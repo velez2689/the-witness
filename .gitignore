@@ -27,3 +27,5 @@ coverage/
 .vercel
 fixtures/audio/*.wav
 !fixtures/audio/.gitkeep
+
+.vercel
