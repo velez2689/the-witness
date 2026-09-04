@@ -1,0 +1,32 @@
+# The structure contract. Read this before creating any file.
+# Prose version: docs/ARCHITECTURE.md
+
+directories:
+  src/app:            "Next.js App Router. Pages and API route handlers only. No business logic."
+  src/app/api:        "Server-only route handlers. The AssemblyAI key lives here and nowhere else."
+  src/domain:         "Pure types and rules: statements, claim ledger, contradiction detection. No I/O, no React, no fetch."
+  src/services:       "Everything that touches the outside world: AssemblyAI clients, audio capture, storage."
+  src/ui:             "React components. Receive data as props, render it. Never call an API directly."
+  src/lib:            "Small shared helpers with no domain meaning (formatting, ids, time)."
+  fixtures:           "Scripted demo corpus: call scripts, generated audio, expected statement records."
+  docs:               "Architecture, decisions, compliance notes."
+  docs/assets:        "Images, GIFs and recordings referenced by the README and docs."
+  tests:              "Mirrors src/ path for path."
+
+boundaries:
+  - "src/domain must not import from src/services, src/ui, src/app, or any npm runtime package"
+  - "src/ui must not import from src/services; data arrives as props"
+  - "The AssemblyAI API key may only be read inside src/app/api. Never in a client component."
+  - "The voice agent never writes to the claim ledger. Our code owns every write."
+
+naming:
+  files: kebab-case
+  react_components: PascalCase.tsx inside src/ui
+  tests: "<name>.test.ts, mirrored under tests/"
+
+forbidden:
+  - "Real credentials in any tracked file"
+  - "New top-level directories without a line in docs/ARCHITECTURE.md"
+  - "Auto-connecting a websocket on page load or hot reload (5 new streams/minute limit)"
+  - "CPT code descriptors anywhere in the repo (AMA-proprietary). Opaque code strings only."
+  - "Any accuracy percentage claim about transcription"

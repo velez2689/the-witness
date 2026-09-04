@@ -1,0 +1,17 @@
+:root {
+  --ink: #e8e6e1;
+  --ink-soft: #8b8880;
+  --bg: #0d0f11;
+  --rule: #1e2226;
+  --live: #35d0a5;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}

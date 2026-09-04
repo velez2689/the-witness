@@ -1,0 +1,29 @@
+# --- secrets: never commit ---
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+
+# --- node ---
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+
+# --- editors / os ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- local artifacts ---
+coverage/
+.vercel
+fixtures/audio/*.wav
+!fixtures/audio/.gitkeep
