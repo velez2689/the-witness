@@ -35,13 +35,26 @@ export type StatementCategory =
   | 'status'
   | 'commitment'
   | 'existence_claim'
-  | 'reference_number';
+  | 'reference_number'
+  | 'policy'
+  | 'rep_identity';
 
 /** A statement that asserts a value the contradiction engine can compare against history. */
 export interface FactStatement extends StatementBase {
   kind: 'fact';
   category: StatementCategory;
+  /** Normalized value the engine compares. The quote lives in span.quote. */
   value: string;
+  /** Policy statements only: what rule is being described ("timely filing limit"). */
+  topic?: string;
+  /** Rep said "also" / "another": an additional reason, not a replacement. Never a value conflict. */
+  additional?: boolean;
+  /** Commitments: the wait window in days (upper bound when a range is given). */
+  windowDays?: number;
+  /** ISO date the statement is about (a status effective date, or the call a Rep says never happened). */
+  subjectDate?: string;
+  /** Set on a confirming row: the id of the statement this row confirms. The original stays untouched. */
+  confirms?: string;
 }
 
 /**
@@ -50,6 +63,7 @@ export interface FactStatement extends StatementBase {
  */
 export interface RefusalStatement extends StatementBase {
   kind: 'refusal';
+  /** What was asked for and withheld: rep_identity, diagnosis_code, reference_number, remark_code... */
   category: string;
 }
 

@@ -1,0 +1,342 @@
+[
+  {
+    "id": "stmt-call-01-01",
+    "kind": "fact",
+    "category": "rep_identity",
+    "value": "M. Alvarez 4471",
+    "speaker": "M. Alvarez 4471",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-01-02",
+    "kind": "fact",
+    "category": "status",
+    "value": "in process",
+    "speaker": "M. Alvarez 4471",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-01-03",
+    "kind": "fact",
+    "category": "commitment",
+    "value": "wait 30 days",
+    "speaker": "M. Alvarez 4471",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-01-04",
+    "kind": "fact",
+    "category": "reference_number",
+    "value": "8K2J-114",
+    "speaker": "M. Alvarez 4471",
+    "confidence": "captured_unconfirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-01-05",
+    "kind": "fact",
+    "category": "reference_number",
+    "value": "8K2J-114",
+    "speaker": "M. Alvarez 4471",
+    "confidence": "captured_confirmed",
+    "confirms": "stmt-call-01-04",
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-02-01",
+    "kind": "fact",
+    "category": "rep_identity",
+    "value": "D. Reese 2210",
+    "speaker": "D. Reese 2210",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-02-02",
+    "kind": "fact",
+    "category": "status",
+    "value": "denied",
+    "speaker": "D. Reese 2210",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-02-03",
+    "kind": "fact",
+    "category": "denial_reason",
+    "value": "no prior authorization",
+    "speaker": "D. Reese 2210",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-02-04",
+    "kind": "fact",
+    "category": "reference_number",
+    "value": "8K2J-338",
+    "speaker": "D. Reese 2210",
+    "confidence": "captured_unconfirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-02-05",
+    "kind": "fact",
+    "category": "reference_number",
+    "value": "8K2J-338",
+    "speaker": "D. Reese 2210",
+    "confidence": "captured_confirmed",
+    "confirms": "stmt-call-02-04",
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-03-01",
+    "kind": "refusal",
+    "category": "rep_identity",
+    "value": null,
+    "speaker": null,
+    "confidence": "not_captured",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-03-02",
+    "kind": "fact",
+    "category": "status",
+    "value": "denied",
+    "speaker": null,
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-03-03",
+    "kind": "fact",
+    "category": "denial_reason",
+    "value": "diagnosis code",
+    "speaker": null,
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-03-04",
+    "kind": "refusal",
+    "category": "diagnosis_code",
+    "value": null,
+    "speaker": null,
+    "confidence": "not_captured",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-03-05",
+    "kind": "refusal",
+    "category": "reference_number",
+    "value": null,
+    "speaker": null,
+    "confidence": "not_captured",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-04-01",
+    "kind": "fact",
+    "category": "rep_identity",
+    "value": "T. Okafor 5182",
+    "speaker": "T. Okafor 5182",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-04-02",
+    "kind": "fact",
+    "category": "status",
+    "value": "reprocessed",
+    "speaker": "T. Okafor 5182",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": "2026-07-30"
+  },
+  {
+    "id": "stmt-call-04-03",
+    "kind": "fact",
+    "category": "commitment",
+    "value": "wait 14-21 days",
+    "speaker": "T. Okafor 5182",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-04-04",
+    "kind": "fact",
+    "category": "reference_number",
+    "value": "8K2J-702",
+    "speaker": "T. Okafor 5182",
+    "confidence": "captured_unconfirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-04-05",
+    "kind": "fact",
+    "category": "reference_number",
+    "value": "8K2J-702",
+    "speaker": "T. Okafor 5182",
+    "confidence": "captured_confirmed",
+    "confirms": "stmt-call-04-04",
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-05-01",
+    "kind": "fact",
+    "category": "rep_identity",
+    "value": "S. Whitfield 3390",
+    "speaker": "S. Whitfield 3390",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-05-02",
+    "kind": "fact",
+    "category": "status",
+    "value": "denied",
+    "speaker": "S. Whitfield 3390",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-05-03",
+    "kind": "fact",
+    "category": "denial_reason",
+    "value": "timely filing",
+    "speaker": "S. Whitfield 3390",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-05-04",
+    "kind": "fact",
+    "category": "reference_number",
+    "value": "8K2J-915",
+    "speaker": "S. Whitfield 3390",
+    "confidence": "captured_unconfirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-05-05",
+    "kind": "fact",
+    "category": "reference_number",
+    "value": "8K2J-915",
+    "speaker": "S. Whitfield 3390",
+    "confidence": "captured_confirmed",
+    "confirms": "stmt-call-05-04",
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-06-01",
+    "kind": "fact",
+    "category": "rep_identity",
+    "value": "D. Reese 2210",
+    "speaker": "D. Reese 2210",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-06-02",
+    "kind": "fact",
+    "category": "denial_reason",
+    "value": "timely filing",
+    "speaker": "D. Reese 2210",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-06-03",
+    "kind": "fact",
+    "category": "status",
+    "value": "denied",
+    "speaker": "D. Reese 2210",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-06-04",
+    "kind": "fact",
+    "category": "existence_claim",
+    "value": "no record of call",
+    "speaker": "D. Reese 2210",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": "2026-08-05"
+  },
+  {
+    "id": "stmt-call-06-05",
+    "kind": "fact",
+    "category": "denial_reason",
+    "value": "diagnosis code",
+    "speaker": "D. Reese 2210",
+    "confidence": "captured_confirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-06-06",
+    "kind": "refusal",
+    "category": "diagnosis_code",
+    "value": null,
+    "speaker": "D. Reese 2210",
+    "confidence": "not_captured",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-06-07",
+    "kind": "refusal",
+    "category": "remark_code",
+    "value": null,
+    "speaker": "D. Reese 2210",
+    "confidence": "not_captured",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-06-08",
+    "kind": "fact",
+    "category": "reference_number",
+    "value": "8K2J-988",
+    "speaker": "D. Reese 2210",
+    "confidence": "captured_unconfirmed",
+    "confirms": null,
+    "subjectDate": null
+  },
+  {
+    "id": "stmt-call-06-09",
+    "kind": "fact",
+    "category": "reference_number",
+    "value": "8K2J-988",
+    "speaker": "D. Reese 2210",
+    "confidence": "captured_confirmed",
+    "confirms": "stmt-call-06-08",
+    "subjectDate": null
+  }
+]

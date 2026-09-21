@@ -5,6 +5,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
+      '@fixtures': path.resolve(import.meta.dirname, './fixtures'),
     },
   },
 });
