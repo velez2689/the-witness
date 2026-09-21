@@ -38,7 +38,8 @@ export function findAlnumRuns(text: string, minChars = 6): AlnumRun[] {
   let i = 0;
   while (i < tokens.length) {
     const first = toAlnum(tokens[i]);
-    const isProse = first !== null && /^[A-Z]$/.test(first) && (tokens[i] === 'a' || tokens[i] === 'i');
+    const nextIsAlnum = i + 1 < tokens.length && toAlnum(tokens[i + 1]) !== null;
+    const isProse = first !== null && (tokens[i] === 'a' || tokens[i] === 'i') && !nextIsAlnum;
     if (first === null || isProse) {
       i += 1;
       continue;
