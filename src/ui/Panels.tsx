@@ -38,6 +38,8 @@ export function TransportBar(p: {
   statementCount: number;
   flagLatencyMs: number | null;
   extractMs: number | null;
+  replyMs: number | null;
+  live: boolean;
   theme: 'auto' | 'light' | 'dark';
   onTheme: () => void;
 }) {
@@ -50,7 +52,8 @@ export function TransportBar(p: {
       <span className="w-state" style={{ color: p.phase === 'running' ? 'var(--flag)' : 'var(--ink-soft)' }}>{state}</span>
       <span className="w-stat">claim <b>{p.claimId}</b> · {p.payer}</span>
       <span className="w-stat">on hold <b>{holdLabel(p.holdSeconds)}</b></span>
-      <span className="w-stat">flag <b>{p.flagLatencyMs === null ? '—' : `${p.flagLatencyMs.toFixed(1)} ms`}</b> <span title="Time to extract, diff and plan for the last flagged turn. Measured in the browser; the scripted path has no network hop.">scripted · no network</span></span>
+      <span className="w-stat">flag <b>{p.flagLatencyMs === null ? '—' : `${p.flagLatencyMs.toFixed(1)} ms`}</b> <span title="Time to extract, diff and plan for the last flagged turn, measured in the browser.">{p.live ? 'engine' : 'scripted · no network'}</span></span>
+      {p.live && <span className="w-stat">first audio <b>{p.replyMs === null ? '—' : `${Math.round(p.replyMs)} ms`}</b> <span title="From the end of the Rep's turn to the first audible syllable of the Witness.">after Rep turn</span></span>}
       <span className="w-stat">extract <b>{p.extractMs === null ? '—' : `${p.extractMs.toFixed(1)} ms`}</b></span>
       <span className="w-stat">statements <b>{p.statementCount}</b></span>
       <span className="w-spacer" />
@@ -60,18 +63,25 @@ export function TransportBar(p: {
 }
 
 // ---------------------------------------------------------------- call brief (intake)
+export type Source = 'scripted' | 'live';
+
 export function BriefPanel(p: {
   brief: CallBrief;
   patientLabel: string;
   locked: boolean;
   mode: Mode;
   setMode: (m: Mode) => void;
+  source: Source;
+  setSource: (s: Source) => void;
+  liveAvailable: boolean;
+  liveDetail: string | null;
   objectives: readonly ObjectiveKey[];
   setObjectives: (o: readonly ObjectiveKey[]) => void;
   phase: Phase;
   speed: number;
   setSpeed: (n: number) => void;
   onStart: () => void;
+  onStop: () => void;
   onPause: () => void;
   onResume: () => void;
   onStep: () => void;
@@ -84,6 +94,7 @@ export function BriefPanel(p: {
 }) {
   const toggle = (k: ObjectiveKey) =>
     p.setObjectives(p.objectives.includes(k) ? p.objectives.filter((x) => x !== k) : [...p.objectives, k]);
+  const live = p.source === 'live';
   return (
     <section className="w-brief" aria-label="Call brief">
       <div>
@@ -112,26 +123,54 @@ export function BriefPanel(p: {
           ))}
         </ul>
         <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          <span className="w-seg" role="group" aria-label="Who speaks to the Rep">
-            <button aria-pressed={p.mode === 'A'} disabled={p.locked} onClick={() => p.setMode('A')}>Witness speaks</button>
-            <button aria-pressed={p.mode === 'B'} disabled={p.locked} onClick={() => p.setMode('B')}>Copilot: I speak</button>
+          <span className="w-seg" role="group" aria-label="Where the Rep comes from">
+            <button aria-pressed={!live} disabled={p.locked} onClick={() => p.setSource('scripted')}>Scripted Rep</button>
+            <button aria-pressed={live} disabled={p.locked || !p.liveAvailable} onClick={() => p.setSource('live')}>Be the Rep (live)</button>
           </span>
-          {p.phase === 'idle' && <button className="w-btn primary" onClick={p.onStart}>Start call</button>}
-          {p.phase === 'running' && <button className="w-btn" onClick={p.onPause}>Pause</button>}
-          {p.phase === 'paused' && <button className="w-btn primary" onClick={p.onResume}>Resume</button>}
-          {(p.phase === 'running' || p.phase === 'paused') && <button className="w-btn" onClick={p.onStep}>Step</button>}
-          {p.canTakeOver && <button className="w-btn warn" onClick={p.onTakeOver}>Take over</button>}
+          {!live && (
+            <span className="w-seg" role="group" aria-label="Who speaks to the Rep">
+              <button aria-pressed={p.mode === 'A'} disabled={p.locked} onClick={() => p.setMode('A')}>Witness speaks</button>
+              <button aria-pressed={p.mode === 'B'} disabled={p.locked} onClick={() => p.setMode('B')}>Copilot: I speak</button>
+            </span>
+          )}
+          {p.phase === 'idle' && <button className="w-btn primary" onClick={p.onStart}>{live ? 'Start live call' : 'Start call'}</button>}
+          {live && p.phase === 'running' && <button className="w-btn warn" onClick={p.onStop}>End call</button>}
+          {!live && p.phase === 'running' && <button className="w-btn" onClick={p.onPause}>Pause</button>}
+          {!live && p.phase === 'paused' && <button className="w-btn primary" onClick={p.onResume}>Resume</button>}
+          {!live && (p.phase === 'running' || p.phase === 'paused') && <button className="w-btn" onClick={p.onStep}>Step</button>}
+          {!live && p.canTakeOver && <button className="w-btn warn" onClick={p.onTakeOver}>Take over</button>}
           {p.phase !== 'idle' && <button className="w-btn" onClick={p.onReset}>Reset</button>}
-          <span className="w-seg" role="group" aria-label="Playback speed">
-            {[1, 2, 4].map((n) => (
-              <button key={n} aria-pressed={p.speed === n} onClick={() => p.setSpeed(n)}>{n}×</button>
-            ))}
-          </span>
+          {!live && (
+            <span className="w-seg" role="group" aria-label="Playback speed">
+              {[1, 2, 4].map((n) => (
+                <button key={n} aria-pressed={p.speed === n} onClick={() => p.setSpeed(n)}>{n}×</button>
+              ))}
+            </span>
+          )}
         </div>
         <p className="w-note" style={{ margin: '8px 0 0' }}>
-          Scripted path: no microphone, no network, no session opens until you press Start.
+          {live
+            ? 'Live: you speak as the payer rep into your microphone; the Witness (AssemblyAI Voice Agent) calls you. Use headphones. Opens one AssemblyAI session only when you press Start.'
+            : 'Scripted path: no microphone, no network, no session opens until you press Start.'}
         </p>
+        {p.liveDetail && <p role="alert" style={{ margin: '6px 0 0', color: 'var(--flag)' }}>{p.liveDetail}</p>}
       </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------- rep cue card (Be the Rep)
+export function RepCue({ lastAsk, suggestion }: { lastAsk: string | null; suggestion: string | null }) {
+  return (
+    <section className="w-cue" aria-label="Rep cue card">
+      <span className="w-note">You are the payer rep. </span>
+      {lastAsk ? <span>The Witness just said: <b>{lastAsk}</b></span> : <span>Wait for the Witness to greet you.</span>}
+      {suggestion && (
+        <div style={{ marginTop: 4 }}>
+          <span className="w-note">Try saying: </span>
+          <span className="said">{suggestion}</span>
+        </div>
+      )}
     </section>
   );
 }

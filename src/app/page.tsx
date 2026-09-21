@@ -1,6 +1,6 @@
 import { DEFAULT_OBJECTIVES, type CallBrief } from '@/domain/call-brief';
 import { buildHistory } from '@/domain/script-runner';
-import { Console } from '@/ui/Console';
+import { ConsoleHost } from './console-host';
 import type { HistoryCall } from '@/ui/console-types';
 import { CALLS, CLAIM, LIVE_CALL } from '@fixtures/scripts/claim-A-4471-08';
 import { REP_BANK_CALL_06 } from '@fixtures/scripts/rep-bank-call-06';
@@ -31,7 +31,7 @@ export default function Home() {
   }));
 
   return (
-    <Console
+    <ConsoleHost
       brief={brief}
       patientLabel={CLAIM.patient}
       historyLedger={history.ledger}

@@ -1,19 +1,25 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import type { ObjectiveKey } from '@/domain/call-brief';
 import { buildClaimUpdate } from '@/domain/claim-update';
 import { closeOutForAgent } from '@/domain/speech';
 import { ClaimUpdateSheet } from './ClaimUpdateSheet';
-import { BriefPanel, Banner, CaptureSheet, HangUpGate, Inspector, Transcript, TransportBar } from './Panels';
+import { BriefPanel, Banner, CaptureSheet, HangUpGate, Inspector, RepCue, Transcript, TransportBar, type Source } from './Panels';
 import { Stage } from './Stage';
-import type { ConsoleProps } from './console-types';
-import { useCallRunner } from './use-call-runner';
+import type { ConsoleProps, LiveDriver } from './console-types';
+import { useCallRunner, type Phase } from './use-call-runner';
+import { useLiveCall } from './use-live-call';
 
 const THEMES = ['auto', 'light', 'dark'] as const;
 
-export function Console(props: ConsoleProps) {
-  const r = useCallRunner(props);
+export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
+  const [objectives, setObjectives] = useState<readonly ObjectiveKey[]>(props.brief.objectives);
+  const [source, setSource] = useState<Source>('scripted');
   const [theme, setTheme] = useState<(typeof THEMES)[number]>('auto');
+  const scripted = useCallRunner(props, objectives);
+  const liveCall = useLiveCall(props, objectives, props.driver);
+  const isLive = source === 'live';
 
   useEffect(() => {
     try {
@@ -24,70 +30,83 @@ export function Console(props: ConsoleProps) {
     }
   }, [theme]);
 
-  const totalHistoryHold = props.historyCalls.reduce((n, c) => n + c.holdSeconds, 0);
-  const liveContradictions = r.liveContradictions;
-  const closeOut = useMemo(() => {
-    if (!r.finished) return null;
-    return closeOutForAgent(r.ledger, props.live.id, liveContradictions, r.holdSeconds);
-  }, [r.finished, r.ledger, props.live.id, liveContradictions, r.holdSeconds]);
+  // One view for both sources: the panels neither know nor care where the Rep's words came from.
+  const v = isLive ? liveCall : scripted;
+  const phase: Phase = isLive
+    ? liveCall.status === 'idle' || (liveCall.status === 'error' && liveCall.feed.length === 0)
+      ? 'idle' // a failed start (no token, no mic) leaves nothing to report: back to a retryable state
+      : liveCall.status === 'closed' || liveCall.status === 'error' ? 'done' : 'running'
+    : scripted.phase;
+  const finished = phase === 'done';
+  const mode = isLive ? 'A' : scripted.mode;
 
-  const update = useMemo(
-    () => (r.finished ? buildClaimUpdate(r.ledger, props.live.id, liveContradictions, r.holdSeconds) : null),
-    [r.finished, r.ledger, props.live.id, liveContradictions, r.holdSeconds],
+  const closeOut = useMemo(
+    () => (finished ? closeOutForAgent(v.ledger, props.live.id, v.liveContradictions, v.holdSeconds) : null),
+    [finished, v.ledger, props.live.id, v.liveContradictions, v.holdSeconds],
   );
-  const banner = r.banner;
-  const totalMs = r.mode === 'A' ? 120_000 : 130_000;
-  const statementCount = r.ledger.statements.length;
+  const update = useMemo(
+    () => (finished ? buildClaimUpdate(v.ledger, props.live.id, v.liveContradictions, v.holdSeconds) : null),
+    [finished, v.ledger, props.live.id, v.liveContradictions, v.holdSeconds],
+  );
+
+  const totalHistoryHold = props.historyCalls.reduce((n, c) => n + c.holdSeconds, 0);
+  const lastWitness = [...v.shown].reverse().find((i) => i.side === 'witness');
+  const suggestion = lastWitness?.tag ? (props.bank[lastWitness.tag]?.text ?? null) : null;
+  const banner = v.banner;
+  const flagMs = isLive ? (liveCall.latency?.flagMs ?? v.flagLatencyMs) : v.flagLatencyMs;
 
   return (
     <div className="w-shell">
       <TransportBar
-        phase={r.phase}
-        mode={r.mode}
-        clockMs={r.clockMs}
-        holdSeconds={r.holdSeconds}
+        phase={phase}
+        mode={mode}
+        clockMs={v.clockMs}
+        holdSeconds={v.holdSeconds}
         claimId={props.brief.claimId}
         payer={props.brief.payer}
-        statementCount={statementCount}
-        flagLatencyMs={r.flagLatencyMs}
-        extractMs={r.extractMs}
+        statementCount={v.ledger.statements.length}
+        flagLatencyMs={flagMs}
+        extractMs={v.extractMs}
+        replyMs={isLive ? (liveCall.latency?.speakMs ?? null) : null}
+        live={isLive}
         theme={theme}
         onTheme={() => setTheme(THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length])}
       />
       <BriefPanel
-        brief={r.brief}
+        brief={{ ...props.brief, objectives }}
         patientLabel={props.patientLabel}
-        locked={r.phase !== 'idle'}
-        mode={r.mode}
-        setMode={r.setMode}
-        objectives={r.objectives}
-        setObjectives={r.setObjectives}
-        phase={r.phase}
-        speed={r.speed}
-        setSpeed={r.setSpeed}
-        onStart={() => r.start(r.mode)}
-        onPause={r.pause}
-        onResume={r.resume}
-        onStep={r.advance}
-        onReset={r.reset}
-        onTakeOver={r.takeOver}
-        canTakeOver={r.mode === 'A' && r.phase !== 'idle' && r.phase !== 'done' && !r.tookOver}
-        totalHold={totalHistoryHold + r.holdSeconds}
-        callsCount={props.historyCalls.length + (r.phase === 'idle' ? 0 : 1)}
+        locked={phase !== 'idle'}
+        mode={scripted.mode}
+        setMode={scripted.setMode}
+        source={source}
+        setSource={setSource}
+        liveAvailable={liveCall.available}
+        liveDetail={isLive ? liveCall.detail : null}
+        objectives={objectives}
+        setObjectives={setObjectives}
+        phase={phase}
+        speed={scripted.speed}
+        setSpeed={scripted.setSpeed}
+        onStart={() => (isLive ? void liveCall.start() : scripted.start(scripted.mode))}
+        onStop={liveCall.stop}
+        onPause={scripted.pause}
+        onResume={scripted.resume}
+        onStep={scripted.advance}
+        onReset={isLive ? liveCall.reset : scripted.reset}
+        onTakeOver={scripted.takeOver}
+        canTakeOver={!isLive && scripted.mode === 'A' && phase !== 'idle' && phase !== 'done' && !scripted.tookOver}
+        totalHold={totalHistoryHold + v.holdSeconds}
+        callsCount={props.historyCalls.length + (phase === 'idle' ? 0 : 1)}
         costPerCall={props.costPerCall}
       />
+      {isLive && phase === 'running' && <RepCue lastAsk={lastWitness?.text ?? null} suggestion={suggestion} />}
       <div className="w-flaglane" aria-label="Contradiction flag lane">
         {banner ? (
-          <Banner
-            group={banner}
-            ledger={r.ledger}
-            queued={r.openCount - 1}
-            onDismiss={() => r.dismiss(banner[0].statementIds[1])}
-          />
+          <Banner group={banner} ledger={v.ledger} queued={v.openCount - 1} onDismiss={() => v.dismiss(banner[0].statementIds[1])} />
         ) : (
           <p className="w-note" style={{ margin: 0 }}>
-            {r.phase === 'idle'
-              ? 'Flag lane. When the Rep contradicts something already on record, it lands here in under two seconds, with both quotes.'
+            {phase === 'idle'
+              ? 'Flag lane. When the Rep contradicts something already on record, it lands here with both quotes.'
               : 'No open flag. Dismissed flags stay on the timeline.'}
           </p>
         )}
@@ -95,30 +114,28 @@ export function Console(props: ConsoleProps) {
       <div className="w-stage">
         <Stage
           historyCalls={props.historyCalls}
-          ledger={r.ledger}
-          contradictions={r.contradictions}
-          shown={r.shown}
-          focus={r.focus}
+          ledger={v.ledger}
+          contradictions={v.contradictions}
+          shown={v.shown}
+          focus={v.focus}
           liveStartedAt={props.live.startedAt}
           liveDuration={props.live.durationSeconds}
-          running={r.phase === 'running' || r.phase === 'paused' || r.phase === 'done'}
-          mode={r.mode}
-          totalMs={totalMs}
-          holdSeconds={r.holdSeconds}
+          running={phase !== 'idle'}
+          mode={mode}
+          totalMs={isLive ? 180_000 : mode === 'A' ? 120_000 : 130_000}
+          holdSeconds={v.holdSeconds}
         />
       </div>
-      <Transcript items={r.shown} mode={r.mode} />
+      <Transcript items={v.shown} mode={mode} />
+      {isLive && liveCall.drift.length > 0 && (
+        <p role="alert" className="w-note" style={{ margin: 0, padding: '6px 16px', color: 'var(--flag)' }}>
+          Self-check: the agent spoke {liveCall.drift.join(', ')}, which is not in the record.
+        </p>
+      )}
       <div className="w-lower">
-        <Inspector
-          ledger={r.ledger}
-          focus={r.focus}
-          shown={r.shown}
-          callCount={props.historyCalls.length}
-          closeOut={closeOut}
-          finished={r.finished}
-        />
-        <CaptureSheet brief={r.brief} patientLabel={props.patientLabel} ledger={r.ledger} gate={r.gate} callId={props.live.id} />
-        <HangUpGate gate={r.gate} ok={r.hangUpOk} phase={r.phase} />
+        <Inspector ledger={v.ledger} focus={v.focus} shown={v.shown} callCount={props.historyCalls.length} closeOut={closeOut} finished={finished} />
+        <CaptureSheet brief={{ ...props.brief, objectives }} patientLabel={props.patientLabel} ledger={v.ledger} gate={v.gate} callId={props.live.id} />
+        <HangUpGate gate={v.gate} ok={v.hangUpOk} phase={phase} />
       </div>
       {update && <ClaimUpdateSheet update={update} />}
     </div>

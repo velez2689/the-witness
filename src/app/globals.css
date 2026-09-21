@@ -216,3 +216,5 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .pk { background: #fff; color: #000; max-width: none; padding: 0; }
   .pk-conflict { background: #fff; }
 }
+
+.w-cue { padding: 8px 16px; border-bottom: 1px solid var(--rule); background: var(--raise); border-left: 6px solid var(--accent); }
