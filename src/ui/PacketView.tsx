@@ -12,7 +12,7 @@ function Cite({ c }: { c: PacketCitation }) {
     <div className="pk-cite">
       <p className="pk-quote">
         <span className="said">{c.quote}</span>
-        <button className="w-play no-print" onClick={() => speak(c.quote)} aria-label="Play this quote">▶ play</button>
+        <button className="w-play no-print" onClick={() => speak(c.quote)} aria-label="Play this quote">Play</button>
       </p>
       <p className="pk-meta">
         <span className="id">{c.date} · call offset {c.offset}</span> · {c.rep}

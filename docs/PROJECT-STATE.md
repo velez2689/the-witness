@@ -16,7 +16,7 @@
 
 ### Open, in priority order
 1. Put `ASSEMBLYAI_API_KEY` in `.env` (it is EMPTY; the previous key was pasted in a chat, rotate it) and run `node --env-file=.env fixtures/scripts/spike-voice-agent.mjs`. Confirm: payload field names of `transcript.user` / `transcript.agent` / `reply.audio`, and how to pin `qwen3.5-4b-fast` (no LLM field is documented; the session currently sends none, so constraint 4 is unmet until this is known).
-2. Add `ELEVENLABS_API_KEY`; write `fixtures/scripts/render-corpus.mjs` (see skill witness-replay-corpus). The scripted ▶ buttons use the browser voice until real audio exists.
+2. Add `ELEVENLABS_API_KEY`; write `fixtures/scripts/render-corpus.mjs` (see skill witness-replay-corpus). The scripted play buttons use the browser voice until real audio exists.
 3. Deploy and push (needs the owner's go-ahead): Vercel project exists; nothing pushed since Sep 4.
 4. Not built yet: Payer Inconsistency Index, Judge Mode (`/judge`), Contradiction Autopsy scrubber, Wrong-Claim Guard, Ask-Next bank, Deadline Guard, Denial-Letter cross-check, deck/video/cover.
 5. Streaming v3 second session for Mode B on live audio (Mode B is scripted-only today).
@@ -221,7 +221,7 @@ of the sound. Five horizontal bands:
    the screenshot.
 4. **Call timeline (edit view)** — two waveform tracks, hold regions shaded with
    durations, a marker at every capture, the contradiction as a **selected region**.
-5. **Three unequal lower panels** — contradiction inspector with ▶ on every quote; the
+5. **Three unequal lower panels** — contradiction inspector with a play control on every quote; the
    **CMS-1500 capture sheet inset on paper** inside the dark console with real box
    numbering; the before-you-hang-up gate as an *exit condition*.
 

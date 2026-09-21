@@ -34,7 +34,7 @@ export function ClaimUpdateSheet({ update }: { update: ClaimUpdate }) {
                 </td>
                 <td>
                   {r.quote && (
-                    <button className="w-play" style={{ margin: 0 }} onClick={() => speak(r.quote!)} aria-label={`Play the quote behind ${r.field}`}>▶</button>
+                    <button className="w-play" style={{ margin: 0 }} onClick={() => speak(r.quote!)} aria-label={`Play the quote behind ${r.field}`}>Play</button>
                   )}
                 </td>
               </tr>

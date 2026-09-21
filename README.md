@@ -89,7 +89,7 @@ sequenceDiagram
     W->>W: extract typed statement (~600ms)
     W->>L: diff against claim history (~50ms)
     L-->>W: conflict — denial reason changed
-    W->>B: 🔊 "That contradicts July eighth.<br/>Same rep said no prior auth. Ask which one."
+    W->>B: Witness says "That contradicts July eighth.<br/>Same rep said no prior auth. Ask which one."
     Note over W,B: under 2 seconds from end of payer turn
     B->>P: "Which is it — timely filing or prior auth?"
     Note over W: both statements retained, both quotable,<br/>both with audio offsets
@@ -126,10 +126,10 @@ Open <http://localhost:3000>. You should see the holding console reading **SYSTE
 
 | Variable | What it is | Required | Default |
 |---|---|:--:|---|
-| `ASSEMBLYAI_API_KEY` | Server-side only. Never sent to the browser — the client gets a short-lived token from `/api/token`. | ✅ | — |
-| `ASSEMBLYAI_STT_MODEL` | Speech model, pinned explicitly. | ✅ | `universal-3-5-pro` |
-| `ASSEMBLYAI_AGENT_LLM` | Agent LLM, pinned explicitly. Never rely on default resolution — the default may resolve to a model the account cannot reach, and it fails looking like a connection error. | ✅ | `qwen3.5-4b-fast` |
-| `SESSION_MAX_SECONDS` | Hard ceiling per session. Billing is on socket-open duration, so every session must be able to kill itself. | ✅ | `900` |
+| `ASSEMBLYAI_API_KEY` | Server-side only. Never sent to the browser — the client gets a short-lived token from `/api/token`. | Yes | — |
+| `ASSEMBLYAI_STT_MODEL` | Speech model, pinned explicitly. | Yes | `universal-3-5-pro` |
+| `ASSEMBLYAI_AGENT_LLM` | Agent LLM, pinned explicitly. Never rely on default resolution — the default may resolve to a model the account cannot reach, and it fails looking like a connection error. | Yes | `qwen3.5-4b-fast` |
+| `SESSION_MAX_SECONDS` | Hard ceiling per session. Billing is on socket-open duration, so every session must be able to kill itself. | Yes | `900` |
 
 ---
 
@@ -155,13 +155,13 @@ The rules are machine-readable in [`.repo-layout.yml`](.repo-layout.yml) and exp
 
 | Area | State |
 |---|---|
-| Research and planning | ✅ Complete |
-| Technical spikes | ✅ Both resolved — agent-initiated speech confirmed, audio capture path decided |
-| Repo + deploy shell | 🔨 In progress |
-| Dual AssemblyAI sessions | ⬜ Week A |
-| Claim ledger + contradiction engine | ⬜ Week B |
-| Two-timescale evidence console | ⬜ Week B |
-| Close-Out + appeal packet | ⬜ Week C |
+| Research and planning | Complete |
+| Technical spikes | Complete: both resolved — agent-initiated speech confirmed, audio capture path decided |
+| Repo + deploy shell | In progress |
+| Dual AssemblyAI sessions | Not started, week A |
+| Claim ledger + contradiction engine | Not started, week B |
+| Two-timescale evidence console | Not started, week B |
+| Close-Out + appeal packet | Not started, week C |
 
 **Known constraints, stated up front:** Chrome-only (dual-channel capture is Chromium-only, and macOS needs 14.2+ with Chrome 141+). The demo corpus is scripted text-to-speech — **no protected health information touches this project.** No accuracy percentage is claimed anywhere, by policy.
 
