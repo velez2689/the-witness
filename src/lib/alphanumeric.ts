@@ -33,6 +33,13 @@ function toAlnum(token: string): string | null {
  * so "a" / "i" in normal prose do not start one.
  */
 export function findAlnumRuns(text: string, minChars = 6): AlnumRun[] {
+  // A sentence end breaks a run: "...seven zero two. 4 minutes" is two things, not one number.
+  return text
+    .split(/[.?!]+(?=\s|$)/)
+    .flatMap((sentence) => findRunsInSentence(sentence, minChars));
+}
+
+function findRunsInSentence(text: string, minChars: number): AlnumRun[] {
   const tokens = tokenize(text);
   const runs: AlnumRun[] = [];
   let i = 0;
