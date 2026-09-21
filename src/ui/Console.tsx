@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { buildClaimUpdate } from '@/domain/claim-update';
 import { closeOutForAgent } from '@/domain/speech';
+import { ClaimUpdateSheet } from './ClaimUpdateSheet';
 import { BriefPanel, Banner, CaptureSheet, HangUpGate, Inspector, Transcript, TransportBar } from './Panels';
 import { Stage } from './Stage';
 import type { ConsoleProps } from './console-types';
@@ -27,8 +29,12 @@ export function Console(props: ConsoleProps) {
   const closeOut = useMemo(() => {
     if (!r.finished) return null;
     return closeOutForAgent(r.ledger, props.live.id, liveContradictions, r.holdSeconds);
-  }, [r.phase, r.visible, r.finished, r.shown, r.ledger, props.live.id, liveContradictions, r.holdSeconds]);
+  }, [r.finished, r.ledger, props.live.id, liveContradictions, r.holdSeconds]);
 
+  const update = useMemo(
+    () => (r.finished ? buildClaimUpdate(r.ledger, props.live.id, liveContradictions, r.holdSeconds) : null),
+    [r.finished, r.ledger, props.live.id, liveContradictions, r.holdSeconds],
+  );
   const banner = r.banner;
   const totalMs = r.mode === 'A' ? 120_000 : 130_000;
   const statementCount = r.ledger.statements.length;
@@ -114,6 +120,7 @@ export function Console(props: ConsoleProps) {
         <CaptureSheet brief={r.brief} patientLabel={props.patientLabel} ledger={r.ledger} gate={r.gate} callId={props.live.id} />
         <HangUpGate gate={r.gate} ok={r.hangUpOk} phase={r.phase} />
       </div>
+      {update && <ClaimUpdateSheet update={update} />}
     </div>
   );
 }
