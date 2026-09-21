@@ -23,6 +23,8 @@ export type CallEvent =
       atMs: number;
       added: Statement[];
       contradictions: Contradiction[];
+      /** Real time spent extracting, diffing and planning for this turn (not network). */
+      engineMs: number;
     };
 
 export interface ModeAState {
@@ -86,8 +88,10 @@ export function stepModeA(state: ModeAState): { state: ModeAState; finished: boo
   if (line.holdBeforeSeconds) hold += line.holdBeforeSeconds;
   const startMs = clock;
   const endMs = startMs + estimateDurationMs(line.text);
+  const t0 = performance.now();
   const r = ingestRepTurn(session, { text: line.text, startMs, endMs, lowConfidence: line.lowConfidence });
-  events.push({ type: 'rep', line, atMs: startMs, added: r.added, contradictions: r.contradictions });
+  const engineMs = performance.now() - t0;
+  events.push({ type: 'rep', line, atMs: startMs, added: r.added, contradictions: r.contradictions, engineMs });
   return {
     state: { ...state, plan, session: r.session, clockMs: endMs, holdSeconds: hold, events },
     finished: plan.done,

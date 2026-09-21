@@ -7,6 +7,7 @@ import type { ClaimLedger } from './claim-ledger';
 import { estimateDurationMs, type ScriptCall } from './script';
 import * as speech from './speech';
 import type { Statement } from './statement';
+import type { ModeAState } from './mode-a';
 
 /**
  * Mode B — Copilot. The Agent speaks to the Rep; the Witness listens and WHISPERS into the Agent's
@@ -22,6 +23,7 @@ export type CopilotEvent =
       holdBeforeSeconds: number;
       added: Statement[];
       contradictions: Contradiction[];
+      engineMs: number;
     }
   | { type: 'whisper'; text: string; cites: readonly string[]; atMs: number; reason: string }
   | { type: 'closeout'; text: string; cites: readonly string[]; atMs: number };
@@ -83,7 +85,9 @@ export function stepModeB(state: ModeBState): ModeBState {
     return { ...state, cursor: state.cursor + 1, session: noteUsLine(state.session, line.text), clockMs: end, events };
   }
 
+  const t0 = performance.now();
   const r = ingestRepTurn(state.session, { text: line.text, startMs: start, endMs: end, lowConfidence: line.lowConfidence });
+  const engineMs = performance.now() - t0;
   events.push({
     type: 'rep',
     text: line.text,
@@ -91,6 +95,7 @@ export function stepModeB(state: ModeBState): ModeBState {
     holdBeforeSeconds: line.holdBeforeSeconds ?? 0,
     added: r.added,
     contradictions: r.contradictions,
+    engineMs,
   });
 
   const whispered = [...state.whispered];
@@ -125,4 +130,32 @@ export function runModeB(initial: ModeBState): ModeBState {
   let s = initial;
   for (let i = 0; i < 200 && !s.finished; i += 1) s = stepModeB(s);
   return s;
+}
+
+/**
+ * Take Over: the Agent picks up the call mid-flight. The ledger, identity and clock carry over and the
+ * Witness drops to whispering. Resumes the script after the last Rep line already heard.
+ */
+export function resumeModeB(a: ModeAState, script: ScriptCall): ModeBState {
+  const lastRep = [...a.events].reverse().find((e) => e.type === 'rep');
+  let cursor = 0;
+  if (lastRep && lastRep.type === 'rep') {
+    for (let i = script.lines.length - 1; i >= 0; i -= 1) {
+      if (script.lines[i].who === 'REP' && script.lines[i].text === lastRep.line.text) {
+        cursor = i + 1;
+        break;
+      }
+    }
+  }
+  return {
+    brief: a.brief,
+    script,
+    cursor,
+    session: a.session,
+    clockMs: a.clockMs,
+    holdSeconds: a.holdSeconds,
+    events: [],
+    whispered: a.plan.challenged,
+    finished: false,
+  };
 }

@@ -66,7 +66,11 @@ export function computeGate(
     let refusalCategory: string | null = null;
     if (key === 'claim_status') field = fieldFor(all.filter((f) => f.category === 'status'));
     else if (key === 'denial_reason') field = fieldFor(all.filter((f) => f.category === 'denial_reason' && !f.additional));
-    else if (key === 'remit_reason') field = fieldFor(all.filter((f) => f.category === 'denial_reason'));
+    else if (key === 'remit_reason') {
+      // Only a SECOND reason (or a refusal) answers "what does the remit say": a repeat of the first does not.
+      const reasons = all.filter((f) => f.category === 'denial_reason');
+      field = reasons.length >= 2 ? fieldFor(reasons) : null;
+    }
     else if (key === 'specific_code') refusalCategory = 'diagnosis_code';
     else if (key === 'remark_code') refusalCategory = 'remark_code';
     const isRefused = refusalCategory ? refused(ledger, callId, refusalCategory) : undefined;
