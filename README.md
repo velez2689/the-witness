@@ -4,7 +4,7 @@
 
 > We don't predict what the payer will pay. We record what the payer said.
 
-**Live demo:** _coming Week A_ · **Built on:** AssemblyAI Streaming STT v3 + Voice Agent API · **Submission:** AssemblyAI Voice Agent Hackathon, Sep 2026
+**Live demo:** https://the-witness-qynnmygc0-chris-velezs-projects.vercel.app (deploy pending the latest build) · **Built on:** AssemblyAI Streaming STT v3 + Voice Agent API · **Submission:** AssemblyAI Voice Agent Hackathon, Sep 2026
 
 ---
 
@@ -180,3 +180,19 @@ The Witness is leverage inside a payer's own internal appeal. It is not a litiga
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+
+---
+
+## Status and how to run it
+
+```bash
+npm install
+cp .env.example .env      # add ASSEMBLYAI_API_KEY (live path only)
+npm run dev               # http://localhost:3000
+npm test && npm run typecheck && npm run lint
+```
+
+- **Scripted path (no key, no mic, no network):** open `/`, press **Start call**. Choose *Witness speaks* (the AI conducts the call and challenges the rep) or *Copilot* (you speak, the Witness whispers). **Take over** switches mid-call. `/packet` is the appeal packet.
+- **Live path:** choose *Be the Rep (live)*, press **Start live call**. You speak as the payer rep; the Witness calls you through the AssemblyAI Voice Agent API. Chrome, headphones, a microphone and a server key are required. One session opens only when you press Start and is ended on every exit path.
+- Everything spoken by the Witness is assembled from recorded statements and checked against the record; nothing is inferred. All demo data is synthetic. No PHI.

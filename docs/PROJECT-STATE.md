@@ -1,5 +1,33 @@
 # Project state — read this to get up to speed
 
+## UPDATE 2026-09-21 — read this section first; it supersedes §2 and §11 below
+
+**Vocabulary.** Agent = the person using The Witness. Rep = the payer rep. Witness = our voice AI. (Code: `operator` / `rep` / `witness`.)
+
+**Two modes (§Modes).** Mode A: the Witness speaks to the Rep (one Voice Agent session on the Rep's audio; verbatim AI + recording disclosure; deterministic call plan; challenges contradictions on the recorded line). Mode B, Copilot: the Agent speaks, the Witness whispers. **Take Over** moves A to B mid-call. No telephony: the demo Rep is a scripted simulator or a person speaking into the mic ("Be the Rep"). Real dialing is roadmap.
+
+**Freeze moved to Sep 26.** Submit Sep 29.
+
+### What is built and verified (86 tests, typecheck, lint, production build)
+- Domain: extractor (rules, final turns only), five contradiction kinds + refusals, call sessions, deterministic call plan, speech assembly with an alphanumeric self-check, capture gate, Mode A runner + Rep Simulator bank, Mode B whispers + Take Over resume, claim update sheet, appeal packet model, SHA-256 hash chain.
+- Console (`/`): claim timeline, the link, flag lane, live-call edit view, capture sheet, hang-up gate, close-out, claim update sheet. Scripted Mode A/B run in the browser with no network.
+- Packet (`/packet`): print-ready, member ID masked, per-statement citations, integrity verify, evidence JSON.
+- Live path (built, **NOT yet exercised against the real API**): `/api/token`, `session-registry`, `voice-agent-session`, `live-call`, mic/audio IO. Covered by fake-socket tests only.
+
+### Open, in priority order
+1. Put `ASSEMBLYAI_API_KEY` in `.env` (it is EMPTY; the previous key was pasted in a chat, rotate it) and run `node --env-file=.env fixtures/scripts/spike-voice-agent.mjs`. Confirm: payload field names of `transcript.user` / `transcript.agent` / `reply.audio`, and how to pin `qwen3.5-4b-fast` (no LLM field is documented; the session currently sends none, so constraint 4 is unmet until this is known).
+2. Add `ELEVENLABS_API_KEY`; write `fixtures/scripts/render-corpus.mjs` (see skill witness-replay-corpus). The scripted ▶ buttons use the browser voice until real audio exists.
+3. Deploy and push (needs the owner's go-ahead): Vercel project exists; nothing pushed since Sep 4.
+4. Not built yet: Payer Inconsistency Index, Judge Mode (`/judge`), Contradiction Autopsy scrubber, Wrong-Claim Guard, Ask-Next bank, Deadline Guard, Denial-Letter cross-check, deck/video/cover.
+5. Streaming v3 second session for Mode B on live audio (Mode B is scripted-only today).
+
+### Gotchas
+- `.env` values are never printed. The token route is public: same-origin check, 60s single-use tokens, 300s session cap, per-IP rate limit (best effort on serverless).
+- The self-check caught two real bugs (digits joined across sentences; close reason lost on synchronous socket close). Keep it running in tests.
+- Numbers: the header shows hold time (computed) and per-call cost (calls × the CAQH $13.80 average) as separate figures; never multiply hold minutes by the 25-minute average.
+
+---
+
 Last updated **2026-09-04, end of day 4**. One file, everything that matters.
 `CLAUDE.md` in the repo root holds the binding constraints; this holds the context
 behind them.

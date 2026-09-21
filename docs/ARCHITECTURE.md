@@ -56,3 +56,10 @@ These are not style preferences. Each one has a specific cost.
 2. Ask what the file *is* — a rule, an adapter, a view, a test, a fixture — not which feature it serves.
 3. Put it in the matching directory and mirror the path under `tests/`.
 4. If nothing fits, stop and ask. A new top-level directory is an architecture decision and gets a line in this file first.
+
+## Additions 2026-09-21
+
+- `fixtures/scripts/` also holds the corpus tooling (`render-corpus.mjs`, `spike-voice-agent.mjs`). Tooling that only serves the fixtures lives with them; no new top-level directory.
+- `src/app/console-host.tsx` is the ONE place the UI is bound to services. `src/ui` never imports `src/services`: it receives a `LiveDriver` as a prop.
+- Two modes share one pipeline: `final Rep turn → extractor → ledger → engine → call plan → speech assembly → speak (Mode A) or whisper (Mode B)`.
+- Vocabulary: Agent = the human user, Rep = the payer rep, Witness = the voice AI.
