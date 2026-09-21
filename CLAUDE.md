@@ -10,7 +10,7 @@ contradictions against prior calls on the same claim in real time; **speaks** co
 into the biller's private earpiece mid-call; and emits an appeal packet quoting the
 transcript with timestamps.
 
-Deadline: **Sep 30 2026, 11:00 ET.** Feature freeze Sep 23.
+Deadline: **Sep 30 2026, 11:00 ET.** Feature freeze moved to **Sep 26** (re-baselined Sep 21).
 
 ## The one sentence that settles most design arguments
 **We don't predict what the payer will pay. We record what the payer said.**
@@ -65,14 +65,22 @@ a connection bug.
 `src/app/api/token/` only. The browser gets a short-lived token. The repo is public
 and the demo URL is public — there is no "just for now."
 
-**8 · Separate session per channel. Never diarization.**
-Live diarization is beta. Channel A (payer) → Streaming STT v3, listen-only, keyterms
-seeded with the claim's own numbers. Channel B (biller) → Voice Agent API.
+**8 · Speaker identity is structural, never diarization.**
+Live diarization is beta. Two modes (see `docs/PROJECT-STATE.md` §Modes):
+- **Mode A — Witness speaks:** ONE Voice Agent session whose input is the Rep's audio
+  only; transcript.user is always the Rep, transcript.agent is always the Witness.
+- **Mode B — Copilot:** Rep audio → Streaming v3 (listen-only, keyterms seeded);
+  Agent mic → Voice Agent session. One session per channel.
 
-**9 · The agent's audio must never reach the payer's line.**
-If agent TTS plays through the same headset whose mic feeds the call, the payer hears
-the coaching. Product-ending on a recorded line. Output routing to a separate device
-(`setSinkId`) is day-one, not polish.
+**9 · Audio routing is explicit per mode.**
+Mode B: the Witness's audio must never reach the Rep's line — route to a separate
+output (`setSinkId`); product-ending on a recorded line otherwise. Mode A: the Witness
+speaks to the Rep by design, so its greeting is verbatim, discloses that it is an AI
+assistant calling for the provider's billing office, and states the call is recorded.
+It never claims to be human and only shares facts in the Call Brief.
+
+**Vocabulary.** *Agent* = the human using The Witness. *Rep* = the payer rep.
+In code: `operator` / `rep` / `witness` (avoids clashing with AssemblyAI "agent").
 
 ## Standing prohibitions
 - **No CPT code descriptors anywhere.** CPT is AMA-proprietary. Codes render as opaque
