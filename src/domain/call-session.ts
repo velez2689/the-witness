@@ -24,6 +24,8 @@ export interface CallSession {
   askedFor: AskKind | null;
   /** Reference number the Agent has read back and is waiting on the Rep to confirm. */
   pendingReadback: string | null;
+  /** Member IDs of everyone on this call (see call-roster). */
+  memberIds: readonly string[];
   ledger: ClaimLedger;
   seq: number;
 }
@@ -36,7 +38,7 @@ export interface IngestResult {
 
 export function startCall(
   ledger: ClaimLedger,
-  meta: { callId: CallId; capturedAt: string; nameHint?: string | null },
+  meta: { callId: CallId; capturedAt: string; nameHint?: string | null; memberIds?: readonly string[] },
 ): CallSession {
   return {
     claimId: ledger.claimId,
@@ -46,6 +48,7 @@ export function startCall(
     identity: { first: null, badge: null },
     askedFor: null,
     pendingReadback: null,
+    memberIds: meta.memberIds ?? [],
     ledger,
     seq: 0,
   };
@@ -80,6 +83,7 @@ export function ingestRepTurn(session: CallSession, turn: RepTurn): IngestResult
     askedFor: session.askedFor,
     knownReps: knownReps(session.ledger),
     nameHint: session.nameHint,
+    knownMemberIds: session.memberIds,
   });
 
   let next: CallSession = {

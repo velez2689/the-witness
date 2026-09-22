@@ -55,6 +55,11 @@ export interface FactStatement extends StatementBase {
   subjectDate?: string;
   /** Set on a confirming row: the id of the statement this row confirms. The original stays untouched. */
   confirms?: string;
+  /**
+   * Reference numbers only. Some payers issue one reference per claim, some one per call —
+   * it varies by payer, so the record says which kind this was rather than assuming.
+   */
+  refScope?: 'call' | 'claim';
 }
 
 /**

@@ -23,6 +23,11 @@ export interface ExtractContext {
   knownReps: readonly Speaker[];
   /** Surname noted by the Agent for this call, if any. */
   nameHint: string | null;
+  /**
+   * Member IDs of every patient on this call. A rep reading one aloud must never be filed
+   * as a reference number — on a multi-patient call that is how ledgers get contaminated.
+   */
+  knownMemberIds?: readonly string[];
 }
 
 interface DraftBase {
@@ -115,7 +120,9 @@ export function extractFromTurn(turn: RepTurn, ctx: ExtractContext): Extraction 
   }
 
   // --- reference numbers ----------------------------------------------------------------
+  const memberIds = new Set((ctx.knownMemberIds ?? []).map((m) => m.replace(/[^A-Za-z0-9]/g, '').toUpperCase()));
   for (const run of findAlnumRuns(text)) {
+    if (memberIds.has(run.raw.replace(/[^A-Za-z0-9]/g, '').toUpperCase())) continue;
     drafts.push({
       kind: 'fact',
       category: 'reference_number',
