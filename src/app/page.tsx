@@ -4,6 +4,7 @@ import { ConsoleHost } from './console-host';
 import type { HistoryCall } from '@/ui/console-types';
 import { CALLS, CLAIM, LIVE_CALL } from '@fixtures/scripts/claim-A-4471-08';
 import { REP_BANK_CALL_06 } from '@fixtures/scripts/rep-bank-call-06';
+import { ROSTER_BATCH } from '@fixtures/scripts/roster-batch';
 
 /** CAQH Index 2024 edition (2023 data): $13.80 per manual phone claim-status inquiry. */
 const COST_PER_CALL = 13.8;
@@ -38,6 +39,7 @@ export default function Home() {
       historyCalls={historyCalls}
       live={LIVE_CALL}
       bank={REP_BANK_CALL_06}
+      batch={ROSTER_BATCH}
       costPerCall={COST_PER_CALL}
     />
   );

@@ -110,6 +110,30 @@ describe('the wrong-claim guard', () => {
     expect(r.entries[1].session.ledger.statements).toHaveLength(0);
   });
 
+  it('quarantines the whole turn — the ACTIVE patient gets nothing from it either', () => {
+    let r = start();
+    const result = ingestToActive(
+      r,
+      turn('I have M-D-five-five-eight-three-zero-four-one-seven up. That one denied for no prior auth.'),
+    );
+    r = result.roster;
+
+    // The rep is reading the wrong chart, so "denied for no prior auth" is about the wrong patient.
+    // Filing it to Delgado would record something false about a real patient.
+    expect(result.added).toHaveLength(0);
+    expect(r.entries.flatMap((e) => e.session.ledger.statements)).toHaveLength(0);
+  });
+
+  it('captures the answer normally once the rep re-states it about the right patient', () => {
+    let r = start();
+    r = ingestToActive(r, turn('I have M-D-five-five-eight-three-zero-four-one-seven up. Denied, no prior auth.')).roster;
+    r = ingestToActive(r, turn('My apologies. That claim denied for timely filing.', 4000)).roster;
+
+    const facts = factsOf(r, 0);
+    expect(facts.map((s) => s.value)).toContain('timely filing');
+    expect(facts.map((s) => s.value)).not.toContain('no prior authorization');
+  });
+
   it('stays quiet when the rep reads the patient who is actually active', () => {
     const r = start();
     expect(checkWrongClaim(r, turn('That is M-D-seven-seven-one-four-zero-two-two-eight.'))).toBeNull();

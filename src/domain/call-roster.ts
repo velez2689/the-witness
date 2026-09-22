@@ -1,10 +1,10 @@
 import type { CallBrief } from './call-brief';
 import { computeGate, canHangUp, type GateItem } from './capture-gate';
 import { ingestRepTurn, noteUsLine, startCall, type CallSession } from './call-session';
-import type { ClaimLedger } from './claim-ledger';
+import { appendStatement, type ClaimLedger } from './claim-ledger';
 import type { Contradiction } from './contradiction';
 import type { RepTurn } from './extractor';
-import type { ClaimId, Statement } from './statement';
+import type { ClaimId, FactStatement, Statement } from './statement';
 import { findAlnumRuns } from '@/lib/alphanumeric';
 
 /**
@@ -113,10 +113,20 @@ export function checkWrongClaim(r: CallRoster, turn: RepTurn): WrongClaimWarning
   return null;
 }
 
-/** Feed a finalized Rep turn to the ACTIVE patient only. */
+/**
+ * Feed a finalized Rep turn to the ACTIVE patient only.
+ *
+ * A turn in which the rep reads ANOTHER patient's member ID is quarantined: nothing in it is
+ * filed, to anyone. The rep is looking at the wrong chart, so everything they say in that breath
+ * describes the wrong patient — filing it to the active claim would record something false about
+ * a real patient, and re-routing it to the spoken claim would be the silent move this whole
+ * module exists to refuse. The turn is dropped, the Agent is shown the challenge, and the answer
+ * is captured when the rep says it again about the right patient.
+ */
 export function ingestToActive(r: CallRoster, turn: RepTurn): RosterIngest {
   const entry = activeEntry(r);
   const wrongClaim = checkWrongClaim(r, turn);
+  if (wrongClaim) return { roster: r, added: [], contradictions: [], wrongClaim };
   // The shared counter keeps statement ids unique across the claims sharing this callId.
   const primed: CallSession = { ...entry.session, seq: r.seq };
   const result = ingestRepTurn(primed, turn);
@@ -125,7 +135,7 @@ export function ingestToActive(r: CallRoster, turn: RepTurn): RosterIngest {
     roster: { ...r, entries, seq: result.session.seq },
     added: result.added,
     contradictions: result.contradictions,
-    wrongClaim,
+    wrongClaim: null,
   };
 }
 
@@ -140,25 +150,43 @@ export function noteUsLineOnActive(r: CallRoster, text: string): CallRoster {
 /**
  * Move to another patient. Explicit by design. The rep's identity carries across — it is the
  * same person on the line — but nothing else does.
+ *
+ * Identity carries as a STATEMENT, not just as session state, because the gate reads the ledger.
+ * This is not manufacturing evidence: "on call-07 the rep identified as Darnell, badge 2210" is
+ * true of every claim discussed on that call, and the row keeps the original quote and timestamp.
+ * What does NOT carry is anything the rep said about the claim — that is per-patient by definition.
  */
 export function switchTo(r: CallRoster, claimId: ClaimId): CallRoster {
   const next = r.entries.findIndex((e) => e.brief.claimId === claimId);
   if (next < 0) throw new Error(`claim ${claimId} is not on this call`);
   if (next === r.activeIndex) return r;
   const leaving = activeEntry(r);
+  const carried = identityRow(leaving, r);
+  let seq = r.seq;
   const entries = r.entries.map((e, i) => {
     if (i === r.activeIndex) return { ...e, closed: true };
     if (i !== next) return e;
-    return {
-      ...e,
-      session: {
-        ...e.session,
-        identity: leaving.session.identity,
-        nameHint: leaving.session.nameHint,
-      },
+    const session = { ...e.session, identity: leaving.session.identity, nameHint: leaving.session.nameHint };
+    if (!carried || hasIdentity(e, r.callId)) return { ...e, session };
+    seq += 1;
+    const row: Statement = {
+      ...carried,
+      id: `stmt-${r.callId}-${String(seq).padStart(2, '0')}`,
+      claimId: e.brief.claimId,
     };
+    return { ...e, session: { ...session, seq, ledger: appendStatement(session.ledger, row) } };
   });
-  return { ...r, entries, activeIndex: next };
+  return { ...r, entries, activeIndex: next, seq };
+}
+
+const hasIdentity = (e: RosterEntry, callId: string): boolean =>
+  e.session.ledger.statements.some((s) => s.callId === callId && s.kind === 'fact' && s.category === 'rep_identity');
+
+/** The identity statement captured for the patient being left, if the rep gave one on this call. */
+function identityRow(leaving: RosterEntry, r: CallRoster): FactStatement | undefined {
+  return leaving.session.ledger.statements.find(
+    (s): s is FactStatement => s.callId === r.callId && s.kind === 'fact' && s.category === 'rep_identity',
+  );
 }
 
 export interface RosterGate {

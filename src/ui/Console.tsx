@@ -9,11 +9,13 @@ import { ClaimUpdateSheet } from './ClaimUpdateSheet';
 import { ClaimTimeline } from './ClaimTimeline';
 import { Icon } from './Icon';
 import { BriefPanel, Banner, CaptureSheet, HangUpGate, Inspector, RepCue, Transcript, TransportBar, type Source } from './Panels';
+import { RosterBand } from './RosterBand';
 import { Stage } from './Stage';
 import { buildStats, StatStrip } from './StatStrip';
 import type { ConsoleProps, LiveDriver } from './console-types';
 import { useCallRunner, type Phase } from './use-call-runner';
 import { useLiveCall } from './use-live-call';
+import { useRoster } from './use-roster';
 
 const THEMES = ['auto', 'light', 'dark'] as const;
 
@@ -71,6 +73,19 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
   const suggestion = lastWitness?.tag ? (props.bank[lastWitness.tag]?.text ?? null) : null;
   const banner = v.banner;
   const flagMs = isLive ? (liveCall.latency?.flagMs ?? v.flagLatencyMs) : v.flagLatencyMs;
+
+  // The rest of the batch: same call, same rep, separate ledgers. Opens once the lead claim is worked.
+  const roster = useRoster(
+    { brief: props.brief, patientLabel: props.patientLabel, ledger: v.ledger },
+    props.batch,
+    { callId: props.live.id, capturedAt: props.live.startedAt },
+    scripted.speed,
+  );
+  useEffect(() => {
+    if (phase === 'idle') roster.reset();
+    // Resetting the call resets the batch with it; roster.reset is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   return (
     <div className="w-shell">
@@ -162,10 +177,26 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
           Self-check: the agent spoke {liveCall.drift.join(', ')}, which is not in the record.
         </p>
       )}
+      <RosterBand
+        gates={roster.gates}
+        items={roster.items}
+        segment={roster.segment}
+        segmentDone={roster.segmentDone}
+        running={roster.running}
+        started={roster.started}
+        atLastPatient={roster.atLastPatient}
+        canEnd={roster.canEnd}
+        outstanding={roster.outstanding}
+        openWarning={roster.openWarning}
+        leadDone={finished}
+        onBegin={roster.begin}
+        onNext={roster.next}
+        onReset={roster.reset}
+      />
       <div className="w-lower">
         <Inspector ledger={v.ledger} focus={v.focus} shown={v.shown} callCount={props.historyCalls.length} closeOut={closeOut} finished={finished} />
         <CaptureSheet brief={{ ...props.brief, objectives }} patientLabel={props.patientLabel} ledger={v.ledger} gate={v.gate} callId={props.live.id} />
-        <HangUpGate gate={v.gate} ok={v.hangUpOk} phase={phase} />
+        <HangUpGate gate={v.gate} ok={v.hangUpOk} phase={phase} batch={roster.started ? roster.outstanding : null} />
       </div>
       {update && <ClaimUpdateSheet update={update} />}
     </div>

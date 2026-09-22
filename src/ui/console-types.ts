@@ -19,6 +19,8 @@ export interface ConsoleProps {
   historyCalls: readonly HistoryCall[];
   live: ScriptCall;
   bank: RepBank;
+  /** The other patients worked on this same call, after the lead claim ("while I have you"). */
+  batch: readonly import('@fixtures/scripts/roster-batch').RosterPatient[];
   /** Per-call average from the CAQH Index (2024 edition, 2023 data year). */
   costPerCall: number;
 }

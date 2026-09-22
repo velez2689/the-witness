@@ -338,8 +338,21 @@ const STATE_ICON: Record<GateItem['state'], IconName> = {
   refused: 'ban',
 };
 
-export function HangUpGate({ gate, ok, phase }: { gate: GateItem[]; ok: boolean; phase: Phase }) {
+export function HangUpGate({
+  gate,
+  ok,
+  phase,
+  batch,
+}: {
+  gate: GateItem[];
+  ok: boolean;
+  phase: Phase;
+  /** Other patients on this call still short a required field. Null when the batch has not opened. */
+  batch?: readonly { patientLabel: string }[] | null;
+}) {
   const missing = gate.filter((g) => g.required && g.state === 'missing');
+  // The gate is per patient, but hang-up is per CALL: one short patient holds the whole line.
+  const others = (batch ?? []).filter((_, i) => i > 0);
   return (
     <section className="w-panel w-gate" aria-label="Before you hang up">
       <h2>
@@ -361,7 +374,13 @@ export function HangUpGate({ gate, ok, phase }: { gate: GateItem[]; ok: boolean;
         ))}
       </ul>
       <div className={`verdict ${ok ? 'ok' : 'open'}`}>
-        {phase === 'idle' ? 'Gate opens when the call starts.' : ok ? 'Gate clear: every required field is captured or a refusal is on record.' : `Do not hang up: ${missing.map((m) => m.label.toLowerCase()).join(', ')} not captured.`}
+        {phase === 'idle'
+          ? 'Gate opens when the call starts.'
+          : !ok
+            ? `Do not hang up: ${missing.map((m) => m.label.toLowerCase()).join(', ')} not captured.`
+            : others.length > 0
+              ? `This patient is clear, but ${others.map((o) => o.patientLabel).join(', ')} on this call ${others.length === 1 ? 'is' : 'are'} still short.`
+              : 'Gate clear: every required field is captured or a refusal is on record.'}
       </div>
     </section>
   );

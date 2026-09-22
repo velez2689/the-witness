@@ -368,3 +368,61 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 .w-cue { padding: 14px 24px; border-bottom: 1px solid var(--rule); background: var(--raise); border-left: 6px solid var(--accent); box-shadow: var(--shadow); font-size: 13.5px; }
+
+/* --- Patients on this call (the batch band) ------------------------------------------- */
+.w-roster { padding: 20px 28px 18px; border-bottom: 1px solid var(--rule); background: var(--bg); }
+.w-roster-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin-bottom: 12px; }
+.w-roster-head h2, .w-roster-head p { margin: 0; }
+
+.w-roster-list { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 0 0 14px; padding: 0; }
+.w-pt {
+  position: relative; display: flex; flex-direction: column; gap: 3px;
+  padding: 13px 14px 12px; background: var(--panel); border: 1px solid var(--rule);
+  border-radius: var(--radius); overflow: hidden;
+}
+.w-pt-band { position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--ink-soft); opacity: 0.5; }
+.w-pt.clear .w-pt-band { background: var(--confirm); opacity: 1; }
+.w-pt.short .w-pt-band { background: var(--signal); opacity: 1; }
+.w-pt.is-active { border-color: var(--accent); box-shadow: var(--shadow); background: var(--raise); }
+.w-pt.is-active .w-pt-band { background: var(--accent); opacity: 1; }
+.w-pt-top { display: flex; align-items: baseline; gap: 8px; }
+.w-pt-top b { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+.w-pt-name { font-size: 14px; font-weight: 600; }
+.w-pt-now {
+  margin-left: auto; font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em;
+  color: var(--on-accent); background: var(--accent); padding: 2px 6px; border-radius: 999px;
+}
+.w-pt-claim { font-size: 11.5px; color: var(--ink-soft); }
+.w-pt-gate { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; margin-top: 4px; }
+.w-pt.clear .w-pt-gate { color: var(--confirm); }
+.w-pt.short .w-pt-gate, .w-pt.active .w-pt-gate { color: var(--signal); }
+.w-pt-short { font-size: 11.5px; color: var(--ink-soft); }
+
+.w-wrongclaim {
+  border: 1px solid var(--flag); border-left: 6px solid var(--flag); background: var(--flag-wash);
+  border-radius: var(--radius); padding: 13px 16px; margin-bottom: 14px;
+}
+.w-wrongclaim p { margin: 0 0 4px; font-size: 13.5px; }
+.w-wrongclaim p:last-child { margin-bottom: 0; }
+.w-wc-tag {
+  display: inline-flex; align-items: center; gap: 7px; color: var(--flag);
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; margin-bottom: 6px;
+}
+
+.w-roster-feed { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+.w-roster-feed li {
+  display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: baseline;
+  padding: 7px 10px; border-radius: var(--radius-sm); font-size: 13px;
+}
+.w-roster-feed li.rep { background: var(--panel); }
+.w-roster-feed li.flagged { background: var(--flag-wash); box-shadow: inset 3px 0 0 var(--flag); }
+.w-rf-who { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink-soft); }
+.w-roster-feed li.flagged .w-rf-who { color: var(--flag); }
+.w-rf-dest { font-size: 11px; color: var(--ink-soft); white-space: nowrap; }
+.w-roster-feed li.flagged .w-rf-dest { color: var(--flag); font-weight: 700; }
+
+.w-roster-verdict { padding: 11px 14px; border-radius: var(--radius); font-size: 13.5px; font-weight: 500; }
+.w-roster-verdict.ok { background: var(--panel); color: var(--confirm); border: 1px solid var(--rule); }
+.w-roster-verdict.open { background: var(--flag-wash); color: var(--flag); border: 1px solid var(--flag); }
+.w-wrongclaim.resolved { border-color: var(--rule); border-left-color: var(--confirm); background: var(--panel); }
+.w-wrongclaim.resolved .w-wc-tag { color: var(--confirm); }
