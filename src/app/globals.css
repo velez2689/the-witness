@@ -167,7 +167,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 .w-gate ul { list-style: none; margin: 0; padding: 0; }
-.w-gate li { display: grid; grid-template-columns: 22px 1fr; gap: 4px; padding: 3px 0; border-bottom: 1px solid var(--rule); }
+.w-gate li { display: grid; grid-template-columns: 34px 1fr; gap: 4px; padding: 3px 0; border-bottom: 1px solid var(--rule); }
 .w-gate .mark { font-family: var(--font-mono); font-weight: 700; }
 .w-gate .missing { color: var(--flag); }
 .w-gate .unconfirmed { color: var(--signal); }

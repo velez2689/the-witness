@@ -54,8 +54,8 @@ describe('tamper-evident ledger', () => {
 describe('appeal packet', () => {
   const packet = buildPacket(ledger, { claimId: CLAIM.id, payer: CLAIM.payer, memberId: CLAIM.memberId, dateOfService: CLAIM.dateOfService, billed: CLAIM.billed });
   it('masks the member ID to its last four characters', () => {
-    expect(maskMember('MD77140228')).toBe('••••••0228');
-    expect(packet.header.memberMasked).toBe('••••••0228');
+    expect(maskMember('MD77140228')).toBe('******0228');
+    expect(packet.header.memberMasked).toBe('******0228');
     expect(JSON.stringify(packet)).not.toContain(CLAIM.memberId);
   });
   it('cites each payer statement with rep, badge, reference, date and an offset into the call', () => {

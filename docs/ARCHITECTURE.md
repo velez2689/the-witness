@@ -7,9 +7,10 @@ The prose companion to [`.repo-layout.yml`](../.repo-layout.yml). That file is t
 Four tiers, one direction of dependency:
 
 ```
-app  →  services  →  domain
- ↓
- ui  ←  (data as props)
+app  ->  services  ->  domain
+ |
+ v
+ ui  <-  (data as props)
 ```
 
 `domain` is the bottom and knows about nothing else. `app` is the top and is allowed to know about everything. Anything that reaches sideways or upward is a bug.
@@ -61,5 +62,5 @@ These are not style preferences. Each one has a specific cost.
 
 - `fixtures/scripts/` also holds the corpus tooling (`render-corpus.mjs`, `spike-voice-agent.mjs`). Tooling that only serves the fixtures lives with them; no new top-level directory.
 - `src/app/console-host.tsx` is the ONE place the UI is bound to services. `src/ui` never imports `src/services`: it receives a `LiveDriver` as a prop.
-- Two modes share one pipeline: `final Rep turn → extractor → ledger → engine → call plan → speech assembly → speak (Mode A) or whisper (Mode B)`.
+- Two modes share one pipeline: `final Rep turn -> extractor -> ledger -> engine -> call plan -> speech assembly -> speak (Mode A) or whisper (Mode B)`.
 - Vocabulary: Agent = the human user, Rep = the payer rep, Witness = the voice AI.

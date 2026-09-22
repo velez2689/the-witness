@@ -170,7 +170,7 @@ export function Stage(p: Props) {
             {b.item.added.map((s, k) => {
               const cx = b.x + 6 + k * 13;
               const cy = 252;
-              if (s.kind === 'refusal') return <text key={s.id} x={cx} y={cy + 4} textAnchor="middle" style={{ fill: 'var(--flag)', fontSize: 13, fontWeight: 700 }}>×</text>;
+              if (s.kind === 'refusal') return <text key={s.id} x={cx} y={cy + 4} textAnchor="middle" style={{ fill: 'var(--flag)', fontSize: 13, fontWeight: 700 }}>x</text>;
               if (s.confirms) return <path key={s.id} d={`M ${cx} ${cy - 5} l 5 5 l -5 5 l -5 -5 z`} fill="var(--confirm)" />;
               return s.confidence === 'captured_confirmed' ? (
                 <path key={s.id} d={`M ${cx} ${cy - 5} l 5 5 l -5 5 l -5 -5 z`} fill="var(--ink)" />
@@ -200,7 +200,7 @@ export function Stage(p: Props) {
         <path d="M 6 6 l 5 5 l -5 5 l -5 -5 z" fill="var(--ink)" /><text x={16} y={14}>captured</text>
         <path d="M 86 6 l 5 5 l -5 5 l -5 -5 z" fill="none" stroke="var(--signal)" strokeWidth={1.8} /><text x={96} y={14}>unconfirmed</text>
         <path d="M 186 6 l 5 5 l -5 5 l -5 -5 z" fill="var(--confirm)" /><text x={196} y={14}>confirmed</text>
-        <text x={262} y={14} style={{ fill: 'var(--flag)', fontWeight: 700 }}>× refused</text>
+        <text x={262} y={14} style={{ fill: 'var(--flag)', fontWeight: 700 }}>x refused</text>
       </g>
     </svg>
   );

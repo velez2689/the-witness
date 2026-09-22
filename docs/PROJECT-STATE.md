@@ -24,7 +24,7 @@
 ### Gotchas
 - `.env` values are never printed. The token route is public: same-origin check, 60s single-use tokens, 300s session cap, per-IP rate limit (best effort on serverless).
 - The self-check caught two real bugs (digits joined across sentences; close reason lost on synchronous socket close). Keep it running in tests.
-- Numbers: the header shows hold time (computed) and per-call cost (calls × the CAQH $13.80 average) as separate figures; never multiply hold minutes by the 25-minute average.
+- Numbers: the header shows hold time (computed) and per-call cost (calls x the CAQH $13.80 average) as separate figures; never multiply hold minutes by the 25-minute average.
 
 ---
 
@@ -98,11 +98,11 @@ That is the strongest thing in the pitch.
 
 Two channels, two AssemblyAI sessions, one claim memory.
 
-- **Channel A — payer line.** Listen-only, never hears the agent. → **Streaming STT v3**
+- **Channel A — payer line.** Listen-only, never hears the agent. -> **Streaming STT v3**
   (`wss://streaming.assemblyai.com/v3/ws`, `universal-3-5-pro`), keyterms seeded with
   this claim's own numbers plus CARC/RARC vocabulary.
 - **Channel B — biller headset** (mic + private earpiece). The agent speaks here and
-  only here. → **Voice Agent API** (`wss://agents.assemblyai.com/v1/ws`), LLM pinned to
+  only here. -> **Voice Agent API** (`wss://agents.assemblyai.com/v1/ws`), LLM pinned to
   `qwen3.5-4b-fast`.
 - **Statement extractor** — each finalized payer turn becomes zero or more typed
   statement records with verbatim span, ms offsets into retained audio, and confidence.
@@ -198,7 +198,7 @@ regulation text before this goes anywhere near the deck. Nobody here is a lawyer
    Sharpest when the payer's own earlier instruction ran out the clock — call 01 says
    "in process, allow thirty days," call 05 says "denied for timely filing." The
    recording doesn't just show a contradiction, it shows the payer caused the denial.
-2. **Status flips with no reason.** "It's processing" → call back → denied, and the rep
+2. **Status flips with no reason.** "It's processing" -> call back -> denied, and the rep
    doesn't know why or won't say.
 3. **The refusal.** "It's the diagnosis code." Which one? They won't tell you.
 
@@ -258,12 +258,12 @@ TTS, with extraction targets and firing flags marked per call.
 |---|---|---|---|---|
 | 01 | Jun 03 | M. Alvarez 4471 | 8K2J-114 | "in process, allow thirty days" |
 | 02 | Jul 08 | D. Reese 2210 | 8K2J-338 | "no prior authorization" — **statement A** |
-| 03 | Jul 22 | *none* | *none* | refusal ×3 + capture gap. 25 min proving nothing |
+| 03 | Jul 22 | *none* | *none* | refusal x3 + capture gap. 25 min proving nothing |
 | 04 | Aug 05 | T. Okafor 5182 | 8K2J-702 | "reprocessed Jul 30" |
 | 05 | Aug 14 | S. Whitfield 3390 | 8K2J-915 | "timely filing" — **statement B** |
 | 06 | Aug 26 | D. Reese 2210 | 8K2J-988 | **the live call** — 3 flags |
 
-**Jul 08 → Aug 26 is 49 days. Same rep, badge 2210, two different answers.** A large
+**Jul 08 -> Aug 26 is 49 days. Same rep, badge 2210, two different answers.** A large
 organisation being sloppy is shruggable; one person contradicting himself is not.
 
 Call 06 fires: value conflict against Reese's own July 8 statement; existence denial
@@ -306,7 +306,7 @@ is scored nowhere.
   before the deck ships.
 - **TAM trap:** of 2.82B annual claim-status inquiries only **2% are fully manual** (18%
   is *partially* electronic, not phone). Use CAQH's published **$2.4B** medical savings
-  opportunity, never a reconstructed volume × price.
+  opportunity, never a reconstructed volume x price.
 - **$25.7B** provider claims-adjudication cost, +23% YoY; **$57.23** admin cost per
   denied claim; ~15% initial denial rate — Premier, Feb 2025.
 - **19%** of in-network claims denied, range 3%–36% by issuer; ~85M denied claims;

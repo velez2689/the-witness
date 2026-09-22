@@ -35,73 +35,25 @@ Nothing else in the stack can be swapped out for this. The transcription difficu
 
 ## How it works
 
-Two audio channels, two AssemblyAI sessions, one claim memory. The agent speaks **only** into the biller's private earpiece — never onto the payer's line.
+One pipeline, two modes. The person using The Witness is the **Agent**; the person at the payer is the **Rep**.
 
-```mermaid
-flowchart LR
-    subgraph Audio["Tier 1 · Audio in"]
-        A["Channel A<br/>payer line<br/><i>listen-only</i>"]
-        B["Channel B<br/>biller headset<br/><i>mic + private earpiece</i>"]
-    end
+- **Mode A, the Witness speaks.** The Agent fills in a call brief (claim, member, what they need answered). The Witness conducts the call: it says up front that it is an AI assistant and that the call is recorded, works through the brief, **challenges the Rep on the recorded line** when the Rep contradicts something already on record, reads reference numbers back, and only finishes when the hang-up gate is clear.
+- **Mode B, Copilot.** The Agent speaks to the Rep. The Witness listens and **whispers** into the Agent's earpiece what to ask, what to question, and what is still missing.
+- **Take over** switches from A to B in the middle of a call.
 
-    subgraph AAI["Tier 2 · AssemblyAI"]
-        STT["Streaming STT v3<br/>universal-3-5-pro<br/><i>keyterms seeded from the claim</i>"]
-        VA["Voice Agent API<br/><i>the coach — speaks here only</i>"]
-    end
+![The Witness architecture: audio in, AssemblyAI, our deterministic code, and outputs](docs/assets/architecture.svg)
 
-    subgraph Reason["Tier 3 · Reasoning (our code)"]
-        EX["Statement extractor<br/><i>turn → typed record</i>"]
-        LED[("Claim ledger<br/><i>append-only</i>")]
-        CE{"Contradiction<br/>engine"}
-    end
+### One real run of Mode A
 
-    subgraph Out["Tier 4 · Out"]
-        UI["Evidence console"]
-        PKT["Appeal packet<br/><i>quotes + timestamps + audio</i>"]
-    end
+Same claim. Same representative. Forty-nine days apart. The steps below are taken from the automated test run of the scripted call, not written for the diagram.
 
-    A --> STT --> EX --> LED
-    LED --> CE
-    EX --> CE
-    CE -->|"reply.create"| VA --> B
-    CE --> UI
-    LED --> UI
-    LED --> PKT
-
-    style CE fill:#7a2d1e,stroke:#c6613f,color:#fff
-    style LED fill:#1e3a5f,stroke:#4a7ab5,color:#fff
-```
-
-### The moment the product exists for
-
-Same claim. Same representative. Forty-nine days apart.
-
-```mermaid
-sequenceDiagram
-    participant P as Payer rep<br/>(D. Reese, 2210)
-    participant W as The Witness
-    participant L as Claim ledger
-    participant B as Biller
-
-    Note over L: Jul 08 — "Denied. No prior authorization on file."<br/>ref 8K2J-338, rep 2210
-
-    P->>W: "This was denied for timely filing."
-    W->>W: extract typed statement (~600ms)
-    W->>L: diff against claim history (~50ms)
-    L-->>W: conflict — denial reason changed
-    W->>B: Witness says "That contradicts July eighth.<br/>Same rep said no prior auth. Ask which one."
-    Note over W,B: under 2 seconds from end of payer turn
-    B->>P: "Which is it — timely filing or prior auth?"
-    Note over W: both statements retained, both quotable,<br/>both with audio offsets
-```
-
-A large organisation being sloppy is shruggable. One person contradicting himself is not.
+![Mode A call flow: greeting, same-badge challenge, existence denial, refusal chain, read-back, close](docs/assets/mode-a-call-flow.svg)
 
 ### What the agent is, and is not
 
-The agent is a **mouth, not a hand.** Contradiction detection is deterministic and runs in our own code. The agent never writes to the ledger and never decides what is true — it is triggered by the engine and speaks a line assembled from the statement record.
+The agent is a **mouth, not a hand.** Contradiction detection is deterministic and runs in our own code. The agent never writes to the ledger and never decides what is true: the call plan decides what happens next, and every sentence that carries a fact is assembled from a recorded statement. A self-check compares every number the agent actually says against the ledger and the call brief.
 
-This is a deliberate constraint, not a limitation we backed into: every evidence-bearing utterance can be traced to a row a human can play back.
+This is a deliberate constraint, not a limitation we backed into: every evidence-bearing utterance can be traced to a row a human can play back. The ledger is append-only and hash-chained, so the appeal packet can be verified against the log.
 
 ---
 

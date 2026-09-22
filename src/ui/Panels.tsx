@@ -143,7 +143,7 @@ export function BriefPanel(p: {
           {!live && (
             <span className="w-seg" role="group" aria-label="Playback speed">
               {[1, 2, 4].map((n) => (
-                <button key={n} aria-pressed={p.speed === n} onClick={() => p.setSpeed(n)}>{n}×</button>
+                <button key={n} aria-pressed={p.speed === n} onClick={() => p.setSpeed(n)}>{n}x</button>
               ))}
             </span>
           )}
@@ -322,7 +322,7 @@ const STATE_WORD: Record<GateItem['state'], string> = {
   missing: 'NOT CAPTURED',
   refused: 'refused · recorded',
 };
-const STATE_MARK: Record<GateItem['state'], string> = { confirmed: '✓', unconfirmed: '?', missing: '✕', refused: '⊘' };
+const STATE_MARK: Record<GateItem['state'], string> = { confirmed: 'OK', unconfirmed: '?', missing: 'NO', refused: 'REF' };
 
 export function HangUpGate({ gate, ok, phase }: { gate: GateItem[]; ok: boolean; phase: Phase }) {
   const missing = gate.filter((g) => g.required && g.state === 'missing');

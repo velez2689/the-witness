@@ -53,7 +53,7 @@ export interface Packet {
 }
 
 export function maskMember(id: string): string {
-  return id.length <= 4 ? id : `${'•'.repeat(id.length - 4)}${id.slice(-4)}`;
+  return id.length <= 4 ? id : `${'*'.repeat(id.length - 4)}${id.slice(-4)}`;
 }
 
 function citationOf(ledger: ClaimLedger, s: Statement, hashes: Map<string, string>): PacketCitation {

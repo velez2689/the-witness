@@ -48,7 +48,7 @@ export function ClaimUpdateSheet({ update }: { update: ClaimUpdate }) {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button className="w-btn primary" onClick={copy}>Copy claim note</button>
           {copied && <span role="status" className="w-note">copied</span>}
-          <Link className="w-btn" href="/packet" style={{ textDecoration: 'none' }}>Open appeal packet →</Link>
+          <Link className="w-btn" href="/packet" style={{ textDecoration: 'none' }}>Open appeal packet</Link>
         </div>
       </div>
     </section>

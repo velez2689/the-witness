@@ -37,14 +37,14 @@ export function PacketView({ packet, ledger }: { packet: Packet; ledger: ClaimLe
   return (
     <main className="pk">
       <div className="no-print pk-bar">
-        <Link href="/">← Console</Link>
+        <Link href="/">Back to console</Link>
         <span className="w-spacer" />
         <button className="w-btn" onClick={() => window.print()}>Print / save as PDF</button>
         <button className="w-btn" onClick={download}>Download evidence (JSON)</button>
         <button className="w-btn" onClick={() => setVerdict(verifyLedger(ledger, packet.ledgerHash))}>Verify integrity</button>
         {verdict !== null && (
           <span role="status" style={{ color: verdict ? 'var(--confirm)' : 'var(--flag)', fontWeight: 600 }}>
-            {verdict ? '✓ hash recomputed from the log matches' : '✕ the log does not match its hash'}
+            {verdict ? 'Verified: the hash recomputed from the log matches' : 'Mismatch: the log does not match its hash'}
           </span>
         )}
       </div>

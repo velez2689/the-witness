@@ -69,8 +69,8 @@ and the demo URL is public — there is no "just for now."
 Live diarization is beta. Two modes (see `docs/PROJECT-STATE.md` §Modes):
 - **Mode A — Witness speaks:** ONE Voice Agent session whose input is the Rep's audio
   only; transcript.user is always the Rep, transcript.agent is always the Witness.
-- **Mode B — Copilot:** Rep audio → Streaming v3 (listen-only, keyterms seeded);
-  Agent mic → Voice Agent session. One session per channel.
+- **Mode B — Copilot:** Rep audio -> Streaming v3 (listen-only, keyterms seeded);
+  Agent mic -> Voice Agent session. One session per channel.
 
 **9 · Audio routing is explicit per mode.**
 Mode B: the Witness's audio must never reach the Rep's line — route to a separate
