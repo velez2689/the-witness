@@ -4,9 +4,13 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ObjectiveKey } from '@/domain/call-brief';
 import { buildClaimUpdate } from '@/domain/claim-update';
 import { closeOutForAgent } from '@/domain/speech';
+import { shortDate } from '@/lib/dates';
 import { ClaimUpdateSheet } from './ClaimUpdateSheet';
+import { ClaimTimeline } from './ClaimTimeline';
+import { Icon } from './Icon';
 import { BriefPanel, Banner, CaptureSheet, HangUpGate, Inspector, RepCue, Transcript, TransportBar, type Source } from './Panels';
 import { Stage } from './Stage';
+import { buildStats, StatStrip } from './StatStrip';
 import type { ConsoleProps, LiveDriver } from './console-types';
 import { useCallRunner, type Phase } from './use-call-runner';
 import { useLiveCall } from './use-live-call';
@@ -50,6 +54,19 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
   );
 
   const totalHistoryHold = props.historyCalls.reduce((n, c) => n + c.holdSeconds, 0);
+  const callsSoFar = props.historyCalls.length + (phase === 'idle' ? 0 : 1);
+  const stats = useMemo(
+    () =>
+      buildStats({
+        calls: callsSoFar,
+        holdSeconds: totalHistoryHold + v.holdSeconds,
+        costPerCall: props.costPerCall,
+        statements: v.ledger.statements.length,
+        contradictions: v.contradictions.length,
+        refusals: v.ledger.statements.filter((s) => s.kind === 'refusal').length,
+      }),
+    [callsSoFar, totalHistoryHold, v.holdSeconds, props.costPerCall, v.ledger.statements, v.contradictions.length],
+  );
   const lastWitness = [...v.shown].reverse().find((i) => i.side === 'witness');
   const suggestion = lastWitness?.tag ? (props.bank[lastWitness.tag]?.text ?? null) : null;
   const banner = v.banner;
@@ -72,6 +89,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         theme={theme}
         onTheme={() => setTheme(THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length])}
       />
+      <StatStrip stats={stats} />
       <BriefPanel
         brief={{ ...props.brief, objectives }}
         patientLabel={props.patientLabel}
@@ -113,20 +131,30 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
           </div>
         )}
       </div>
+      <ClaimTimeline
+        historyCalls={props.historyCalls}
+        ledger={v.ledger}
+        contradictions={v.contradictions}
+        focus={v.focus}
+        liveStartedAt={props.live.startedAt}
+        liveDuration={props.live.durationSeconds}
+        liveNumber={props.historyCalls.length + 1}
+        holdSeconds={v.holdSeconds}
+        running={phase !== 'idle'}
+        onSelectCall={v.select}
+      />
       <div className="w-stage">
-        <Stage
-          historyCalls={props.historyCalls}
-          ledger={v.ledger}
-          contradictions={v.contradictions}
-          shown={v.shown}
-          focus={v.focus}
-          liveStartedAt={props.live.startedAt}
-          liveDuration={props.live.durationSeconds}
-          running={phase !== 'idle'}
-          mode={mode}
-          totalMs={isLive ? 180_000 : 150_000}
-          holdSeconds={v.holdSeconds}
-        />
+        <header className="w-stage-head">
+          <h2>
+            <Icon name="radio" size={15} />
+            <span>Live call</span>
+          </h2>
+          <p className="w-note">
+            {shortDate(props.live.startedAt)} ·{' '}
+            {mode === 'A' ? 'the Witness is speaking to the Rep' : 'the Agent is speaking, the Witness whispers'}
+          </p>
+        </header>
+        <Stage shown={v.shown} focus={v.focus} mode={mode} totalMs={isLive ? 180_000 : 150_000} />
       </div>
       <Transcript items={v.shown} mode={mode} />
       {isLive && liveCall.drift.length > 0 && (

@@ -7,6 +7,7 @@ import { callReference } from '@/domain/speech';
 import type { FactStatement, Statement } from '@/domain/statement';
 import { shortDate } from '@/lib/dates';
 import { clockLabel, holdLabel, type FeedItem } from './call-feed';
+import { Icon, type IconName } from './Icon';
 import { speak } from './speak';
 import type { Mode, Phase } from './use-call-runner';
 
@@ -98,21 +99,17 @@ export function BriefPanel(p: {
   return (
     <section className="w-brief" aria-label="Call brief">
       <div>
-        <h2>Call brief · sample claim, all data synthetic</h2>
+        <h2><Icon name="list" size={15} /><span>Call brief · sample claim, all data synthetic</span></h2>
         <dl>
           <dt>Claim</dt><dd className="id">{p.brief.claimId} · {p.patientLabel}</dd>
           <dt>Payer</dt><dd>{p.brief.payer}</dd>
           <dt>Member ID</dt><dd className="id">{p.brief.memberId}</dd>
           <dt>Date of service</dt><dd className="id">{p.brief.dateOfService}</dd>
           <dt>Diagnosis codes</dt><dd className="id">{p.brief.dxCodes.join('  ')}</dd>
-          <dt>This claim so far</dt>
-          <dd>
-            <b className="id">{holdLabel(p.totalHold)}</b> on hold across {p.callsCount} calls · <b className="id">${(p.callsCount * p.costPerCall).toFixed(2)}</b> at the ${p.costPerCall.toFixed(2)} per-call CAQH average <span className="w-note">(2023 data)</span>
-          </dd>
         </dl>
       </div>
       <div>
-        <h2>What I need from this call</h2>
+        <h2><Icon name="check" size={15} /><span>What I need from this call</span></h2>
         <ul className="w-obj">
           {(Object.keys(OBJECTIVES) as ObjectiveKey[]).map((k) => (
             <li key={k}>
@@ -135,12 +132,22 @@ export function BriefPanel(p: {
               <button aria-pressed={p.mode === 'B'} disabled={p.locked} onClick={() => p.setMode('B')}>Copilot: I speak</button>
             </span>
           )}
-          {p.phase === 'idle' && <button className="w-btn primary" onClick={p.onStart}>{live ? 'Start live call' : 'Start call'}</button>}
+          {p.phase === 'idle' && (
+            <button className="w-btn primary" onClick={p.onStart}>
+              <Icon name={live ? 'mic' : 'play'} size={15} />
+              {live ? 'Start live call' : 'Start call'}
+            </button>
+          )}
           {live && p.phase === 'running' && <button className="w-btn warn" onClick={p.onStop}>End call</button>}
           {!live && p.phase === 'running' && <button className="w-btn" onClick={p.onPause}>Pause</button>}
           {!live && p.phase === 'paused' && <button className="w-btn primary" onClick={p.onResume}>Resume</button>}
           {!live && (p.phase === 'running' || p.phase === 'paused') && <button className="w-btn" onClick={p.onStep}>Step</button>}
-          {!live && p.canTakeOver && <button className="w-btn warn" onClick={p.onTakeOver}>Take over</button>}
+          {!live && p.canTakeOver && (
+            <button className="w-btn warn" onClick={p.onTakeOver}>
+              <Icon name="alert" size={15} />
+              Take over
+            </button>
+          )}
           {p.phase !== 'idle' && <button className="w-btn" onClick={p.onReset}>Reset</button>}
           {!live && (
             <span className="w-seg" role="group" aria-label="Playback speed">
@@ -237,7 +244,7 @@ export function Inspector(p: {
   if (!f) {
     return (
       <section className="w-panel" aria-label="Contradiction inspector">
-        <h2>Contradiction inspector</h2>
+        <h2><Icon name="alert" size={15} /><span>Contradiction inspector</span></h2>
         <p>No contradictions on this call yet. The ledger holds <b className="id">{p.ledger.statements.length}</b> statements from {p.callCount} calls, each with the words the rep said and a timestamp.</p>
       </section>
     );
@@ -252,12 +259,12 @@ export function Inspector(p: {
       <div className="w-kindlabel">{KIND_LABEL[f.kind]}{f.sameBadge ? ' · SAME BADGE' : ''}</div>
       <div className="w-quote">
         <span className="said">{quoteOf(later)}</span>
-        <button className="w-play" onClick={() => speak(quoteOf(later))} aria-label="Play this quote">Play</button>
+        <button className="w-play" onClick={() => speak(quoteOf(later))} aria-label="Play this quote"><Icon name="play" size={11} />Play</button>
         <div className="meta">just now · {later.speaker ? `${later.speaker.name} · badge ${later.speaker.badge}` : 'rep'}</div>
       </div>
       <div className="w-quote">
         <span className="said">{quoteOf(earlier)}</span>
-        <button className="w-play" onClick={() => speak(quoteOf(earlier))} aria-label="Play the earlier quote">Play</button>
+        <button className="w-play" onClick={() => speak(quoteOf(earlier))} aria-label="Play the earlier quote"><Icon name="play" size={11} />Play</button>
         <div className="meta">{metaOf(p.ledger, earlier)}</div>
       </div>
       {related.map((r) => (
@@ -271,14 +278,14 @@ export function Inspector(p: {
           <span className="w-note">{said.side === 'witness' ? 'The Witness said to the Rep' : 'Whispered to the Agent'} (assembled from the {said.cites.length} rows above, not composed by the model):</span>
           <br />
           {said.text}
-          {said.side === 'witness' && <button className="w-play" onClick={() => speak(said.text, 'witness')} aria-label="Play what the Witness said">Play</button>}
+          {said.side === 'witness' && <button className="w-play" onClick={() => speak(said.text, 'witness')} aria-label="Play what the Witness said"><Icon name="play" size={11} />Play</button>}
         </p>
       )}
       {p.closeOut && (
         <div className="w-closeout">
           <h2>Close-out · rendered from the statement rows</h2>
           <p style={{ margin: 0 }}>{p.closeOut.text}</p>
-          <button className="w-play" style={{ margin: '6px 0 0' }} onClick={() => speak(p.closeOut!.text, 'witness')}>Play close-out</button>
+          <button className="w-play" style={{ margin: '6px 0 0' }} onClick={() => speak(p.closeOut!.text, 'witness')}><Icon name="play" size={11} />Play close-out</button>
         </div>
       )}
     </section>
@@ -303,7 +310,7 @@ export function CaptureSheet(p: { brief: CallBrief; patientLabel: string; ledger
   );
   return (
     <section className="w-panel" aria-label="Capture sheet">
-      <h2>Capture sheet</h2>
+      <h2><Icon name="file" size={15} /><span>Capture sheet</span></h2>
       <div className="w-paper">
         <div className="hdr">HEALTH INSURANCE CLAIM FORM · capture copy</div>
         {box('1a', "INSURED'S I.D. NUMBER", p.brief.memberId)}
@@ -324,17 +331,27 @@ const STATE_WORD: Record<GateItem['state'], string> = {
   missing: 'NOT CAPTURED',
   refused: 'refused · recorded',
 };
-const STATE_MARK: Record<GateItem['state'], string> = { confirmed: 'OK', unconfirmed: '?', missing: 'NO', refused: 'REF' };
+const STATE_ICON: Record<GateItem['state'], IconName> = {
+  confirmed: 'check',
+  unconfirmed: 'pending',
+  missing: 'x',
+  refused: 'ban',
+};
 
 export function HangUpGate({ gate, ok, phase }: { gate: GateItem[]; ok: boolean; phase: Phase }) {
   const missing = gate.filter((g) => g.required && g.state === 'missing');
   return (
     <section className="w-panel w-gate" aria-label="Before you hang up">
-      <h2>Before you hang up</h2>
+      <h2>
+        <Icon name="shield" size={15} />
+        <span>Before you hang up</span>
+      </h2>
       <ul>
         {gate.map((g) => (
           <li key={g.key}>
-            <span className={`mark ${phase === 'idle' ? '' : g.state}`} aria-hidden="true">{phase === 'idle' ? '·' : STATE_MARK[g.state]}</span>
+            <span className={`mark ${phase === 'idle' ? 'idle' : g.state}`} aria-hidden="true">
+              {phase === 'idle' ? <Icon name="pending" size={15} /> : <Icon name={STATE_ICON[g.state]} size={15} />}
+            </span>
             <span>
               {g.label}{g.required ? '' : ' (asked)'}
               <br />

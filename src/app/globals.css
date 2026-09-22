@@ -79,9 +79,19 @@ html, body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans);
-  font-size: 14.5px;
+  font-size: 15px;
   line-height: 1.55;
 }
+/* A very slight top vignette. In a dark UI this is most of what separates
+   "flat black rectangle" from "a surface with light falling on it". */
+body::before {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(1200px 420px at 50% -120px, rgba(255, 255, 255, 0.05), transparent 70%);
+}
+.w-shell > * { position: relative; z-index: 1; }
+
+.w-icon { flex: 0 0 auto; vertical-align: -0.16em; }
 button { font: inherit; color: inherit; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -111,18 +121,22 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .said::before { content: "\201C"; }
 .said::after { content: "\201D"; }
 
-/* tiny uppercase section eyebrow — used above every panel's content */
-.w-brief h2, .w-panel h2, .w-update h2 {
-  margin: 0 0 14px; font-size: 11px; font-weight: 700; color: var(--ink-soft);
-  letter-spacing: 0.09em; text-transform: uppercase;
+/* Section titles: sentence case, an icon, and enough size to read as a heading.
+   (An earlier pass used 11px uppercase micro-labels — smaller AND a documented
+   AI-design tell. Replaced.) */
+.w-brief h2, .w-panel h2, .w-update h2, .w-claim-head h2, .w-stage-head h2 {
+  margin: 0 0 14px; font-size: 14px; font-weight: 600; color: var(--ink);
+  letter-spacing: -0.005em; display: flex; align-items: center; gap: 8px;
 }
+.w-brief h2 .w-icon, .w-panel h2 .w-icon, .w-update h2 .w-icon,
+.w-claim-head h2 .w-icon, .w-stage-head h2 .w-icon { color: var(--accent); }
 
 /* ---------- console shell ---------- */
 .w-shell { min-height: 100vh; display: flex; flex-direction: column; }
 .w-transport {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px;
-  padding: 14px 24px; border-bottom: 1px solid var(--rule); background: var(--panel);
-  font-size: 13px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px;
+  padding: 13px 24px; border-bottom: 1px solid var(--rule); background: var(--panel);
+  font-size: 12.5px;
 }
 .w-brand { display: inline-flex; align-items: center; font-weight: 600; letter-spacing: 0.01em; font-size: 17px; }
 .w-brand::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 3px; background: var(--accent); margin-right: 11px; }
@@ -142,6 +156,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .w-seg button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .w-btn {
+  display: inline-flex; align-items: center; gap: 7px;
   border: 1px solid var(--rule); background: var(--panel); color: var(--ink); font-size: 13.5px; font-weight: 500;
   padding: 9px 18px; border-radius: var(--radius); transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
 }
@@ -153,21 +168,99 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .w-btn.warn { border-color: var(--flag); color: var(--flag); background: transparent; }
 .w-btn.warn:hover { background: var(--flag-wash); }
 
+/* ---------- the claim's record at a glance ---------- */
+.w-stats {
+  display: flex; flex-wrap: wrap; align-items: stretch;
+  padding: 18px 28px 20px; border-bottom: 1px solid var(--rule); background: var(--panel);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+.w-stat-block { display: flex; flex-direction: column; gap: 6px; padding: 0 30px; border-left: 1px solid var(--rule); }
+.w-stat-block:first-child { padding-left: 0; border-left: 0; }
+.w-stat-label { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-soft); }
+.w-stat-value { font-size: 30px; line-height: 1.1; font-weight: 500; letter-spacing: -0.02em; }
+.w-stat-block.flag .w-stat-value, .w-stat-block.flag .w-stat-label .w-icon { color: var(--flag); }
+.w-stat-block.accent .w-stat-value { color: var(--accent); }
+
+/* ---------- band 2: the claim timeline (HTML, so type and depth actually work) ---------- */
+.w-claim { padding: 22px 28px 16px; border-bottom: 1px solid var(--rule); background: var(--bg); }
+.w-claim-head, .w-stage-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-bottom: 6px; }
+.w-claim-head h2, .w-stage-head h2 { margin: 0; }
+.w-claim-head p, .w-stage-head p { margin: 0; }
+
+.w-claim-track { position: relative; height: 218px; margin: 0 56px; }
+
+.w-call {
+  position: absolute; top: 34px; transform: translateX(-50%);
+  width: 104px; height: 120px; overflow: hidden;
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 11px 10px 28px; text-align: left;
+  background: var(--panel); border: 1px solid var(--rule); border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+.w-call:hover { transform: translateX(-50%) translateY(-2px); box-shadow: var(--shadow); border-color: var(--ink-soft); }
+.w-call .band { position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--ink-soft); opacity: 0.55; }
+.w-call .row { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+.w-call .row b { font-size: 19px; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; }
+.w-call .when { font-size: 11px; color: var(--ink-soft); }
+.w-call .who { font-size: 12.5px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.w-call .badge, .w-call .refno { font-size: 11px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.w-call .refno { color: var(--ink); }
+.w-call .missing { color: var(--flag); font-weight: 600; }
+.w-call .hold { position: absolute; left: 10px; right: 10px; bottom: 9px; display: flex; align-items: center; gap: 6px; }
+.w-call .hold-bar { flex: 1; height: 4px; border-radius: 2px; background: var(--hold); overflow: hidden; }
+.w-call .hold-bar span { display: block; height: 100%; background: var(--ink-soft); opacity: 0.75; }
+.w-call .hold-label { font-size: 10px; color: var(--ink-soft); }
+
+.w-call.flagged .band { background: var(--flag); opacity: 1; }
+.w-call.focus { border-color: var(--flag); background: linear-gradient(var(--flag-wash), var(--flag-wash)), var(--panel); box-shadow: 0 0 0 1px var(--flag), 0 0 26px -8px var(--flag); }
+.w-call.live { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 0 1px var(--accent), 0 0 26px -6px var(--accent); }
+.w-call.live .band, .w-call.pending .band { background: var(--accent); opacity: 1; }
+.w-call.pending { border-style: dashed; border-color: var(--accent); }
+.w-call .livelabel { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; color: var(--accent); letter-spacing: 0.04em; }
+.w-call .pendinglabel { font-size: 12px; color: var(--accent); margin-top: 3px; }
+.w-call .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--flag); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .w-call .pulse { animation: none; } }
+
+.w-link-line { position: absolute; left: 0; right: 0; top: 0; height: 34px; width: 100%; overflow: visible; }
+.w-link-dot { position: absolute; top: 30px; width: 7px; height: 7px; border-radius: 50%; background: var(--flag); transform: translateX(-50%); }
+.w-link-chip {
+  position: absolute; top: 14px; transform: translate(-50%, -50%);
+  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+  padding: 5px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+  color: var(--flag); background: var(--bg); border: 1px solid var(--flag); box-shadow: var(--shadow);
+}
+
+.w-lead { position: absolute; left: 0; right: 0; top: 154px; height: 40px; width: 100%; }
+.w-axis { position: absolute; left: 0; right: 0; top: 190px; height: 28px; border-top: 1px solid var(--rule); }
+.w-axis-mark { position: absolute; top: 0; padding-left: 7px; font-size: 11px; color: var(--ink-soft); font-family: var(--font-mono); white-space: nowrap; }
+.w-axis-mark[data-end="true"] { padding-left: 0; padding-right: 7px; transform: translateX(-100%); }
+.w-axis-mark i { position: absolute; left: 0; top: -1px; width: 1px; height: 7px; background: var(--rule); }
+.w-axis-mark[data-end="true"] i { left: auto; right: 0; }
+.w-axis-mark.dos { color: var(--ink); }
+.w-axis-dot { position: absolute; top: -4px; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-soft); transform: translateX(-50%); }
+.w-axis-dot.flagged { background: var(--flag); }
+.w-axis-dot.live { background: var(--accent); }
+
+@media (max-width: 1100px) { .w-claim-track { margin: 0 24px; } }
+
 .w-brief { padding: 26px 28px; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px 52px; background: var(--panel); }
 .w-brief dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 9px 20px; font-size: 14.5px; }
 .w-brief dt { color: var(--ink-soft); }
 .w-brief dd { margin: 0; }
 .w-obj { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 0; padding: 0; list-style: none; }
 
-.w-stage { position: relative; border-bottom: 1px solid var(--rule); background: var(--bg); padding: 18px 0; }
-.w-stage svg { display: block; width: 100%; height: auto; }
+.w-stage { position: relative; border-bottom: 1px solid var(--rule); background: var(--bg); padding: 20px 28px 22px; }
+/* the chart only — NOT the icons inside the header, which are also svg */
+.w-stage > svg { display: block; width: 100%; height: auto; }
 .w-stage text { font-family: var(--font-sans); fill: var(--ink-soft); font-size: 11.5px; }
 .w-stage .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .w-stage .strong { fill: var(--ink); }
 
-.w-flaglane { min-height: 156px; padding: 22px 24px; border-bottom: 1px solid var(--rule); background: var(--panel); }
+.w-flaglane { min-height: 104px; padding: 18px 24px; border-bottom: 1px solid var(--rule); background: var(--panel); }
 .w-empty {
-  height: 100%; min-height: 108px; display: flex; align-items: center; justify-content: center; text-align: center;
+  height: 100%; min-height: 60px; display: flex; align-items: center; justify-content: center; text-align: center;
   border: 1px dashed var(--rule); border-radius: var(--radius-lg); padding: 20px;
 }
 .w-banner {
@@ -196,6 +289,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .w-quote { margin: 9px 0 0; }
 .w-quote .meta { color: var(--ink-soft); font-size: 12.5px; }
 .w-play {
+  display: inline-flex; align-items: center; gap: 5px;
   border: 1px solid var(--rule); background: transparent; color: var(--ink-soft); padding: 3px 12px; margin-left: 8px;
   font-size: 12.5px; border-radius: var(--radius-sm); transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
@@ -223,7 +317,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .w-gate ul { list-style: none; margin: 0; padding: 0; }
 .w-gate li { display: grid; grid-template-columns: 40px 1fr; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 13.5px; }
-.w-gate .mark { font-family: var(--font-mono); font-weight: 700; }
+.w-gate .mark { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid currentColor; }
+.w-gate .mark.idle { color: var(--ink-soft); opacity: 0.5; border-style: dashed; }
+.w-gate li { align-items: start; }
 .w-gate .missing { color: var(--flag); }
 .w-gate .unconfirmed { color: var(--signal); }
 .w-gate .confirmed { color: var(--confirm); }
