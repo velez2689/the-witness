@@ -92,6 +92,8 @@ export function BriefPanel(p: {
   totalHold: number;
   callsCount: number;
   costPerCall: number;
+  /** True when the console is working claims the Agent imported, not the sample. */
+  imported: boolean;
 }) {
   const toggle = (k: ObjectiveKey) =>
     p.setObjectives(p.objectives.includes(k) ? p.objectives.filter((x) => x !== k) : [...p.objectives, k]);
@@ -99,7 +101,7 @@ export function BriefPanel(p: {
   return (
     <section className="w-brief" aria-label="Call brief">
       <div>
-        <h2><Icon name="list" size={15} /><span>Call brief · sample claim, all data synthetic</span></h2>
+        <h2><Icon name="list" size={15} /><span>{p.imported ? 'Call brief · from your worklist' : 'Call brief · sample claim, all data synthetic'}</span></h2>
         <dl>
           <dt>Claim</dt><dd className="id">{p.brief.claimId} · {p.patientLabel}</dd>
           <dt>Payer</dt><dd>{p.brief.payer}</dd>
@@ -123,7 +125,7 @@ export function BriefPanel(p: {
         </ul>
         <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
           <span className="w-seg" role="group" aria-label="Where the Rep comes from">
-            <button aria-pressed={!live} disabled={p.locked} onClick={() => p.setSource('scripted')}>Scripted Rep</button>
+            <button aria-pressed={!live} disabled={p.locked || p.imported} title={p.imported ? 'The scripted Rep replays the sample conversation. Playing it against a real claim would file the sample rep’s words into this patient’s ledger.' : undefined} onClick={() => p.setSource('scripted')}>Scripted Rep</button>
             <button aria-pressed={live} disabled={p.locked || !p.liveAvailable} onClick={() => p.setSource('live')}>Be the Rep (live)</button>
           </span>
           {!live && (

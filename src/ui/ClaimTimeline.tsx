@@ -19,12 +19,21 @@ import type { HistoryCall } from './console-types';
  * a call happened.
  */
 
-const DOS = '2026-05-18';
-const AXIS_DAYS = 106; // May 18 -> Sep 1
 const MIN_GAP_PCT = 10.4; // ~112px of separation on a typical track width
-const MONTHS = ['2026-06-01', '2026-07-01', '2026-08-01', '2026-09-01'];
 
-const pctOf = (iso: string) => Math.min(100, Math.max(0, (daysBetween(DOS, iso) / AXIS_DAYS) * 100));
+/** First of each month strictly inside the axis, so the ruler is labelled for any claim. */
+function monthMarks(dos: string, days: number): string[] {
+  const out: string[] = [];
+  const start = new Date(`${dos}T00:00:00Z`);
+  if (Number.isNaN(start.getTime())) return out;
+  const d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1));
+  while (daysBetween(dos, d.toISOString().slice(0, 10)) < days - 4) {
+    out.push(d.toISOString().slice(0, 10));
+    d.setUTCMonth(d.getUTCMonth() + 1);
+    if (out.length > 24) break; // a claim older than two years does not need a mark a month
+  }
+  return out;
+}
 
 interface Placed {
   id: string;
@@ -38,6 +47,8 @@ interface Placed {
 }
 
 interface Props {
+  /** The claim's date of service: the left edge of the axis. Varies per claim, so never a constant. */
+  dateOfService: string;
   historyCalls: readonly HistoryCall[];
   ledger: ClaimLedger;
   contradictions: readonly Contradiction[];
@@ -70,6 +81,16 @@ function place(all: Omit<Placed, 'pct'>[]): Placed[] {
 }
 
 export function ClaimTimeline(p: Props) {
+  const DOS = p.dateOfService;
+  // The axis runs from the date of service to a little past the newest call, whenever that is.
+  const lastDay = [...p.historyCalls.map((c) => c.startedAt), p.liveStartedAt].reduce(
+    (a, b) => (a > b ? a : b),
+    p.liveStartedAt,
+  );
+  const AXIS_DAYS = Math.max(daysBetween(DOS, lastDay) * 1.06, 30);
+  const MONTHS = monthMarks(DOS, AXIS_DAYS);
+  const pctOf = (iso: string) => Math.min(100, Math.max(0, (daysBetween(DOS, iso) / AXIS_DAYS) * 100));
+
   const flagged = new Set<string>();
   const callOf = (id: string) => p.ledger.statements.find((s) => s.id === id)?.callId;
   for (const c of p.contradictions) {
@@ -123,7 +144,9 @@ export function ClaimTimeline(p: Props) {
           <span>Claim timeline</span>
         </h2>
         <p className="w-note">
-          date of service {shortDate(DOS)} · {cards.length} calls · hold time drawn to scale under each call
+          {p.historyCalls.length === 0
+            ? `date of service ${shortDate(DOS)} · no prior calls on file · this is call 1`
+            : `date of service ${shortDate(DOS)} · ${cards.length} calls · hold time drawn to scale under each call`}
         </p>
       </header>
 

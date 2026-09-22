@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { ObjectiveKey } from '@/domain/call-brief';
+import { toCallBrief } from '@/domain/claim-import';
 import { buildClaimUpdate } from '@/domain/claim-update';
+import { createLedger } from '@/domain/claim-ledger';
 import { closeOutForAgent } from '@/domain/speech';
 import { shortDate } from '@/lib/dates';
 import { ClaimUpdateSheet } from './ClaimUpdateSheet';
@@ -26,9 +28,39 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
   const [source, setSource] = useState<Source>('scripted');
   const [theme, setTheme] = useState<(typeof THEMES)[number]>('auto');
   const worklist = useWorklist(props.readWorkbook, props.worklistStore);
-  const scripted = useCallRunner(props, objectives);
-  const liveCall = useLiveCall(props, objectives, props.driver);
-  const isLive = source === 'live';
+
+  /**
+   * Which claims the console is working: the imported worklist once the Agent has loaded it,
+   * otherwise the sample claim with its six calls of history.
+   *
+   * An imported claim has no history on file, so no contradiction can fire on its first call —
+   * that is the truth about a claim nobody has called on yet, and the timeline says so rather
+   * than implying otherwise. The scripted Rep is disabled for imported claims on purpose:
+   * replaying the sample conversation would file the sample rep's words into a real patient's
+   * ledger, which is precisely the contamination this product exists to refuse.
+   */
+  const imported = worklist.loaded && worklist.chosen.length > 0;
+  const active: ConsoleProps = useMemo(() => {
+    if (!imported) return props;
+    const [lead, ...rest] = worklist.chosen;
+    return {
+      ...props,
+      brief: toCallBrief(lead, props.brief.providerName, objectives),
+      patientLabel: lead.patientLabel || lead.claimId,
+      historyLedger: createLedger(lead.claimId),
+      historyCalls: [],
+      batch: rest.map((c) => ({
+        brief: toCallBrief(c, props.brief.providerName, objectives),
+        patientLabel: c.patientLabel || c.claimId,
+        lines: [], // no script for a real claim: those words have not been spoken yet
+      })),
+    };
+  }, [imported, objectives, props, worklist.chosen]);
+
+  const scripted = useCallRunner(active, objectives);
+  const liveCall = useLiveCall(active, objectives, props.driver);
+  // A real claim has no recorded conversation to replay, so Live is the only honest source.
+  const isLive = imported ? true : source === 'live';
 
   useEffect(() => {
     try {
@@ -58,8 +90,8 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
     [finished, v.ledger, props.live.id, v.liveContradictions, v.holdSeconds],
   );
 
-  const totalHistoryHold = props.historyCalls.reduce((n, c) => n + c.holdSeconds, 0);
-  const callsSoFar = props.historyCalls.length + (phase === 'idle' ? 0 : 1);
+  const totalHistoryHold = active.historyCalls.reduce((n, c) => n + c.holdSeconds, 0);
+  const callsSoFar = active.historyCalls.length + (phase === 'idle' ? 0 : 1);
   const stats = useMemo(
     () =>
       buildStats({
@@ -79,8 +111,8 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
 
   // The rest of the batch: same call, same rep, separate ledgers. Opens once the lead claim is worked.
   const roster = useRoster(
-    { brief: props.brief, patientLabel: props.patientLabel, ledger: v.ledger },
-    props.batch,
+    { brief: active.brief, patientLabel: active.patientLabel, ledger: v.ledger },
+    active.batch,
     { callId: props.live.id, capturedAt: props.live.startedAt },
     scripted.speed,
   );
@@ -97,8 +129,8 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         mode={mode}
         clockMs={v.clockMs}
         holdSeconds={v.holdSeconds}
-        claimId={props.brief.claimId}
-        payer={props.brief.payer}
+        claimId={active.brief.claimId}
+        payer={active.brief.payer}
         statementCount={v.ledger.statements.length}
         flagLatencyMs={flagMs}
         extractMs={v.extractMs}
@@ -122,12 +154,12 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         onClear={worklist.clear}
       />
       <BriefPanel
-        brief={{ ...props.brief, objectives }}
-        patientLabel={props.patientLabel}
+        brief={{ ...active.brief, objectives }}
+        patientLabel={active.patientLabel}
         locked={phase !== 'idle'}
         mode={scripted.mode}
         setMode={scripted.setMode}
-        source={source}
+        source={isLive ? 'live' : source}
         setSource={setSource}
         liveAvailable={liveCall.available}
         liveDetail={isLive ? liveCall.detail : null}
@@ -145,8 +177,9 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         onTakeOver={scripted.takeOver}
         canTakeOver={!isLive && scripted.mode === 'A' && phase !== 'idle' && phase !== 'done' && !scripted.tookOver}
         totalHold={totalHistoryHold + v.holdSeconds}
-        callsCount={props.historyCalls.length + (phase === 'idle' ? 0 : 1)}
+        callsCount={active.historyCalls.length + (phase === 'idle' ? 0 : 1)}
         costPerCall={props.costPerCall}
+        imported={imported}
       />
       {isLive && phase === 'running' && <RepCue lastAsk={lastWitness?.text ?? null} suggestion={suggestion} />}
       <div className="w-flaglane" aria-label="Contradiction flag lane">
@@ -163,13 +196,14 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         )}
       </div>
       <ClaimTimeline
-        historyCalls={props.historyCalls}
+        dateOfService={active.brief.dateOfService}
+        historyCalls={active.historyCalls}
         ledger={v.ledger}
         contradictions={v.contradictions}
         focus={v.focus}
         liveStartedAt={props.live.startedAt}
         liveDuration={props.live.durationSeconds}
-        liveNumber={props.historyCalls.length + 1}
+        liveNumber={active.historyCalls.length + 1}
         holdSeconds={v.holdSeconds}
         running={phase !== 'idle'}
         onSelectCall={v.select}
@@ -205,6 +239,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         outstanding={roster.outstanding}
         openWarning={roster.openWarning}
         leadDone={finished}
+        gateCount={active.batch.length + 1}
         onBegin={roster.begin}
         onNext={roster.next}
         onReset={roster.reset}
@@ -212,8 +247,8 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         onDiscard={roster.discard}
       />
       <div className="w-lower">
-        <Inspector ledger={v.ledger} focus={v.focus} shown={v.shown} callCount={props.historyCalls.length} closeOut={closeOut} finished={finished} />
-        <CaptureSheet brief={{ ...props.brief, objectives }} patientLabel={props.patientLabel} ledger={v.ledger} gate={v.gate} callId={props.live.id} />
+        <Inspector ledger={v.ledger} focus={v.focus} shown={v.shown} callCount={active.historyCalls.length} closeOut={closeOut} finished={finished} />
+        <CaptureSheet brief={{ ...active.brief, objectives }} patientLabel={active.patientLabel} ledger={v.ledger} gate={v.gate} callId={props.live.id} />
         <HangUpGate gate={v.gate} ok={v.hangUpOk} phase={phase} batch={roster.started ? roster.outstanding : null} />
       </div>
       {update && <ClaimUpdateSheet update={update} />}

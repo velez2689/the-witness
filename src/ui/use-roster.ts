@@ -61,6 +61,8 @@ export function useRoster(
   const running = playing && !segmentDone;
 
   const begin = useCallback(() => {
+    // One claim on the call means there is no batch to open.
+    if (batch.length === 0) return;
     const started = startRoster(
       [
         { brief: lead.brief, patientLabel: lead.patientLabel, ledger: lead.ledger },

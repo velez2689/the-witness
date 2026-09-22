@@ -24,6 +24,8 @@ interface Props {
   outstanding: readonly RosterGate[];
   openWarning: { warning: WrongClaimWarning; resolved: boolean; held: QuarantinedTurn | null } | null;
   leadDone: boolean;
+  /** How many patients are on this call in total. One means there is no batch. */
+  gateCount: number;
   onBegin: () => void;
   onNext: () => void;
   onReset: () => void;
@@ -59,10 +61,10 @@ export function RosterBand(p: Props) {
             : 'a biller does not hang up after one claim — the IVR and the hold queue cost 25 minutes, so they batch'}
         </p>
         <span className="w-spacer" />
-        {!p.started && p.leadDone && (
+        {!p.started && p.leadDone && p.gateCount > 1 && (
           <button type="button" className="w-btn primary" onClick={p.onBegin}>
             <Icon name="arrowRight" size={15} />
-            While I have you: 2 more
+            While I have you: {p.gateCount - 1} more
           </button>
         )}
         {p.started && p.segmentDone && !p.atLastPatient && (
@@ -78,7 +80,7 @@ export function RosterBand(p: Props) {
         )}
       </header>
 
-      {!p.started && !p.leadDone && (
+      {!p.started && (p.gateCount > 1 ? !p.leadDone : true) && (
         <div className="w-empty">
           <p className="w-note" style={{ margin: 0 }}>
             The batch opens when the first claim is worked. Each patient keeps its own ledger and its own

@@ -1,4 +1,4 @@
-import type { ObjectiveKey } from './call-brief';
+import type { CallBrief, ObjectiveKey } from './call-brief';
 
 /**
  * Bringing a worklist into The Witness.
@@ -216,3 +216,26 @@ export function selectionBlocked(selectedCount: number, claim: ImportedClaim): s
 
 /** The objectives a freshly imported claim starts with. The Agent can change them per call. */
 export const IMPORT_DEFAULT_OBJECTIVES: readonly ObjectiveKey[] = ['claim_status', 'denial_reason', 'remit_reason', 'specific_code'];
+
+/**
+ * An imported row becomes a Call Brief. Only what the sheet actually said is carried: a field the
+ * export did not contain stays empty rather than being invented, because the Witness may only
+ * speak facts that are in the brief.
+ */
+export function toCallBrief(
+  claim: ImportedClaim,
+  providerName: string,
+  objectives: readonly ObjectiveKey[] = IMPORT_DEFAULT_OBJECTIVES,
+): CallBrief {
+  return {
+    claimId: claim.claimId,
+    payer: claim.payer,
+    providerName,
+    patientLabel: claim.patientLabel,
+    memberId: claim.memberId,
+    dateOfService: claim.dateOfService,
+    dxCodes: claim.dxCodes,
+    billed: claim.billed ?? 0,
+    objectives,
+  };
+}
