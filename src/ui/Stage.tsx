@@ -102,7 +102,7 @@ export function Stage(p: Props) {
         const holdW = w * Math.min(1, c.holdSeconds / c.durationSeconds);
         return (
           <g key={c.id} tabIndex={0} role="button" aria-label={`Call ${c.number}, ${shortDate(c.startedAt)}`} onClick={() => p.onSelectCall?.(c.id)} style={{ cursor: 'pointer' }}>
-            <rect x={x} y={46} width={w} height={46} fill="var(--panel)" stroke="var(--ink-soft)" />
+            <rect x={x} y={46} width={w} height={46} rx={5} fill="var(--panel)" stroke="var(--ink-soft)" />
             {flagged && <rect x={x} y={46} width={w} height={5} fill="var(--flag)" />}
             <rect x={x} y={94} width={holdW} height={5} fill="var(--ink-soft)" opacity={0.7} />
             <text x={x + 4} y={72} className="mono strong">{String(c.number).padStart(2, '0')}</text>
@@ -119,7 +119,7 @@ export function Stage(p: Props) {
         const w = 14 + (Math.max(p.liveDuration, 60) / 60) * 0.9;
         return (
           <g>
-            <rect x={x} y={46} width={w} height={46} fill={p.running ? 'var(--flag-wash)' : 'transparent'} stroke="var(--accent)" strokeDasharray={p.running ? undefined : '4 3'} strokeWidth={p.running ? 2 : 1} />
+            <rect x={x} y={46} width={w} height={46} rx={5} fill={p.running ? 'var(--flag-wash)' : 'transparent'} stroke="var(--accent)" strokeDasharray={p.running ? undefined : '4 3'} strokeWidth={p.running ? 2 : 1} />
             <text x={x + 4} y={72} className="mono strong">06</text>
             <text x={x} y={116} className="mono">{shortDate(p.liveStartedAt)}</text>
             <text x={x} y={129} className="mono" style={{ fill: 'var(--accent)', fontWeight: 700 }}>{p.running ? 'LIVE' : 'this call'}</text>
@@ -149,8 +149,10 @@ export function Stage(p: Props) {
       <text x={X0} y={283} className="mono">Rep</text>
       <text x={X0} y={296} className="mono" style={{ fontSize: 10 }}>channel A</text>
       <text x={X0} y={329} className="mono">{p.mode === 'A' ? 'Witness' : 'Agent'}</text>
-      <rect x={X0 + 100} y={262} width={W - 100} height={34} fill="var(--panel)" />
-      <rect x={X0 + 100} y={308} width={W - 100} height={34} fill="var(--panel)" />
+      <rect x={X0 + 100} y={262} width={W - 100} height={34} rx={5} fill="var(--panel)" stroke="var(--rule)" />
+      <rect x={X0 + 100} y={308} width={W - 100} height={34} rx={5} fill="var(--panel)" stroke="var(--rule)" />
+      <line x1={X0 + 100} x2={X1} y1={279} y2={279} stroke="var(--rule)" strokeDasharray="1 4" opacity={0.6} />
+      <line x1={X0 + 100} x2={X1} y1={325} y2={325} stroke="var(--rule)" strokeDasharray="1 4" opacity={0.6} />
 
       {blocks.map((b) => {
         const rep = b.item.side === 'rep';

@@ -104,11 +104,13 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         {banner ? (
           <Banner group={banner} ledger={v.ledger} queued={v.openCount - 1} onDismiss={() => v.dismiss(banner[0].statementIds[1])} />
         ) : (
-          <p className="w-note" style={{ margin: 0 }}>
-            {phase === 'idle'
-              ? 'Flag lane. When the Rep contradicts something already on record, it lands here with both quotes.'
-              : 'No open flag. Dismissed flags stay on the timeline.'}
-          </p>
+          <div className="w-empty">
+            <p className="w-note" style={{ margin: 0 }}>
+              {phase === 'idle'
+                ? 'Flag lane. When the Rep contradicts something already on record, it lands here with both quotes.'
+                : 'No open flag. Dismissed flags stay on the timeline.'}
+            </p>
+          </div>
         )}
       </div>
       <div className="w-stage">
