@@ -5,11 +5,14 @@ import {
   canEndCall,
   ingestToActive,
   noteUsLineOnActive,
+  callIdentity,
   outstanding,
+  releaseQuarantineTo,
   rosterGates,
   startRoster,
   switchTo,
   type CallRoster,
+  type QuarantinedTurn,
   type WrongClaimWarning,
 } from '@/domain/call-roster';
 import { createLedger } from '@/domain/claim-ledger';
@@ -46,7 +49,7 @@ function freshRoster(): CallRoster {
 }
 
 /** Play the whole call: the rep identifies, then every batch segment in order. */
-function playBatch(): { roster: CallRoster; warnings: WrongClaimWarning[] } {
+function playBatch(): { roster: CallRoster; warnings: WrongClaimWarning[]; held: QuarantinedTurn[] } {
   let r = freshRoster();
   const warnings: WrongClaimWarning[] = [];
   // The lead claim: the rep identifies and gives a reference number (call 06, abbreviated).
@@ -69,7 +72,7 @@ function playBatch(): { roster: CallRoster; warnings: WrongClaimWarning[] } {
       at += 2400;
     }
   }
-  return { roster: r, warnings };
+  return { roster: r, warnings, held: [...r.quarantine] };
 }
 
 const factsOf = (r: CallRoster, claimId: string) =>
@@ -122,19 +125,41 @@ describe('the demo batch: one call, three patients', () => {
     expect(refOf('C-8812-02')).not.toContain('7R4B-261');
   });
 
-  it('carries the rep identity into every patient worked on the call, so each gate can clear', () => {
+  it('identifies the rep exactly once, in the ledger where it was actually captured', () => {
     const { roster } = playBatch();
-    for (const claimId of ['A-4471-08', 'B-2290-15', 'C-8812-02']) {
-      const id = factsOf(roster, claimId).filter((s) => s.category === 'rep_identity');
-      expect(id).toHaveLength(1);
-      expect(id[0].value).toContain('2210');
+    const rows = roster.entries.flatMap((e) =>
+      e.session.ledger.statements.filter((s) => s.kind === 'fact' && s.category === 'rep_identity'),
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].claimId).toBe('A-4471-08');
+    expect(callIdentity(roster)?.id).toBe(rows[0].id);
+  });
+
+  it('clears every patient’s gate from that one identity row', () => {
+    const { roster } = playBatch();
+    expect(outstanding(roster)).toHaveLength(0);
+    for (const g of rosterGates(roster)) {
+      expect(g.items.find((i) => i.key === 'rep_badge')!.value).toBe('2210');
     }
   });
 
-  it('clears every patient’s gate by the end of the batch, so the call may close', () => {
-    const { roster } = playBatch();
+  it('holds the call open until the Agent rules on the held turn, then lets it close', () => {
+    const { roster, held } = playBatch();
+    // Every gate is clear, but the wrong-chart turn is still waiting on a decision.
     expect(outstanding(roster)).toHaveLength(0);
-    expect(canEndCall(roster)).toBe(true);
+    expect(held).toHaveLength(1);
+    expect(canEndCall(roster)).toBe(false);
+
+    // The Agent files it to the patient the rep was actually reading.
+    const after = releaseQuarantineTo(roster, held[0].id, held[0].warning.spokenClaimId).roster;
+    expect(after.quarantine).toHaveLength(0);
+    expect(canEndCall(after)).toBe(true);
+  });
+
+  it('loses nothing to the quarantine: the held words stay available verbatim', () => {
+    const { held } = playBatch();
+    expect(held[0].turn.text).toContain('denied for no prior auth');
+    expect(held[0].contains.map((c) => c.value)).toContain('no prior authorization');
   });
 
   it('blocks hang-up while a later patient has not been worked yet', () => {

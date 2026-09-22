@@ -192,6 +192,8 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         onBegin={roster.begin}
         onNext={roster.next}
         onReset={roster.reset}
+        onRelease={roster.release}
+        onDiscard={roster.discard}
       />
       <div className="w-lower">
         <Inspector ledger={v.ledger} focus={v.focus} shown={v.shown} callCount={props.historyCalls.length} closeOut={closeOut} finished={finished} />

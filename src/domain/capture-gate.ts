@@ -37,11 +37,21 @@ export function computeGate(
   ledger: ClaimLedger,
   callId: CallId,
   objectives: readonly ObjectiveKey[],
+  /**
+   * Who the rep said they were on this call, captured against ANOTHER claim worked on the same
+   * call. Identity is a property of the CALL, not of the claim: one rep answers the line, and they
+   * say their name once, not once per patient. Passing the real row here lets this claim's gate
+   * clear while its ledger stays strictly what was said about THIS claim — the alternative,
+   * copying the row into every ledger, would put a quote in claim B timestamped from before
+   * claim B was ever mentioned, which is indistinguishable from fabricated evidence in a packet.
+   */
+  callIdentity?: FactStatement | null,
 ): GateItem[] {
   const all = facts(ledger, callId);
   const items: GateItem[] = [];
 
-  const identity = fieldFor(all.filter((f) => f.category === 'rep_identity'));
+  const own = all.filter((f) => f.category === 'rep_identity');
+  const identity = fieldFor(own.length > 0 ? own : callIdentity ? [callIdentity] : []);
   const identityRefused = refused(ledger, callId, 'rep_identity');
   const parts = identity ? identity.row.value.split(' ') : [];
   const badge = parts.length ? parts[parts.length - 1] : null;

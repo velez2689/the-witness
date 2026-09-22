@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_OBJECTIVES, type CallBrief } from '@/domain/call-brief';
 import {
   activeEntry,
+  callIdentity,
   canEndCall,
   checkWrongClaim,
+  discardQuarantine,
   ingestToActive,
   noteUsLineOnActive,
   outstanding,
+  releaseQuarantineTo,
   rosterGates,
   startRoster,
   switchTo,
@@ -82,6 +85,34 @@ describe('one call, several patients', () => {
     expect(activeEntry(r).session.identity).toEqual({ first: 'Darnell', badge: '2210' });
   });
 
+  it('never copies the identity STATEMENT into another patient’s ledger', () => {
+    let r = start();
+    r = ingestToActive(r, turn('This is Darnell, badge two-two-one-zero.')).roster;
+    r = switchTo(r, 'B-2290-15');
+
+    // A copied row would sit in claim B quoting a moment before claim B was ever mentioned —
+    // indistinguishable from fabricated evidence once it reaches an appeal packet.
+    expect(r.entries[1].session.ledger.statements).toHaveLength(0);
+    expect(r.entries[2].session.ledger.statements).toHaveLength(0);
+  });
+
+  it('resolves identity at CALL level, so every patient’s gate cites the one real row', () => {
+    let r = start();
+    r = ingestToActive(r, turn('This is Darnell, badge two-two-one-zero.')).roster;
+    r = switchTo(r, 'B-2290-15');
+
+    const row = callIdentity(r);
+    expect(row?.claimId).toBe('A-4471-08');
+
+    const gate = rosterGates(r).find((g) => g.claimId === 'B-2290-15')!;
+    const name = gate.items.find((i) => i.key === 'rep_name')!;
+    const badge = gate.items.find((i) => i.key === 'rep_badge')!;
+    expect(name.state).not.toBe('missing');
+    expect(badge.value).toBe('2210');
+    // The citation points at the row where it was actually captured, not at a copy.
+    expect(name.statementId).toBe(row?.id);
+  });
+
   it('keeps statement ids unique across the claims sharing one call', () => {
     let r = start();
     r = ingestToActive(r, turn('This is Darnell, badge two-two-one-zero.')).roster;
@@ -121,6 +152,82 @@ describe('the wrong-claim guard', () => {
     // The rep is reading the wrong chart, so "denied for no prior auth" is about the wrong patient.
     // Filing it to Delgado would record something false about a real patient.
     expect(result.added).toHaveLength(0);
+    expect(r.entries.flatMap((e) => e.session.ledger.statements)).toHaveLength(0);
+  });
+
+  it('HOLDS the turn rather than dropping it, with a preview of what it would record', () => {
+    const result = ingestToActive(
+      start(),
+      turn('I have M-D-five-five-eight-three-zero-four-one-seven up. That one denied for no prior auth.'),
+    );
+    // Held, not lost: the words the rep said are still available to the Agent.
+    expect(result.quarantined).not.toBeNull();
+    expect(result.roster.quarantine).toHaveLength(1);
+    expect(result.quarantined!.turn.text).toContain('no prior auth');
+    const contains = result.quarantined!.contains.filter((c) => c.category === 'denial_reason');
+    expect(contains.map((c) => c.value)).toEqual(['no prior authorization']);
+  });
+
+  it('shows held content even when the spoken patient already has that fact on file', () => {
+    let r = start();
+    // Okonkwo already said "no prior auth" on their own segment.
+    r = switchTo(r, 'B-2290-15');
+    r = ingestToActive(r, turn('That claim denied. No prior authorization.')).roster;
+    r = switchTo(r, 'C-8812-02');
+
+    const result = ingestToActive(
+      r,
+      turn('I have M-D-five-five-eight-three-zero-four-one-seven up. That one denied for no prior auth.'),
+    );
+    // Dedupe must not make the hold look empty: the rep said it, and the Agent rules on what was
+    // said. Showing "nothing here" would invite discarding a real, corroborating utterance.
+    expect(result.quarantined!.contains.map((c) => c.value)).toContain('no prior authorization');
+  });
+
+  it('will not let the call end while a held turn is unresolved, even with every gate clear', () => {
+    let r = start();
+    // Clear every patient's required fields first.
+    for (const claimId of ['A-4471-08', 'B-2290-15', 'C-8812-02'] as const) {
+      r = switchTo(r, claimId);
+      if (claimId === 'A-4471-08') {
+        r = ingestToActive(r, turn('This is Darnell, badge two-two-one-zero.')).roster;
+      }
+      r = noteUsLineOnActive(r, 'Reference number?');
+      r = ingestToActive(r, turn(`Eight-K-two-J-nine-${claimId.length}-eight.`)).roster;
+    }
+    expect(canEndCall(r)).toBe(true);
+
+    r = ingestToActive(r, turn('Wait, I have M-D-five-five-eight-three-zero-four-one-seven up.')).roster;
+    expect(canEndCall(r)).toBe(false);
+  });
+
+  it('files a released turn to the patient the Agent names, with real extraction', () => {
+    let r = start();
+    const held = ingestToActive(
+      r,
+      turn('I have M-D-five-five-eight-three-zero-four-one-seven up. That one denied for no prior auth.'),
+    );
+    r = held.roster;
+
+    const out = releaseQuarantineTo(r, held.quarantined!.id, 'B-2290-15');
+    r = out.roster;
+
+    expect(r.quarantine).toHaveLength(0);
+    expect(factsOf(r, 1).map((s) => s.value)).toContain('no prior authorization');
+    // Still nothing on the patient who was merely on screen.
+    expect(factsOf(r, 0)).toHaveLength(0);
+    expect(canEndCall(start())).toBe(false);
+  });
+
+  it('records nothing anywhere when the Agent rules the rep misspoke', () => {
+    let r = start();
+    const held = ingestToActive(
+      r,
+      turn('I have M-D-five-five-eight-three-zero-four-one-seven up. That one denied for no prior auth.'),
+    );
+    r = discardQuarantine(held.roster, held.quarantined!.id);
+
+    expect(r.quarantine).toHaveLength(0);
     expect(r.entries.flatMap((e) => e.session.ledger.statements)).toHaveLength(0);
   });
 

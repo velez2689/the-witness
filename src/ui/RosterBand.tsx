@@ -1,6 +1,6 @@
 'use client';
 
-import type { RosterGate, WrongClaimWarning } from '@/domain/call-roster';
+import type { QuarantinedTurn, RosterGate, WrongClaimWarning } from '@/domain/call-roster';
 import { Icon } from './Icon';
 import type { RosterLineItem } from './use-roster';
 
@@ -22,11 +22,20 @@ interface Props {
   atLastPatient: boolean;
   canEnd: boolean;
   outstanding: readonly RosterGate[];
-  openWarning: { warning: WrongClaimWarning; resolved: boolean } | null;
+  openWarning: { warning: WrongClaimWarning; resolved: boolean; held: QuarantinedTurn | null } | null;
   leadDone: boolean;
   onBegin: () => void;
   onNext: () => void;
   onReset: () => void;
+  onRelease: (quarantineId: string, claimId: string) => void;
+  onDiscard: (quarantineId: string) => void;
+}
+
+/** One line per thing the held turn would record, so the Agent rules on content, not on a count. */
+function heldContents(held: QuarantinedTurn): string[] {
+  return held.contains.map((c) =>
+    c.kind === 'refusal' ? `refusal: ${c.category.replace(/_/g, ' ')}` : `${c.category.replace(/_/g, ' ')}: ${c.value}`,
+  );
 }
 
 function shortOf(g: RosterGate): string[] {
@@ -119,6 +128,47 @@ export function RosterBand(p: Props) {
                 contamination this is here to prevent — so the Witness challenges the rep on the line and the Agent decides.
                 {p.openWarning.resolved && ' The rep re-stated it against the right patient and that answer was captured.'}
               </p>
+
+              {p.openWarning.held && (
+                <div className="w-held">
+                  <p className="w-held-title">
+                    <Icon name="pending" size={14} />
+                    Held, not discarded — the rep did say this:
+                  </p>
+                  <blockquote className="w-held-quote">{p.openWarning.held.turn.text}</blockquote>
+                  {heldContents(p.openWarning.held).length > 0 ? (
+                    <ul className="w-held-list">
+                      {heldContents(p.openWarning.held).map((line) => (
+                        <li key={line} className="id">
+                          {line}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="w-note" style={{ margin: '4px 0 8px' }}>
+                      Nothing extractable in it — no value would be recorded either way.
+                    </p>
+                  )}
+                  <p className="w-note" style={{ margin: '0 0 9px' }}>
+                    It describes <b>{p.openWarning.warning.spokenPatient}</b> if the rep was reading their chart, or
+                    nothing at all if they simply misspoke. That is your call, not ours.
+                  </p>
+                  <div className="w-held-acts">
+                    <button
+                      type="button"
+                      className="w-btn"
+                      onClick={() => p.onRelease(p.openWarning!.held!.id, p.openWarning!.warning.spokenClaimId)}
+                    >
+                      <Icon name="arrowRight" size={14} />
+                      File to {p.openWarning.warning.spokenPatient} ({p.openWarning.warning.spokenClaimId})
+                    </button>
+                    <button type="button" className="w-btn warn" onClick={() => p.onDiscard(p.openWarning!.held!.id)}>
+                      <Icon name="x" size={14} />
+                      Rep misspoke — record nothing
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -139,7 +189,9 @@ export function RosterBand(p: Props) {
           <div className={`w-roster-verdict ${p.canEnd ? 'ok' : 'open'}`}>
             {p.canEnd
               ? 'Every patient on this call is clear. The call may end.'
-              : `Do not hang up: ${p.outstanding.map((g) => g.patientLabel).join(', ')} still short a required field.`}
+              : p.outstanding.length > 0
+                ? `Do not hang up: ${p.outstanding.map((g) => g.patientLabel).join(', ')} still short a required field.`
+                : 'Do not hang up: a held turn is still waiting on your decision. Hanging up loses what the rep said.'}
           </div>
         </>
       )}

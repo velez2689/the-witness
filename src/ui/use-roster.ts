@@ -5,9 +5,11 @@ import type { CallBrief } from '@/domain/call-brief';
 import {
   activeEntry,
   canEndCall,
+  discardQuarantine,
   ingestToActive,
   noteUsLineOnActive,
   outstanding,
+  releaseQuarantineTo,
   rosterGates,
   startRoster,
   switchTo,
@@ -34,6 +36,8 @@ export interface RosterLineItem {
   patientLabel: string;
   addedCount: number;
   warning: WrongClaimWarning | null;
+  /** Set when this turn was held rather than filed, so the feed can track its fate. */
+  quarantineId: string | null;
 }
 
 export function useRoster(
@@ -89,14 +93,14 @@ export function useRoster(
       setRoster(noteUsLineOnActive(roster, line.text));
       setItems((x) => [
         ...x,
-        { key: `${entry.brief.claimId}-${step}`, side: 'us', text: line.text, claimId: entry.brief.claimId, patientLabel: entry.patientLabel, addedCount: 0, warning: null },
+        { key: `${entry.brief.claimId}-${step}`, side: 'us', text: line.text, claimId: entry.brief.claimId, patientLabel: entry.patientLabel, addedCount: 0, warning: null, quarantineId: null },
       ]);
     } else {
       const result = ingestToActive(roster, { text: line.text, startMs: at, endMs: at + 2400 });
       setRoster(result.roster);
       setItems((x) => [
         ...x,
-        { key: `${entry.brief.claimId}-${step}`, side: 'rep', text: line.text, claimId: entry.brief.claimId, patientLabel: entry.patientLabel, addedCount: result.added.length, warning: result.wrongClaim },
+        { key: `${entry.brief.claimId}-${step}`, side: 'rep', text: line.text, claimId: entry.brief.claimId, patientLabel: entry.patientLabel, addedCount: result.added.length, warning: result.wrongClaim, quarantineId: result.quarantined?.id ?? null },
       ]);
     }
     setClockMs(at + 2400);
@@ -121,8 +125,9 @@ export function useRoster(
   const short = useMemo(() => (roster ? outstanding(roster) : []), [roster]);
   /**
    * The challenge stays on screen after it is answered — it happened, and the Agent should see it
-   * in the record — but it stops shouting once the rep has re-stated something about the right
-   * patient. A permanently loud banner would imply an open problem that is no longer open.
+   * in the record — but it stops shouting once the held turn has been ruled on AND the rep has
+   * re-stated something about the right patient. A permanently loud banner would imply an open
+   * problem that is no longer open; a quiet one over an unresolved hold would hide a real decision.
    */
   const openWarning = useMemo(() => {
     let at = -1;
@@ -133,9 +138,28 @@ export function useRoster(
       }
     }
     if (at < 0) return null;
-    const resolved = items.slice(at + 1).some((i) => i.side === 'rep' && i.addedCount > 0 && !i.warning);
-    return { warning: items[at].warning!, resolved };
-  }, [items]);
+    const restated = items.slice(at + 1).some((i) => i.side === 'rep' && i.addedCount > 0 && !i.warning);
+    const held = roster?.quarantine.find((q) => q.id === items[at].quarantineId) ?? null;
+    return { warning: items[at].warning!, resolved: restated && !held, held };
+  }, [items, roster]);
+
+  /** The Agent files a held turn against the patient the rep was actually reading. */
+  const release = useCallback(
+    (quarantineId: string, claimId: string) => {
+      if (!roster) return;
+      setRoster(releaseQuarantineTo(roster, quarantineId, claimId).roster);
+    },
+    [roster],
+  );
+
+  /** The Agent rules that the rep misspoke and the turn records nothing. */
+  const discard = useCallback(
+    (quarantineId: string) => {
+      if (!roster) return;
+      setRoster(discardQuarantine(roster, quarantineId));
+    },
+    [roster],
+  );
 
   return {
     roster,
@@ -149,6 +173,9 @@ export function useRoster(
     running,
     atLastPatient: segment + 1 >= batch.length,
     openWarning,
+    pendingHolds: roster?.quarantine ?? [],
+    release,
+    discard,
     begin,
     next,
     reset,
