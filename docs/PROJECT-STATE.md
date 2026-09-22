@@ -90,7 +90,8 @@ That is the strongest thing in the pitch.
 | Product code | **None yet.** This is where you come in. |
 
 **Repo:** https://github.com/velez2689/the-witness
-**Live:** https://the-witness-qynnmygc0-chris-velezs-projects.vercel.app
+**Live:** https://the-witness-omega.vercel.app (stable production alias; every push to `main`
+auto-deploys to it — never cite a `the-witness-<hash>-…` URL, those are pinned to one build)
 
 ---
 

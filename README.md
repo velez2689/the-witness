@@ -4,7 +4,7 @@
 
 > We don't predict what the payer will pay. We record what the payer said.
 
-**Live demo:** https://the-witness-qynnmygc0-chris-velezs-projects.vercel.app (deploy pending the latest build) · **Built on:** AssemblyAI Streaming STT v3 + Voice Agent API · **Submission:** AssemblyAI Voice Agent Hackathon, Sep 2026
+**Live demo:** https://the-witness-omega.vercel.app · **Built on:** AssemblyAI Streaming STT v3 + Voice Agent API · **Submission:** AssemblyAI Voice Agent Hackathon, Sep 2026
 
 ---
 
