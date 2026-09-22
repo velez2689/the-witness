@@ -122,7 +122,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
           liveDuration={props.live.durationSeconds}
           running={phase !== 'idle'}
           mode={mode}
-          totalMs={isLive ? 180_000 : mode === 'A' ? 120_000 : 130_000}
+          totalMs={isLive ? 180_000 : 150_000}
           holdSeconds={v.holdSeconds}
         />
       </div>

@@ -41,13 +41,19 @@ One pipeline, two modes. The person using The Witness is the **Agent**; the pers
 - **Mode B, Copilot.** The Agent speaks to the Rep. The Witness listens and **whispers** into the Agent's earpiece what to ask, what to question, and what is still missing.
 - **Take over** switches from A to B in the middle of a call.
 
+![The Witness console running Mode A: the flag fires, the link is drawn to the earlier call, refusals and the read-back are recorded, the gate clears](docs/assets/console-run.gif)
+
+_The real console, recorded from the production build. Scripted Rep, no network._
+
 ![The Witness architecture: audio in, AssemblyAI, our deterministic code, and outputs](docs/assets/architecture.svg)
 
 ### One real run of Mode A
 
 Same claim. Same representative. Forty-nine days apart. The steps below are taken from the automated test run of the scripted call, not written for the diagram.
 
-![Mode A call flow: greeting, same-badge challenge, existence denial, refusal chain, read-back, close](docs/assets/mode-a-call-flow.svg)
+![Mode A call flow: greeting, same-badge challenge, existence denial, refusal chain, read-back, close](docs/assets/d2-mode-a-call-flow.svg)
+
+The diagram is generated from `docs/assets/mode-a-call-flow.d2` (`d2 mode-a-call-flow.d2 d2-mode-a-call-flow.svg`).
 
 ### What the agent is, and is not
 

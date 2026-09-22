@@ -1,0 +1,50 @@
+title: "Mode A, one real run: the Witness conducts call 06" {
+  near: top-center
+  shape: text
+  style.font-size: 24
+  style.bold: true
+}
+
+shape: sequence_diagram
+
+w: "The Witness (AI)"
+r: "Rep (D. Reese, badge 2210)"
+l: "Claim ledger" {
+  style.fill: "#e8f0fb"
+}
+
+w -> r: "1  This is an AI assistant, and this call is recorded.\nMay I have your name and badge number?"
+r -> w: "This is Darnell, badge two-two-one-zero."
+r -> l: "identity recorded" { style.stroke-dash: 4 }
+
+w -> r: "2  Member ID and date of service.\nWhat is the status of the claim?"
+r -> w: "That claim denied. Timely filing."
+r -> l: "reason recorded. Same badge said\nno prior authorization on July 8." { style.stroke-dash: 4 }
+
+w -> r: "3  CHALLENGE, value conflict, same badge:\nOn July eighth, badge two two one zero, reference\neight K two J three three eight, said no prior authorization." {
+  style.stroke: "#b3261e"
+  style.font-color: "#b3261e"
+}
+r -> w: "I'm showing timely filing today."
+
+w -> r: "4  On August fifth, T. Okafor, reference eight K two J seven zero two,\nrecorded reprocessed. Can you confirm that?"
+r -> w: "I don't have a record of a call on August fifth."
+r -> l: "existence denial flagged" { style.stroke-dash: 4 }
+
+w -> r: "5  CHALLENGE, existence denial:\nOur record shows that call and its reference. Can you look it up?" {
+  style.stroke: "#b3261e"
+  style.font-color: "#b3261e"
+}
+r -> w: "I'd have to look into that."
+
+w -> r: "6  What is the reason on the remit?\nWhich diagnosis code? What is the remark code?"
+r -> w: "There's also a diagnosis issue. It doesn't specify.\nI'd have to refer you to the denial letter."
+r -> l: "two refusals recorded as evidence" { style.stroke-dash: 4 }
+
+w -> r: "7  Could I get a reference number for this call?"
+r -> w: "Eight-K-two-J, nine-eight-eight.  (degraded audio, unconfirmed)"
+w -> r: "8  Let me read that back: eight K two J nine eight eight. Is that correct?"
+r -> w: "That's correct."
+r -> l: "reference confirmed by a new row" { style.stroke-dash: 4 }
+
+w -> r: "9  Recap spoken from the rows. The gate is clear, so the session ends."
