@@ -116,8 +116,10 @@ export function BriefPanel(p: {
         <ul className="w-obj">
           {(Object.keys(OBJECTIVES) as ObjectiveKey[]).map((k) => (
             <li key={k}>
-              <label>
-                <input type="checkbox" disabled={p.locked} checked={p.objectives.includes(k)} onChange={() => toggle(k)} /> {OBJECTIVES[k].label}
+              <label className="w-check">
+                <input type="checkbox" disabled={p.locked} checked={p.objectives.includes(k)} onChange={() => toggle(k)} />
+                <span className="w-check-box" aria-hidden="true" />
+                <span>{OBJECTIVES[k].label}</span>
               </label>
             </li>
           ))}
