@@ -462,3 +462,59 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .w-roster { padding: 18px 16px 16px; }
   .w-stage, .w-transport { padding-left: 16px; padding-right: 16px; }
 }
+
+/* --- Worklist import: the front door ---------------------------------------------------- */
+.w-import { padding: 20px 28px 18px; border-bottom: 1px solid var(--rule); background: var(--bg); }
+.w-import-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin-bottom: 12px; }
+.w-import-head h2, .w-import-head p { margin: 0; }
+
+.w-drop {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 30px 20px 22px; text-align: center;
+  border: 2px dashed var(--rule); border-radius: var(--radius-lg); background: var(--panel);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.w-drop:hover { border-color: var(--accent); }
+.w-drop.busy { opacity: 0.7; }
+.w-drop > .w-icon { color: var(--accent); margin-bottom: 2px; }
+.w-drop-main { margin: 0; font-size: 16px; font-weight: 600; }
+.w-drop p { margin: 0; }
+.w-drop-acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.w-drop-acts a.w-btn { text-decoration: none; }
+.w-privacy {
+  display: inline-flex; align-items: center; gap: 7px; margin-top: 14px !important;
+  font-size: 12px; color: var(--ink-soft);
+}
+.w-privacy .w-icon { color: var(--confirm); }
+
+.w-import-error {
+  display: flex; align-items: center; gap: 8px; margin: 12px 0 0;
+  padding: 11px 14px; font-size: 13.5px; color: var(--flag);
+  background: var(--flag-wash); border: 1px solid var(--flag); border-radius: var(--radius);
+}
+
+.w-cap { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 0 0 10px; font-size: 13px; font-weight: 600; }
+.w-cap .w-icon { color: var(--accent); }
+.w-cap .w-note { font-weight: 400; }
+
+.w-table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--panel); }
+.w-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.w-table th {
+  text-align: left; font-weight: 600; font-size: 11.5px; letter-spacing: 0.02em;
+  color: var(--ink-soft); padding: 10px 12px; border-bottom: 1px solid var(--rule); white-space: nowrap;
+}
+.w-table td { padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.w-table tbody tr:last-child td { border-bottom: 0; }
+.w-table tbody tr.on { background: var(--raise); box-shadow: inset 3px 0 0 var(--accent); }
+.w-table tbody tr.bad td { color: var(--ink-soft); }
+.w-table .pick { width: 38px; padding-right: 0; }
+.w-table .num { text-align: right; }
+.w-table td.problem { color: var(--flag); font-size: 11.5px; white-space: nowrap; }
+.w-table td.problem .w-icon { vertical-align: -0.16em; margin-right: 5px; }
+
+.w-import-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 14px; }
+
+@media (max-width: 760px) {
+  .w-import { padding: 18px 16px 16px; }
+  .w-drop { padding: 24px 14px 18px; }
+}

@@ -6,6 +6,7 @@ import { buildClaimUpdate } from '@/domain/claim-update';
 import { closeOutForAgent } from '@/domain/speech';
 import { shortDate } from '@/lib/dates';
 import { ClaimUpdateSheet } from './ClaimUpdateSheet';
+import { ClaimImport } from './ClaimImport';
 import { ClaimTimeline } from './ClaimTimeline';
 import { Icon } from './Icon';
 import { BriefPanel, Banner, CaptureSheet, HangUpGate, Inspector, RepCue, Transcript, TransportBar, type Source } from './Panels';
@@ -16,6 +17,7 @@ import type { ConsoleProps, LiveDriver } from './console-types';
 import { useCallRunner, type Phase } from './use-call-runner';
 import { useLiveCall } from './use-live-call';
 import { useRoster } from './use-roster';
+import { useWorklist } from './use-worklist';
 
 const THEMES = ['auto', 'light', 'dark'] as const;
 
@@ -23,6 +25,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
   const [objectives, setObjectives] = useState<readonly ObjectiveKey[]>(props.brief.objectives);
   const [source, setSource] = useState<Source>('scripted');
   const [theme, setTheme] = useState<(typeof THEMES)[number]>('auto');
+  const worklist = useWorklist(props.readWorkbook, props.worklistStore);
   const scripted = useCallRunner(props, objectives);
   const liveCall = useLiveCall(props, objectives, props.driver);
   const isLive = source === 'live';
@@ -105,6 +108,19 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         onTheme={() => setTheme(THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length])}
       />
       <StatStrip stats={stats} />
+      <ClaimImport
+        fileName={worklist.fileName}
+        sheetName={worklist.sheetName}
+        result={worklist.result}
+        busy={worklist.busy}
+        error={worklist.error}
+        selected={worklist.selected}
+        loaded={worklist.loaded}
+        onPick={worklist.pick}
+        onToggle={worklist.toggle}
+        onLoad={worklist.load}
+        onClear={worklist.clear}
+      />
       <BriefPanel
         brief={{ ...props.brief, objectives }}
         patientLabel={props.patientLabel}

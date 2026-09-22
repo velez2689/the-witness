@@ -4,6 +4,8 @@ import { useMemo } from 'react';
 import { LiveCall } from '@/services/live-call';
 import { PcmPlayer, startMic } from '@/services/audio-io';
 import { SessionRegistry } from '@/services/session-registry';
+import { readWorkbook } from '@/services/workbook-reader';
+import { createWorklistStore } from '@/services/worklist-store';
 import { Console } from '@/ui/Console';
 import type { ConsoleProps, LiveDriver } from '@/ui/console-types';
 
@@ -18,6 +20,7 @@ async function fetchToken(): Promise<string> {
 
 /** Binds the UI to the real services. The UI itself never imports services. */
 export function ConsoleHost(props: ConsoleProps) {
+  const worklistStore = useMemo(() => createWorklistStore(), []);
   const driver: LiveDriver = useMemo(() => {
     const registry = new SessionRegistry(MAX_SESSION_SECONDS);
     if (typeof window !== 'undefined') registry.attachToWindow(window);
@@ -39,5 +42,5 @@ export function ConsoleHost(props: ConsoleProps) {
       },
     };
   }, []);
-  return <Console {...props} driver={driver} />;
+  return <Console {...props} driver={driver} readWorkbook={readWorkbook} worklistStore={worklistStore} />;
 }

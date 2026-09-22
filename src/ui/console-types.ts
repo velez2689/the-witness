@@ -21,6 +21,10 @@ export interface ConsoleProps {
   bank: RepBank;
   /** The other patients worked on this same call, after the lead claim ("while I have you"). */
   batch: readonly import('@fixtures/scripts/roster-batch').RosterPatient[];
+  /** Reads a worklist file into rows. Injected by the app host; the UI never imports services. */
+  readWorkbook?: (file: File) => Promise<{ rows: string[][]; sheetName: string | null }>;
+  /** Browser-storage handle for the worklist. Injected by the app host. */
+  worklistStore?: import('./use-worklist').WorklistStorage;
   /** Per-call average from the CAQH Index (2024 edition, 2023 data year). */
   costPerCall: number;
 }
