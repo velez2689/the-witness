@@ -45,7 +45,9 @@ One pipeline, two modes. The person using The Witness is the **Agent**; the pers
 
 _The real console, recorded from the production build. Scripted Rep, no network._
 
-![The Witness architecture: audio in, AssemblyAI, our deterministic code, and outputs](docs/assets/architecture.svg)
+![The Witness architecture: audio in, AssemblyAI, our deterministic code, and outputs](docs/assets/d2-architecture.svg)
+
+Generated from `docs/assets/architecture.d2` (`d2 architecture.d2 d2-architecture.svg`).
 
 ### One real run of Mode A
 

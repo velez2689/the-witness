@@ -1,0 +1,84 @@
+vars: {
+  d2-config: {
+    theme-id: 100
+    layout-engine: elk
+  }
+}
+
+title: "How The Witness works\nOne pipeline, two modes — the model is a mouth, never a hand" {
+  near: top-center
+  shape: text
+  style.font-size: 26
+  style.bold: true
+}
+
+rep: "Rep\npayer line" {
+  shape: person
+}
+agent: "Agent\nyou" {
+  shape: person
+}
+
+aai: "AssemblyAI" {
+  shape: package
+  style.stroke-width: 3
+  va: "Voice Agent API\nMode A · one session on the Rep\nverbatim greeting + keyterms" {
+    style.border-radius: 14
+  }
+  stt: "Streaming STT v3\nMode B · Rep audio, listen only" {
+    style.border-radius: 14
+  }
+  vb: "Voice Agent API\nMode B · speaks the whisper" {
+    style.border-radius: 14
+  }
+}
+
+brain: "Our code — deterministic, no LLM decides" {
+  shape: hexagon
+  style.stroke-width: 3
+  extractor: "Extractor\nfinal turns only" {
+    style.border-radius: 20
+  }
+  ledger: "Ledger\nappend-only\nhash-chained" {
+    shape: cylinder
+  }
+  engine: "Contradiction\nengine\n5 kinds + refusals" {
+    shape: diamond
+  }
+  plan: "Call plan\nask or whisper" {
+    style.border-radius: 20
+  }
+  speech: "Speech assembly\nbuilt from rows\n\nreply.create sends this\nback up to the Voice Agent API" {
+    style.border-radius: 20
+  }
+  check: "Self-check\nevery number must\nbe on record" {
+    style.border-radius: 20
+    style.stroke-dash: 4
+  }
+
+  extractor -> ledger
+  ledger -> engine
+  engine -> plan
+  plan -> speech
+  speech -> check
+}
+
+result_a: "Mode A\nWitness speaks, challenges\non the recorded line" {
+  shape: oval
+}
+result_b: "Mode B\nwhisper to the Agent" {
+  shape: oval
+}
+evidence: "Console · claim update · appeal packet\nwith a verifiable hash" {
+  shape: document
+}
+
+rep -> aai.va
+rep -> aai.stt
+agent -> aai.vb
+aai.va -> brain.extractor
+aai.stt -> brain.extractor
+aai.va -> result_a
+aai.vb -> result_b
+brain.ledger -> evidence
+brain.engine -> evidence
