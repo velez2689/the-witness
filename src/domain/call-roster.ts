@@ -131,7 +131,6 @@ export function ingestToActive(r: CallRoster, turn: RepTurn): RosterIngest {
 
 /** Something the Agent (or the Witness) said, recorded against the active patient. */
 export function noteUsLineOnActive(r: CallRoster, text: string): CallRoster {
-  const entry = activeEntry(r);
   const entries = r.entries.map((e, i) =>
     i === r.activeIndex ? { ...e, session: noteUsLine(e.session, text) } : e,
   );
