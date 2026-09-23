@@ -44,7 +44,7 @@ describe('alphanumerics', () => {
   it('parses a spoken badge and speaks a reference chunked', () => {
     expect(parseSpokenDigits('two-two-one-zero', 4)).toBe('2210');
     expect(parseSpokenDigits('two-two-one', 4)).toBeNull();
-    expect(spellForSpeech('8K2J-988')).toBe('eight K two J nine eight eight');
+    expect(spellForSpeech('8K2J-988')).toBe('eight K two J, nine eight eight');
     expect(editDistance('8K2J988', '8K2J915')).toBe(2);
   });
 });
@@ -64,7 +64,7 @@ describe('dates', () => {
 
 describe('alphanumeric runs and sentence boundaries', () => {
   it('does not join digits across a sentence end', () => {
-    const runs = findAlnumRuns('reference eight K two J seven zero two. 4 minutes 2 seconds on hold.', 4);
+    const runs = findAlnumRuns('reference eight K two J, seven zero two. 4 minutes 2 seconds on hold.', 4);
     expect(runs.map((r) => r.raw)).toEqual(['8K2J702']);
   });
   it('keeps a dx-code style token with a decimal intact', () => {

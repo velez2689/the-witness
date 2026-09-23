@@ -114,7 +114,7 @@ export const LIVE_CALL: ScriptCall = {
     { who: 'REP', text: 'Meridian claims, this is Darnell, badge two-two-one-zero.' },
     { who: 'US', text: 'Thank you. Member M-D-seven-seven-one-four-zero-two-two-eight, date of service May eighteenth.' },
     { who: 'REP', text: 'Okay. That claim denied. Timely filing.', holdBeforeSeconds: 242 },
-    { who: 'US', text: 'Darnell, on July eighth you told me this denied for no prior authorization. Which is it?' },
+    { who: 'US', text: 'Darnell, on July eighth you told me this was denied for no prior authorization. Which is it?' },
     { who: 'REP', text: "I'm showing timely filing today." },
     { who: 'US', text: 'On August fifth Tunde Okafor told me it was reprocessed on July thirtieth. Reference eight-K-two-J-seven-zero-two.' },
     { who: 'REP', text: "I don't have a record of a call on August fifth." },

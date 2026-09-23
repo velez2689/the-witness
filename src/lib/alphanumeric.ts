@@ -86,12 +86,36 @@ export function formatReference(raw: string): string {
 }
 
 /** "8K2J-988" -> "eight K two J nine eight eight" for speech (chunked, unambiguous). */
+/**
+ * Render an identifier for TTS, one character at a time, keeping the groups it already has.
+ *
+ * The hyphen becomes a comma rather than being stripped. A comma is the only prosody control
+ * available through `reply.create` - it makes the voice pause and drop pitch the way a person
+ * does between groups. Without it the whole identifier comes out as one flat run, which a
+ * listener described as rattling off a string like a machine, and which is also how a rep
+ * mishears half of it.
+ *
+ * A long ungrouped value is chunked into threes for the same reason: nobody reads seven
+ * characters aloud in a single breath. Short ones are left alone - a four-digit badge said as
+ * "two two one, zero" is worse than saying it straight, which is what an earlier version of
+ * this function did to every badge on the call.
+ */
+const CHUNK_ABOVE = 6;
+
 export function spellForSpeech(value: string): string {
-  return value
-    .replace(/-/g, '')
-    .split('')
-    .map((c) => (/\d/.test(c) ? sayDigit(c) : c))
-    .join(' ');
+  const groups = value.includes('-')
+    ? value.split('-').filter(Boolean)
+    : value.replace(/[^A-Za-z0-9]/g, '').length > CHUNK_ABOVE
+      ? (value.match(/.{1,3}/g) ?? [value])
+      : [value];
+  return groups
+    .map((g) =>
+      g
+        .split('')
+        .map((c) => (/\d/.test(c) ? sayDigit(c) : c))
+        .join(' '),
+    )
+    .join(', ');
 }
 
 /** Levenshtein distance, for near-match against known reference candidates. */

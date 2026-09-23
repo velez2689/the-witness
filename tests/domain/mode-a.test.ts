@@ -42,7 +42,7 @@ describe('Mode A: the Witness conducts call 06 against the Rep Simulator', () =>
     expect(c.text).toContain('July eighth');
     expect(c.text).toContain('D. Reese');
     expect(c.text).toContain('two two one zero');
-    expect(c.text).toContain('eight K two J three three eight');
+    expect(c.text).toContain('eight K two J, three three eight');
     expect(c.text).toContain('no prior authorization');
     expect(c.text).toContain('timely filing');
     expect(c.text).toContain('same badge you gave today');
@@ -55,7 +55,7 @@ describe('Mode A: the Witness conducts call 06 against the Rep Simulator', () =>
     expect(keys.indexOf('challenge:existence_denial')).toBeGreaterThan(keys.indexOf('probe_prior'));
     const ex = witnessLines(final.events).find((e) => e.move.key === 'challenge:existence_denial')!;
     expect(ex.text).toContain('August fifth');
-    expect(ex.text).toContain('eight K two J seven zero two');
+    expect(ex.text).toContain('eight K two J, seven zero two');
   });
 
   it('never challenges more than the cap', () => {
@@ -90,17 +90,33 @@ describe('Mode A: the Witness conducts call 06 against the Rep Simulator', () =>
   });
 
   it('the self-check catches a drifted, fabricated reference number', () => {
-    const drifted = 'Let me read that back: eight K two J nine one five. Is that correct?';
-    const bad = 'The reference is eight K two J four four four.';
+    const drifted = 'Let me read that back: eight K two J, nine one five. Is that correct?';
+    const bad = 'The reference is eight K two J, four four four.';
     expect(checkSpeech(drifted, final.session.ledger, BRIEF).ok).toBe(true); // 915 is a real prior reference
     expect(checkSpeech(bad, final.session.ledger, BRIEF)).toEqual({ ok: false, unknown: ['8K2J-444'] });
+  });
+
+  /*
+   * Identifiers are now spoken in groups so they do not come out as one flat run, which means
+   * transcript.agent can return them already split. Flagging a fragment would report the Witness
+   * fabricating "8K2J" - the opposite of the truth, and the fastest way to teach an operator to
+   * ignore the one alarm that must never be ignored.
+   */
+  it('does not cry fabrication when the transcript splits an identifier into its groups', () => {
+    const split = 'Let me read that back: 8K2J 988. Is that correct?';
+    expect(checkSpeech(split, final.session.ledger, BRIEF)).toEqual({ ok: true, unknown: [] });
+  });
+
+  it('still catches a fabrication when only the first half is real', () => {
+    const half = 'Your reference is 8K2J 777.';
+    expect(checkSpeech(half, final.session.ledger, BRIEF).ok).toBe(false);
   });
 
   it('holds on-record hold time for the header and renders the Close-Out from rows only', () => {
     expect(final.holdSeconds).toBe(242);
     const out = closeOutForAgent(final.session.ledger, 'call-06', detectCall06(), final.holdSeconds);
     expect(out.text).toContain('D. Reese');
-    expect(out.text).toContain('eight K two J nine eight eight');
+    expect(out.text).toContain('eight K two J, nine eight eight');
     expect(out.text).toContain('Denial reason today: timely filing.');
     expect(out.text).toContain('Conflicts with the same representative');
     expect(out.text).toContain('diagnosis code: not provided, refused.');

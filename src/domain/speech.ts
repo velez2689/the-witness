@@ -301,8 +301,25 @@ export function checkSpeech(
       add(s.speaker?.badge);
     } else add(s.speaker?.badge);
   }
-  const unknown = findAlnumRuns(spoken, 4)
-    .map((r) => formatReference(r.raw))
-    .filter((v) => !allowed.has(v.replace(/[^A-Za-z0-9]/g, '').toUpperCase()));
+  const norm = (v: string) => v.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  const runs = findAlnumRuns(spoken, 4).map((r) => formatReference(r.raw));
+
+  /*
+   * An identifier is spoken in groups, so the transcript can come back split - "8K2J" then "988"
+   * where the ledger holds "8K2J-988". Checking each fragment alone would report the agent
+   * fabricating "8K2J", which is the opposite of the truth and would train the operator to
+   * ignore the one alarm that must never be ignored. So a fragment is only unknown once it
+   * fails to join with its neighbour into something on record.
+   */
+  const unknown: string[] = [];
+  for (let i = 0; i < runs.length; i += 1) {
+    if (allowed.has(norm(runs[i]))) continue;
+    const joined = i + 1 < runs.length ? norm(runs[i]) + norm(runs[i + 1]) : null;
+    if (joined && allowed.has(joined)) {
+      i += 1; // both halves accounted for
+      continue;
+    }
+    unknown.push(runs[i]);
+  }
   return { ok: unknown.length === 0, unknown };
 }
