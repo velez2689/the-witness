@@ -47,15 +47,78 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 describe('VoiceAgentSession', () => {
-  it('sends session.update FIRST with the greeting, keyterms and voice', () => {
+  /**
+   * These field names are the documented ones, checked against the session-configuration and
+   * voices references. A later version of this test asserted the DOCUMENTED shape
+   * (`voice.voice_id`, `transcription_mode`), which the live server rejects outright — on rejection the server falls back to
+   * defaults for the ENTIRE session - empty system prompt, no greeting, stock voice - so the AI
+   * disclosure would simply not have been spoken, with nothing anywhere reporting a problem.
+   */
+  it('sends session.update FIRST, in the documented field shape', () => {
     const { session, sock } = setup();
     session.connect('tok', CONFIG);
     sock().open();
     const first = sock().sent[0] as { type: string; session: Record<string, unknown> };
     expect(first.type).toBe('session.update');
     expect(first.session.greeting).toBe(CONFIG.greeting);
-    expect(first.session.input).toEqual({ keyterms: ['8K2J-338', 'Meridian'] });
     expect(sock().sent).toHaveLength(1);
+
+    // output.voice, never voice.voice_id: the server REJECTS the documented shape.
+    expect(first.session.output).toEqual({ voice: 'alba' });
+    expect(first.session.voice).toBeUndefined();
+
+    // The ledger's identifiers reach the STT through BOTH hints; each was confirmed to apply.
+    const input = first.session.input as Record<string, unknown>;
+    expect(input.keyterms).toEqual(['8K2J-338', 'Meridian']);
+    expect(String(input.transcription_prompt)).toContain('8K2J-338');
+    expect(String(input.transcription_prompt)).toContain('Meridian');
+    expect(input.transcription_mode).toBeUndefined();
+  });
+
+  /**
+   * reply.audio delivers base64 PCM16 in `data`. This code read `audio` — a field the server
+   * never sends — so the Witness would have run an entire call in total silence: sockets open,
+   * transcripts arriving, latency measured, and not one audible word. There was no test here at
+   * all, which is exactly why it survived to the day before the demo.
+   */
+  it('plays the audio the server actually sends, from reply.audio.data', () => {
+    const heard: string[] = [];
+    const { session, sock } = setup({ onAudio: (b64) => heard.push(b64) });
+    session.connect('t', CONFIG);
+    sock().open();
+    sock().server({ type: 'session.ready', session_id: 's1' });
+    sock().server({ type: 'reply.audio', data: 'QUJD' });
+    expect(heard).toEqual(['QUJD']);
+  });
+
+  it('still plays audio if the field is ever renamed back to `audio`', () => {
+    const heard: string[] = [];
+    const { session, sock } = setup({ onAudio: (b64) => heard.push(b64) });
+    session.connect('t', CONFIG);
+    sock().open();
+    sock().server({ type: 'session.ready', session_id: 's1' });
+    sock().server({ type: 'reply.audio', audio: 'WFla' });
+    expect(heard).toEqual(['WFla']);
+  });
+
+  it('reads the Rep turn from transcript.user.text', () => {
+    const turns: string[] = [];
+    const { session, sock } = setup({ onUserTurn: (t) => turns.push(t) });
+    session.connect('t', CONFIG);
+    sock().open();
+    sock().server({ type: 'session.ready', session_id: 's1' });
+    sock().server({ type: 'transcript.user', text: 'That claim denied. Timely filing.', item_id: 'i1' });
+    expect(turns).toEqual(['That claim denied. Timely filing.']);
+  });
+
+  it('reads what the Witness said from transcript.agent.text, for the self-check', () => {
+    const said: string[] = [];
+    const { session, sock } = setup({ onAgentTranscript: (t) => said.push(t) });
+    session.connect('t', CONFIG);
+    sock().open();
+    sock().server({ type: 'session.ready', session_id: 's1' });
+    sock().server({ type: 'transcript.agent', text: 'Let me read that back: 8K2J-988.', reply_id: 'r1' });
+    expect(said).toEqual(['Let me read that back: 8K2J-988.']);
   });
 
   it('puts the single-use token in the URL only', () => {

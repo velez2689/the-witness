@@ -71,12 +71,29 @@ export class VoiceAgentSession {
 
     ws.addEventListener('open', (() => {
       // session.update must be the FIRST message: greeting and voice are immutable after ready.
+      /**
+       * Field shapes VERIFIED against the live server on 2026-09-22, not against the docs.
+       *
+       * The voices documentation describes `voice.voice_id`; the server rejects it with
+       * `session.error: invalid_format` and then runs the whole call on defaults — empty system
+       * prompt, NO GREETING, and the stock voice. Nothing else reports a problem, so a call would
+       * have gone out with the AI disclosure silently missing. `output.voice` is the real field.
+       *
+       * Both identifier hints apply and they do different jobs, so we send both: `keyterms`
+       * biases recognition toward this claim's reference numbers and rep names, and
+       * `transcription_prompt` primes the same vocabulary as free text. An alphanumeric the STT
+       * has never seen is precisely what it mishears, and a misheard reference number is a
+       * fabricated fact in an appeal packet.
+       */
       this.send({
         type: 'session.update',
         session: {
           system_prompt: config.systemPrompt,
           greeting: config.greeting,
-          input: { keyterms: [...config.keyterms] },
+          input: {
+            keyterms: [...config.keyterms],
+            transcription_prompt: config.keyterms.join(', '),
+          },
           output: { voice: config.voice ?? 'alba' },
         },
       });
@@ -94,8 +111,10 @@ export class VoiceAgentSession {
       return;
     }
     const at = this.now();
-    // Event names are from the events reference. Payload field names (text/transcript, audio) are
-    // read defensively and must be confirmed with the live spike (see docs/PROJECT-STATE.md).
+    // Field names confirmed against the events reference (2026-09-22): transcript.user and
+    // transcript.agent both carry `text`; reply.audio carries base64 PCM16 in `data`, NOT `audio`
+    // — that one was guessed wrong and would have produced a silent agent on every live call.
+    // `transcript` is kept as a fallback only; the documented field is `text`.
     const text = String(m.text ?? m.transcript ?? '');
     switch (m.type) {
       case 'session.ready':
@@ -108,9 +127,13 @@ export class VoiceAgentSession {
       case 'transcript.agent':
         if (text.trim()) this.handlers.onAgentTranscript?.(text);
         break;
-      case 'reply.audio':
-        if (typeof m.audio === 'string') this.handlers.onAudio?.(m.audio, at);
+      case 'reply.audio': {
+        // The documented field is `data`. `audio` is accepted only so a field rename upstream
+        // degrades to "still works" rather than "agent goes silent with no error anywhere".
+        const chunk = typeof m.data === 'string' ? m.data : typeof m.audio === 'string' ? m.audio : null;
+        if (chunk) this.handlers.onAudio?.(chunk, at);
         break;
+      }
       case 'input.speech.started':
         this.handlers.onSpeechStarted?.();
         break;
