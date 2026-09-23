@@ -31,11 +31,13 @@ Nothing is inferred, scored, or adjudicated.
 
 ## HARD CONSTRAINTS — do not violate these
 
-**1 · The agent cannot call tools.**
-The only LLM this account can reach is `qwen3.5-4b-fast`, and it does **not** support
-tool calling. Nothing may depend on JSON-schema tool calls through the LLM Gateway.
-The agent is driven from our contradiction engine via `reply.create` with one-shot
-instructions.
+**1 · The agent never calls tools — by choice, not by limitation.**
+The Voice Agent API *does* support tools: the session config carries a `tools` array and
+the server emits `tool.call` / `tool.result` (verified live, Sep 22). We do not use them.
+A tool is a hand, and a hand can write to the ledger. Everything the agent says is driven
+from our contradiction engine via `reply.create` with one-shot instructions, so the model
+can never decide what is true. State this as a deliberate refusal, never as "we couldn't" —
+a judge who knows the API will know the difference.
 
 **2 · The agent never writes to the claim ledger.**
 Our code owns every write. The agent is a mouth, not a hand.
@@ -45,10 +47,14 @@ The contradiction flag, the readback prompt and the Close-Out are built by our c
 from statement rows. The model supplies conversational glue only. A 4B model will
 occasionally phrase things oddly; that must never touch a quoted fact.
 
-**4 · Pin both models explicitly.**
-`universal-3-5-pro` for STT, `qwen3.5-4b-fast` for the agent. Never rely on default
-resolution — the default may resolve to a model this account cannot reach, and it
-fails looking like a connection error.
+**4 · Send NO `llm` key on `session.update`.**
+Verified live Sep 22: the server answers *"BYO LLM config is not allowed on session.update;
+define it on a stored agent via POST /v1/agents"*, and any `llm` key — even a well-formed
+one — gets the whole `session.update` rejected. A rejected update does not fail loudly: the
+call proceeds on defaults, **greeting included**, so the AI disclosure silently goes unsaid.
+Taking the default model is safe here precisely because constraint 3 holds — no
+evidence-bearing sentence comes from the model. Never add a field to `session.update`
+without spiking it first; the failure mode is silence, not an error.
 
 **5 · Guaranteed `Terminate`, in the same commit as the socket code.**
 Billing is on websocket-open duration; an abandoned session bills three hours. Hard

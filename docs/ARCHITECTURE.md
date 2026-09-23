@@ -80,3 +80,47 @@ These are not style preferences. Each one has a specific cost.
 - `src/domain/claim-import.ts` owns column mapping and `MAX_CLAIMS_PER_CALL`. The three-claim
   cap is an industry rule — payers allow three claim-status inquiries per representative on
   one call — so it lives in the domain where the UI cannot quietly exceed it.
+
+## Decisions 2026-09-22: what we verified, and one API we refuse
+
+Every field below was checked against the live Voice Agent server, not against the docs. That
+distinction earned its keep: the published `voices` page describes `voice.voice_id`, the server
+rejects it with `session.error: invalid_format`, and a rejected `session.update` does not fail
+loudly - it silently runs the whole call on defaults. An empty system prompt, the stock voice,
+and NO GREETING, which is where the AI disclosure lives. The real field is `output.voice`.
+
+Verified accepted: `system_prompt`, `greeting`, `input.keyterms`, `input.transcription_prompt`,
+`input.turn_detection`, `input.voice_focus`, `input.voice_focus_threshold`,
+`input.continuous_partials`, `output.voice`. Audio both ways is base64 PCM16 mono at 24 kHz,
+and `reply.audio` carries it in `data` (not `audio`).
+
+`turn_detection.min_silence` is 1800 ms rather than the 1000 ms default for one reason: a rep
+reading an identifier off a screen pauses inside it - "Eight-K-two-J... nine-eight-eight" - and
+at the default that lands as two turns. The extractor would see `8K2J` and `988` as separate
+alphanumeric runs and could file a reference number nobody spoke.
+
+**LLM pinning is not possible inline.** The server answers "BYO LLM config is not allowed on
+session.update; define it on a stored agent via POST /v1/agents". We send no `llm` key and take
+the default, because no evidence-bearing sentence comes from the model: our code assembles those
+from statement rows and the agent reads them verbatim.
+
+### Why the Dictation API is not used on the Rep channel
+
+AssemblyAI's Dictation API removes filler words, resolves self-corrections and reshapes output
+through an `llm_instruction`. Their own example is "ship it tuesday no wait wednesday" becoming
+"Ship it Wednesday."
+
+Applied to a payer call, that is a defect rather than a feature. When a rep says
+
+    "It denied for timely fil- sorry, no prior auth."
+
+the Dictation API returns "It denied for no prior authorization" and silently discards the fact
+that the rep first said timely filing. That discarded half IS the contradiction - the thing this
+product exists to catch - and nothing would report that an edit had occurred.
+
+The same holds for filler removal. Once a quote is cleaned up it is no longer a quote, and an
+appeal packet that says "the representative stated" has to match audio a human can play back.
+
+So the Rep's channel stays verbatim, deliberately. The Dictation API is a good fit for one place
+we may use it later: the Agent's own spoken annotations ("Witness, flag that"), which are the
+biller's notes and explicitly not payer statements.
