@@ -49,7 +49,9 @@ export interface Mic {
 /** Captures the microphone with echo cancellation and streams ~50 ms PCM16 chunks (base64). */
 export async function startMic(onChunk: (base64Pcm16: string) => void): Promise<Mic> {
   const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
+    // AssemblyAI recommend the browser path specifically for these three: hardware echo
+    // cancellation is what stops the Witness's own TTS being transcribed as the Rep.
+    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
   });
   const ctx = new AudioContext({ sampleRate: SAMPLE_RATE });
   const url = URL.createObjectURL(new Blob([WORKLET], { type: 'application/javascript' }));

@@ -198,11 +198,12 @@ export class VoiceAgentSession {
 
   /** Stream Rep audio in (base64 PCM16, ~50 ms chunks). Dropped, never queued, when not ready. */
   /**
-   * The token for rejoining this session after a dropped socket, valid for about 30 seconds.
-   * Null until session.ready.
+   * The id needed to rejoin this session after a dropped socket, valid for about 30 seconds.
+   * Null until session.ready. The server also returns a separate `resume_token`; `session.resume`
+   * wants this one.
    */
   get resumable(): string | null {
-    return this.resumeToken;
+    return this.sessionId;
   }
 
   /**
@@ -213,7 +214,7 @@ export class VoiceAgentSession {
    * as a connection bug rather than as the self-inflicted rate limit it is. A drop during a call
    * surfaces to the operator, who decides whether to rejoin.
    */
-  resume(token: string, resumeToken: string): void {
+  resume(token: string, sessionId: string): void {
     if (this.socket) throw new Error('session already connected');
     const url = new URL(VOICE_AGENT_URL);
     url.searchParams.set('token', token);
@@ -222,7 +223,9 @@ export class VoiceAgentSession {
     this.openedAt = this.now();
     this.registry.register(this);
     ws.addEventListener('open', (() => {
-      this.send({ type: 'session.resume', session_id: resumeToken });
+      // `session_id`, not the separate `resume_token` the server also returns. `token` must be a
+      // FRESH mint: tokens are single-use per session, and that includes a resume.
+      this.send({ type: 'session.resume', session_id: sessionId });
     }) as never);
     ws.addEventListener('message', ((ev: { data: string }) => this.onMessage(ev.data)) as never);
     ws.addEventListener('error', (() => this.handlers.onError?.('socket error')) as never);
