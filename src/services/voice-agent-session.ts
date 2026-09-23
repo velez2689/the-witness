@@ -18,6 +18,33 @@ export interface SessionConfig {
   voice?: string;
 }
 
+/**
+ * Turn detection, tuned for a payer call rather than a chat.
+ *
+ * `min_silence` is the reason this is set at all. A rep reading an identifier off a screen pauses
+ * inside it — "Eight-K-two-J... nine-eight-eight" — and at the 1000 ms default that lands as two
+ * turns. Our extractor would then see "8K2J" and "988" as separate runs and file a reference
+ * number that was never spoken. 1800 ms keeps the identifier whole.
+ *
+ * `interrupt_response` stays on: if the Rep talks over the Witness, the Rep wins. Every one of
+ * these is updatable mid-session, so they are a starting point for real calls, not a final answer.
+ */
+export const TURN_DETECTION = {
+  vad_threshold: 0.5,
+  min_silence: 1800,
+  max_silence: 5000,
+  interrupt_response: true,
+  interruption_delay: 150,
+} as const;
+
+/**
+ * Voice isolation. A judge demos on a laptop, so the Witness's own voice comes out of the speakers
+ * and straight back into the microphone; near-field is what keeps that from being transcribed as
+ * the Rep. Set at connect — a mid-session change only applies on the next STT reconnect.
+ */
+export const VOICE_FOCUS = 'near-field';
+export const VOICE_FOCUS_THRESHOLD = 0.85;
+
 export interface AgentHandlers {
   onReady?: (sessionId: string | null) => void;
   /** A FINALIZED user (Rep) turn. Deltas are not surfaced: nothing is written from a partial. */
@@ -51,6 +78,8 @@ export class VoiceAgentSession {
   private closed = false;
   private exitReason: string | null = null;
   private ready = false;
+  private resumeToken: string | null = null;
+  private sessionId: string | null = null;
 
   constructor(
     private readonly registry: SessionRegistry,
@@ -93,8 +122,17 @@ export class VoiceAgentSession {
           input: {
             keyterms: [...config.keyterms],
             transcription_prompt: config.keyterms.join(', '),
+            turn_detection: { ...TURN_DETECTION },
+            voice_focus: VOICE_FOCUS,
+            voice_focus_threshold: VOICE_FOCUS_THRESHOLD,
+            continuous_partials: true,
           },
           output: { voice: config.voice ?? 'alba' },
+          // No `llm` key, deliberately. The server rejects BYO-LLM config on session.update
+          // ("define it on a stored agent via POST /v1/agents"), and a rejected session.update
+          // does not fail loudly — it drops the greeting and runs the call on defaults. Pinning
+          // the model would mean managing a stored agent; the default is fine here because no
+          // evidence-bearing sentence comes from the model. Our code assembles those.
         },
       });
     }) as never);
@@ -119,7 +157,11 @@ export class VoiceAgentSession {
     switch (m.type) {
       case 'session.ready':
         this.ready = true;
-        this.handlers.onReady?.(typeof m.session_id === 'string' ? m.session_id : null);
+        // Kept so a dropped socket can be rejoined instead of losing the call. Storing it is
+        // free; USING it is an explicit operator action (see `resume`), never automatic.
+        this.resumeToken = typeof m.resume_token === 'string' ? m.resume_token : null;
+        this.sessionId = typeof m.session_id === 'string' ? m.session_id : null;
+        this.handlers.onReady?.(this.sessionId);
         break;
       case 'transcript.user':
         if (text.trim()) this.handlers.onUserTurn?.(text, at);
@@ -155,6 +197,38 @@ export class VoiceAgentSession {
   }
 
   /** Stream Rep audio in (base64 PCM16, ~50 ms chunks). Dropped, never queued, when not ready. */
+  /**
+   * The token for rejoining this session after a dropped socket, valid for about 30 seconds.
+   * Null until session.ready.
+   */
+  get resumable(): string | null {
+    return this.resumeToken;
+  }
+
+  /**
+   * Rejoin a session whose socket dropped, keeping its conversation history.
+   *
+   * ONE explicit attempt, never a loop and never automatic. The account allows five new streams
+   * a minute, and a reconnect-on-close loop is the fastest way to exhaust that — it then presents
+   * as a connection bug rather than as the self-inflicted rate limit it is. A drop during a call
+   * surfaces to the operator, who decides whether to rejoin.
+   */
+  resume(token: string, resumeToken: string): void {
+    if (this.socket) throw new Error('session already connected');
+    const url = new URL(VOICE_AGENT_URL);
+    url.searchParams.set('token', token);
+    const ws = this.makeSocket(url.toString());
+    this.socket = ws;
+    this.openedAt = this.now();
+    this.registry.register(this);
+    ws.addEventListener('open', (() => {
+      this.send({ type: 'session.resume', session_id: resumeToken });
+    }) as never);
+    ws.addEventListener('message', ((ev: { data: string }) => this.onMessage(ev.data)) as never);
+    ws.addEventListener('error', (() => this.handlers.onError?.('socket error')) as never);
+    ws.addEventListener('close', (() => this.finish('socket-closed')) as never);
+  }
+
   sendAudio(base64Pcm16: string): void {
     if (!this.isReady) return;
     this.send({ type: 'input.audio', audio: base64Pcm16 });
