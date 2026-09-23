@@ -122,6 +122,18 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
+  /**
+   * One control that puts the console back to a known state: no imported claims, no call in
+   * progress, no batch, nothing left over from the last run. Anything less leaves a screen that
+   * looks ready but is still carrying the previous attempt.
+   */
+  const clearEverything = () => {
+    worklist.clear();
+    roster.reset();
+    liveCall.reset();
+    scripted.reset();
+  };
+
   return (
     <div className="w-shell">
       <TransportBar
@@ -151,7 +163,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         onPick={worklist.pick}
         onToggle={worklist.toggle}
         onLoad={worklist.load}
-        onClear={worklist.clear}
+        onClear={clearEverything}
       />
       <BriefPanel
         brief={{ ...active.brief, objectives }}
@@ -180,7 +192,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         callsCount={active.historyCalls.length + (phase === 'idle' ? 0 : 1)}
         costPerCall={props.costPerCall}
         imported={imported}
-        onUseSample={worklist.clear}
+        onUseSample={clearEverything}
       />
       {isLive && phase === 'running' && <RepCue lastAsk={lastWitness?.text ?? null} suggestion={suggestion} />}
       <div className="w-flaglane" aria-label="Contradiction flag lane">

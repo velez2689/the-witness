@@ -59,11 +59,16 @@ export function ClaimImport(p: Props) {
             : 'upload the AR worklist your billing system already exports'}
         </p>
         <span className="w-spacer" />
-        {p.result && (
-          <button type="button" className="w-btn" onClick={p.onClear}>
-            Use a different file
-          </button>
-        )}
+        {/*
+          Always present, never conditional. The clear control used to appear only while a file
+          was loaded, which meant the moment anyone was unsure whether stale claims were still
+          in play - exactly when they need it - there was nothing to press. A button that does
+          nothing because there is nothing to clear is far better than a missing one.
+        */}
+        <button type="button" className="w-btn warn" onClick={p.onClear}>
+          <Icon name="x" size={14} />
+          Clear claims
+        </button>
       </header>
 
       {!p.result && (
