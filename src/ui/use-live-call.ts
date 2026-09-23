@@ -9,6 +9,30 @@ import { useDerived } from './use-derived';
 
 export type LiveStatus = 'idle' | 'connecting' | 'live' | 'closed' | 'error';
 
+/**
+ * Turn a start failure into something the Agent can act on. The browser's own wording for a
+ * blocked microphone ("Permission denied") does not tell anyone where to click, and in an
+ * incognito window a blocked mic is the single most likely reason a call never begins.
+ */
+function startFailureMessage(e: unknown): string {
+  const name = (e as { name?: string })?.name ?? '';
+  const raw = e instanceof Error ? e.message : String(e);
+
+  if (name === 'NotAllowedError' || /permission|denied|dismissed/i.test(raw)) {
+    return 'Microphone blocked. Click the camera or microphone icon in the address bar, allow it for this site, then press Start again. In an incognito window Chrome asks every time.';
+  }
+  if (name === 'NotFoundError' || /no (audio )?(input )?device|not found/i.test(raw)) {
+    return 'No microphone found. Plug in or select an input device, then press Start again.';
+  }
+  if (name === 'NotReadableError' || /in use|busy/i.test(raw)) {
+    return 'The microphone is in use by another app. Close whatever is holding it and press Start again.';
+  }
+  if (/token|401|403|not_configured/i.test(raw)) {
+    return `Could not get a session token from the server. ${raw}`;
+  }
+  return `The call could not start: ${raw}`;
+}
+
 /** "Be the Rep": the same console, fed by a live Voice Agent session instead of a script. */
 export function useLiveCall(props: ConsoleProps, objectives: readonly ObjectiveKey[], driver: LiveDriver | undefined) {
   const [status, setStatus] = useState<LiveStatus>('idle');
@@ -43,7 +67,19 @@ export function useLiveCall(props: ConsoleProps, objectives: readonly ObjectiveK
       },
     );
     session.current = s;
-    await s.start();
+    /*
+     * start() throws for the ordinary reasons a live call fails to begin - microphone blocked,
+     * no input device, the token request refused. This used to be an unguarded await called as
+     * `void start()`, so every one of those became an unhandled rejection: the button did
+     * nothing, said nothing, and left the console sitting in idle. "Nothing happens" is the
+     * worst failure a demo can have, because there is nothing to act on.
+     */
+    try {
+      await s.start();
+    } catch (e) {
+      setStatus('error');
+      setDetail(startFailureMessage(e));
+    }
   }, [driver, brief, props.historyLedger, props.live.id, props.live.startedAt, push]);
 
   const stop = useCallback(() => session.current?.stop('user-stop'), []);
