@@ -94,6 +94,8 @@ export function BriefPanel(p: {
   costPerCall: number;
   /** True when the console is working claims the Agent imported, not the sample. */
   imported: boolean;
+  /** Drop every imported claim and go back to the sample claim with its call history. */
+  onUseSample: () => void;
 }) {
   const toggle = (k: ObjectiveKey) =>
     p.setObjectives(p.objectives.includes(k) ? p.objectives.filter((x) => x !== k) : [...p.objectives, k]);
@@ -101,7 +103,22 @@ export function BriefPanel(p: {
   return (
     <section className="w-brief" aria-label="Call brief">
       <div>
-        <h2><Icon name="list" size={15} /><span>{p.imported ? 'Call brief · from your worklist' : 'Call brief · sample claim, all data synthetic'}</span></h2>
+        <h2>
+          <Icon name="list" size={15} />
+          <span>{p.imported ? 'Call brief · from your worklist' : 'Call brief · sample claim, all data synthetic'}</span>
+          {/*
+            Sits next to the heading that states which dataset is live, because that is where
+            someone looks when they are unsure. The clear control used to live only in the import
+            panel further up the page, which is the wrong place to put the way out of a state you
+            did not realise you were in.
+          */}
+          {p.imported && (
+            <button type="button" className="w-btn w-back-sample" onClick={p.onUseSample}>
+              <Icon name="arrowRight" size={14} />
+              Back to sample claim
+            </button>
+          )}
+        </h2>
         <dl>
           <dt>Claim</dt><dd className="id">{p.brief.claimId} · {p.patientLabel}</dd>
           <dt>Payer</dt><dd>{p.brief.payer}</dd>

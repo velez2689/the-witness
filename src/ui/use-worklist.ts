@@ -99,10 +99,20 @@ export function useWorklist(readWorkbook: ReadWorkbook | undefined, storage: Wor
     [commit, state],
   );
 
+  /**
+   * Back to the sample claim. Belt and braces on purpose: this is the way out of a state the
+   * operator may not have realised they were in, so it clears local state, the injected store,
+   * AND the raw key - a store that failed to construct must not be able to strand anyone.
+   */
   const clear = useCallback(() => {
     setLive(EMPTY);
     setError(null);
     storage.clear();
+    try {
+      localStorage.removeItem('witness.worklist.v1');
+    } catch {
+      /* private window, blocked storage: nothing to clear */
+    }
   }, [storage]);
 
   const result: ImportResult | null =

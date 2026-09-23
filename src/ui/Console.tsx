@@ -180,6 +180,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         callsCount={active.historyCalls.length + (phase === 'idle' ? 0 : 1)}
         costPerCall={props.costPerCall}
         imported={imported}
+        onUseSample={worklist.clear}
       />
       {isLive && phase === 'running' && <RepCue lastAsk={lastWitness?.text ?? null} suggestion={suggestion} />}
       <div className="w-flaglane" aria-label="Contradiction flag lane">

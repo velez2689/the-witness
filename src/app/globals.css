@@ -518,3 +518,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .w-import { padding: 18px 16px 16px; }
   .w-drop { padding: 24px 14px 18px; }
 }
+/* The way back to the sample claim, beside the heading that says which dataset is live. */
+.w-back-sample { margin-left: auto; padding: 5px 12px; font-size: 12.5px; border-color: var(--accent); color: var(--accent); }
+.w-back-sample:hover:not(:disabled) { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.w-brief h2 { flex-wrap: wrap; gap: 8px; }
