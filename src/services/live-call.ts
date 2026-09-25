@@ -122,7 +122,7 @@ export class LiveCall {
         onReplyDone: (interrupted) => {
           // A genuine barge-in: drop whatever is still queued so stale speech does not play on.
           if (interrupted) this.d.stopAudio();
-          if (this.pendingClose) this.stop('plan-complete');
+          if (this.pendingClose) this.closeWhenSilent();
         },
         onError: (m) => this.d.events.status('error', m),
         onClosed: (reason) => {
@@ -195,6 +195,28 @@ export class LiveCall {
     this.voice?.say(move.line.text);
     this.d.events.witness({ text: move.line.text, cites: move.line.cites, tag: move.key, atMs });
     if (move.kind === 'alert_agent' || move.kind === 'close' || move.kind === 'recap') this.pendingClose = true;
+  }
+
+  /**
+   * Hang up only once the last line has actually been HEARD.
+   *
+   * `reply.done` means the server finished sending the audio, not that it finished playing: at
+   * that moment the closing line is still sitting in the playback buffer. Closing there cut the
+   * Witness off part-way through its own sign-off - a saved call showed the recap starting at
+   * 198.7s and the session ending at 210.5s, mid-sentence. The tester heard it stop speaking,
+   * again, for a different reason than last time.
+   *
+   * Polled rather than driven by an event because the buffer is owned by the player, and bounded
+   * so a wedged player can never keep a billed session open.
+   */
+  private closeWhenSilent(waited = 0): void {
+    const STEP = 250;
+    const LIMIT = 15_000;
+    if (waited < LIMIT && this.d.isSpeaking?.()) {
+      setTimeout(() => this.closeWhenSilent(waited + STEP), STEP);
+      return;
+    }
+    this.stop('plan-complete');
   }
 
   /** Every exit path: user Stop, plan done, error, timeout, page exit (the registry also closes on those). */

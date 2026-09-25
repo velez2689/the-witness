@@ -42,7 +42,7 @@ describe('Mode A: the Witness conducts call 06 against the Rep Simulator', () =>
     expect(c.text).toContain('July eighth');
     expect(c.text).toContain('D Reese');
     expect(c.text).toContain('two two one zero');
-    expect(c.text).toContain('eight K two J, three three eight');
+    expect(c.text).toContain('eight K two J; three three eight');
     expect(c.text).toContain('no prior authorization');
     expect(c.text).toContain('timely filing');
     expect(c.text).toContain('same badge'); // the callout survives rewording; the fact is what matters
@@ -55,7 +55,7 @@ describe('Mode A: the Witness conducts call 06 against the Rep Simulator', () =>
     expect(keys.indexOf('challenge:existence_denial')).toBeGreaterThan(keys.indexOf('probe_prior'));
     const ex = witnessLines(final.events).find((e) => e.move.key === 'challenge:existence_denial')!;
     expect(ex.text).toContain('August fifth');
-    expect(ex.text).toContain('eight K two J, seven zero two');
+    expect(ex.text).toContain('eight K two J; seven zero two');
   });
 
   it('never challenges more than the cap', () => {
@@ -116,7 +116,7 @@ describe('Mode A: the Witness conducts call 06 against the Rep Simulator', () =>
     expect(final.holdSeconds).toBe(242);
     const out = closeOutForAgent(final.session.ledger, 'call-06', detectCall06(), final.holdSeconds);
     expect(out.text).toContain('D Reese');
-    expect(out.text).toContain('eight K two J, nine eight eight');
+    expect(out.text).toContain('eight K two J; nine eight eight');
     expect(out.text).toContain('Denial reason today: timely filing.');
     expect(out.text).toContain('Conflicts with the same representative');
     expect(out.text).toContain('diagnosis code: not provided, refused.');

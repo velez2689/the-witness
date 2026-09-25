@@ -30,12 +30,12 @@ describe('Mode B: the Agent speaks, the Witness whispers', () => {
 
   it('whispers the existence denial with the payer-issued reference', () => {
     const w = whispers.find((x) => x.reason === 'existence_denial')!;
-    expect(w.text).toContain('eight K two J, seven zero two');
+    expect(w.text).toContain('eight K two J; seven zero two');
   });
 
   it('turns a low-confidence reference number into a spoken read-back prompt, never a guess', () => {
     const w = whispers.find((x) => x.reason === 'readback')!;
-    expect(w.text).toContain('eight K two J, nine eight eight');
+    expect(w.text).toContain('eight K two J; nine eight eight');
     expect(w.text).toMatch(/repeat/);
   });
 

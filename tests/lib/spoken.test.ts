@@ -44,8 +44,28 @@ describe('alphanumerics', () => {
   it('parses a spoken badge and speaks a reference chunked', () => {
     expect(parseSpokenDigits('two-two-one-zero', 4)).toBe('2210');
     expect(parseSpokenDigits('two-two-one', 4)).toBeNull();
-    expect(spellForSpeech('8K2J-988')).toBe('eight K two J, nine eight eight');
+    expect(spellForSpeech('8K2J-988')).toBe('eight K two J; nine eight eight');
     expect(editDistance('8K2J988', '8K2J915')).toBe(2);
+  });
+
+  /**
+   * The separator is a semicolon on purpose, and it is the only mark that works.
+   *
+   * A tester asked for the Witness to slow down when reading identifiers. There is no rate or
+   * SSML control - the whole output config is {voice, format, volume} - so punctuation is the
+   * only lever. Rendering the same identifier in each mark and measuring the audio gave:
+   * semicolon +32%, double comma -2%, period -2%, dash -22% against the comma it replaced.
+   *
+   * A period would have been the obvious choice and is the trap: it reads at the SAME speed and
+   * splits the identifier into runs too short to verify, silently disarming the check that stops
+   * the Witness speaking a reference number that is not in the record. The semicolon slows the
+   * voice and stays invisible to that check. Do not "tidy" it back to a comma or up to a period.
+   */
+  it('keeps a spelled identifier as one verifiable run despite the pause', () => {
+    const spoken = spellForSpeech('8K2J-988');
+    expect(spoken).toContain(';');
+    const runs = findAlnumRuns(`the reference is ${spoken}.`);
+    expect(runs.map((r) => r.raw)).toEqual(['8K2J988']);
   });
 });
 
