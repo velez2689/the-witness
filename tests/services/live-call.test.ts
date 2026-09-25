@@ -262,7 +262,8 @@ describe('acoustic echo: the Witness must not hear itself', () => {
 
     h.speak(true);
     h.stt().server({ type: 'Turn', transcript: 'a', end_of_turn: false });
-    expect(h.stops()).toBe(0);
+    h.stt().server({ type: 'Turn', transcript: 'uh-huh', end_of_turn: false });
+    expect(h.stops(), 'a single word is a cough, a back-channel, or our own echo').toBe(0);
     h.stt().server({ type: 'Turn', transcript: 'hold on a second', end_of_turn: false });
     expect(h.stops()).toBe(1);
 

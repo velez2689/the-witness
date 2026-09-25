@@ -70,6 +70,24 @@ const SYSTEM_PROMPT =
   'When you are given an explicit instruction to say something, say exactly that and nothing else. ' +
   'Otherwise reply with the single word: Okay.';
 
+/**
+ * Does this partial transcript mean the Rep is genuinely talking over the Witness?
+ *
+ * Cutting the Witness off is destructive - the rest of the sentence is discarded - so the bar is
+ * deliberately higher than "the microphone heard something". A single word is what a cough, a
+ * keyboard, a back-channel "mm-hm" or a syllable of the Witness's own voice leaking past the
+ * gate all look like, and treating any of those as a barge-in is what made the Witness clip
+ * itself mid-greeting.
+ */
+export function isRealInterruption(text: string): boolean {
+  const words = text.trim().split(/\s+/).filter((w) => /[a-z0-9]/i.test(w));
+  if (words.length < 2) return false;
+  // "Uh-huh", "okay", "mm-hm" - agreement, not an interruption. The server used to make this
+  // same distinction for us; it cannot any more, because it is no longer the one speaking.
+  const BACK_CHANNEL = /^(uh|um|mm|hmm|mhm|uh-huh|mm-hm|yeah|yep|yes|okay|ok|right|sure|got it)$/i;
+  return words.some((w) => !BACK_CHANNEL.test(w.replace(/[^a-z0-9-]/gi, '')));
+}
+
 export function keytermsFor(brief: CallBrief, ledger: ClaimLedger): string[] {
   const terms = new Set<string>([brief.claimId, brief.memberId, brief.payer, ...brief.dxCodes]);
   for (const s of ledger.statements) {
@@ -191,7 +209,7 @@ export class LiveCall {
            * mid-sentence the first time round.
            */
           onPartial: (text) => {
-            if (text.trim().length > 2 && this.d.isSpeaking?.()) this.d.stopAudio();
+            if (this.d.isSpeaking?.() && isRealInterruption(text)) this.d.stopAudio();
           },
           onError: (m) => this.d.events.status('error', m),
           onClosed: () => this.mic?.stop(),

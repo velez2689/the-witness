@@ -181,6 +181,8 @@ export class PcmPlayer {
   private pending: Float32Array[] = [];
   private speaking = false;
   private lastActivity = 0;
+  /** AudioContext time at which everything queued so far will have finished playing. */
+  private speakingUntil = 0;
 
   /**
    * Notified whenever playback actually starts or runs dry. Paired with the arrival time of each
@@ -245,28 +247,38 @@ export class PcmPlayer {
     const pcm = new Int16Array(bytes.buffer, bytes.byteOffset, Math.floor(bytes.byteLength / 2));
     const samples = new Float32Array(pcm.length);
     for (let i = 0; i < pcm.length; i += 1) samples[i] = pcm[i] / 0x8000;
-    this.lastActivity = ctx.currentTime;
+    // Accumulate when this audio will FINISH, not when it arrived. See isSpeaking.
+    this.speakingUntil =
+      Math.max(this.speakingUntil, ctx.currentTime + PREBUFFER_SECONDS) + samples.length / SAMPLE_RATE;
     this.push(samples);
   }
 
   /**
    * Is the Witness audibly speaking right now?
    *
-   * Used to hold the microphone closed while it talks. Browser echo cancellation is built around
-   * a single capture-and-render path, and this player renders through its own AudioContext, so
-   * on speakers the Witness's voice returns through the microphone, is transcribed as the Rep,
-   * and the call plan answers its own questions. The tail covers the speaker and room delay,
-   * and also the pre-buffer window, where audio is in hand but not yet audible.
+   * This holds the microphone closed while it talks. That matters because this player renders
+   * through its own AudioContext, which browser echo cancellation cannot see, so on speakers the
+   * Witness's voice returns through the microphone and is transcribed as the Rep.
+   *
+   * It must be answered from when the audio will FINISH PLAYING, which is the mistake this
+   * replaces. It previously answered from when a chunk last ARRIVED, and the server sends far
+   * faster than real time - a ten-second greeting lands in about three. One tail later the
+   * microphone opened while the Witness was still seven seconds from finishing, heard itself,
+   * and the barge-in cut off its own greeting. A saved call caught it exactly: 2.34 seconds of a
+   * ten-second greeting played, in three fragments, and the next line never played at all.
+   *
+   * So the end time is accumulated the way the audio is actually scheduled, including the
+   * pre-buffer, and it only moves forward. The tail then covers speaker and room delay on top.
    */
-  isSpeaking(tailSeconds = 0.25): boolean {
+  isSpeaking(tailSeconds = 0.4): boolean {
     if (!this.ctx) return false;
-    if (this.speaking) return true;
-    return this.ctx.currentTime - this.lastActivity < tailSeconds;
+    return this.ctx.currentTime < this.speakingUntil + tailSeconds;
   }
 
   stop(): void {
     this.pending = [];
     this.speaking = false;
+    this.speakingUntil = 0;
     try {
       this.node?.port.postMessage('flush');
     } catch {

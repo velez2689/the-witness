@@ -122,6 +122,55 @@ describe('playback worklet: the voice must come out as one continuous stream', (
   });
 });
 
+/**
+ * isSpeaking gates the microphone. If it says "not speaking" while the Witness still is, the
+ * microphone opens, the Witness's own voice comes back through the speakers, and barge-in cuts
+ * off its own sentence. This is the arithmetic that answers it, isolated from the browser.
+ *
+ * The bug it replaces: the answer came from when a chunk last ARRIVED. The server sends far
+ * faster than real time - a ten-second greeting lands in about three - so a tail after the last
+ * chunk the gate opened while seven seconds of speech were still queued. A saved call showed
+ * 2.34 seconds of a ten-second greeting playing, in three fragments, and the following line
+ * never playing at all.
+ */
+describe('speaking window: arrival time is not playback time', () => {
+  /** The rule under test, matching PcmPlayer.enqueue / isSpeaking exactly. */
+  function window(prebuffer: number) {
+    let until = 0;
+    return {
+      enqueue: (now: number, seconds: number) => { until = Math.max(until, now + prebuffer) + seconds; },
+      speaking: (now: number, tail = 0.4) => now < until + tail,
+      flush: () => { until = 0; },
+    };
+  }
+
+  it('stays true while a fast-delivered greeting is still playing', () => {
+    const w = window(PREBUFFER_SECONDS);
+    // Ten seconds of audio delivered in twenty chunks over three seconds of wall clock.
+    for (let i = 0; i < 20; i += 1) w.enqueue(i * 0.15, 0.5);
+    expect(w.speaking(3.0), 'delivery finished, playback has not').toBe(true);
+    expect(w.speaking(9.0), 'still mid-greeting').toBe(true);
+    expect(w.speaking(10.0)).toBe(true);
+    expect(w.speaking(11.0), 'greeting over, mic may open').toBe(false);
+  });
+
+  it('only ever moves forward, so a late chunk cannot shorten the window', () => {
+    const w = window(PREBUFFER_SECONDS);
+    w.enqueue(0, 5);
+    const end = 5 + PREBUFFER_SECONDS;
+    w.enqueue(0.1, 0.5); // arrives late; must extend from the end, not from now
+    expect(w.speaking(end)).toBe(true);
+  });
+
+  it('a barge-in flush ends the window immediately', () => {
+    const w = window(PREBUFFER_SECONDS);
+    w.enqueue(0, 10);
+    expect(w.speaking(1)).toBe(true);
+    w.flush();
+    expect(w.speaking(1)).toBe(false);
+  });
+});
+
 describe('base64 PCM16 round trip', () => {
   it('survives a payload larger than one spread call', () => {
     const bytes = Uint8Array.from({ length: 0x8000 * 2 + 17 }, (_, i) => i % 256);
