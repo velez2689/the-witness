@@ -31,8 +31,18 @@ function factOf(ledger: ClaimLedger, id: string): FactStatement {
 }
 
 /** "D. Reese, badge two two one zero" — or an honest "an unidentified representative". */
+/**
+ * A rep's name and badge, for speaking aloud.
+ *
+ * The period after an initial is dropped. "D. Reese" makes the TTS treat the initial as the end
+ * of a sentence and pause - heard as "D... Reese", which a listener called out as one of the
+ * clearest robotic tells in the whole line. The stored name keeps its period; only the spoken
+ * form loses it.
+ */
 export function repLabel(s: Statement): string {
-  return s.speaker ? `${s.speaker.name}, badge ${spellForSpeech(s.speaker.badge)}` : 'an unidentified representative';
+  if (!s.speaker) return 'an unidentified representative';
+  const spoken = s.speaker.name.replace(/\b([A-Z])\.(?=\s)/g, '$1');
+  return `${spoken}, badge ${spellForSpeech(s.speaker.badge)}`;
 }
 
 /** The reference number a call produced (the confirmed row preferred), if any. */
@@ -45,18 +55,26 @@ export function callReference(ledger: ClaimLedger, callId: CallId): FactStatemen
 
 // ---- Mode A: the Witness speaks to the Rep -------------------------------------------------
 
+/*
+ * Everything below is spoken aloud, so it is written the way a biller talks rather than the way
+ * a claim note reads. The facts and citations are unchanged - same date, same badge, same
+ * reference - because those are assembled from statement rows and must stay exact. Only the
+ * connective language is conversational. A tester's verdict on the earlier phrasing was "very
+ * robotic", and most of that was the script, not the voice.
+ */
+
 /** Spoken verbatim by TTS, never run through the LLM. Immutable after session.ready. */
 export function consentGreeting(brief: CallBrief): Utterance {
   return say(
-    `Hello, this is an AI assistant calling on behalf of ${brief.providerName} about a claim. ` +
-      'This call is being recorded. May I have your name and badge number?',
+    `Hi, this is an AI assistant calling for ${brief.providerName} about a claim, ` +
+      "and just so you know, this call is recorded. Could I get your name and badge number?",
   );
 }
 
 export function verifyClaim(brief: CallBrief): Utterance {
   return say(
-    `Thank you. The member ID is ${spellForSpeech(brief.memberId)}, date of service ${sayDate(brief.dateOfService)}. ` +
-      `What is the current status of claim ${spellForSpeech(brief.claimId)}?`,
+    `Thanks. So that's member ${spellForSpeech(brief.memberId)}, date of service ${sayDate(brief.dateOfService)}. ` +
+      `Can you tell me where claim ${spellForSpeech(brief.claimId)} stands right now?`,
   );
 }
 
@@ -65,15 +83,15 @@ export function askObjective(key: ObjectiveKey): Utterance {
 }
 
 export function askIdentityAgain(): Utterance {
-  return say('Could I please get your name and badge number for the record?');
+  return say("Sorry, I didn't catch your name and badge number. Could I get those for the record?");
 }
 
 export function askReference(): Utterance {
-  return say('Could I get a reference number for this call?');
+  return say('And can I grab a reference number for this call?');
 }
 
 export function readback(reference: string): Utterance {
-  return say(`Let me read that back: ${spellForSpeech(reference)}. Is that correct?`);
+  return say(`Let me read that back to you. ${spellForSpeech(reference)}. Did I get that right?`);
 }
 
 /** A contradiction stated back to the Rep on the recorded line: quote, cite, ask ONE question. */
@@ -89,34 +107,36 @@ export function challenge(ledger: ClaimLedger, c: Contradiction): Utterance {
   switch (c.kind) {
     case 'value_conflict':
       return say(
-        `Before we go on: on ${when}, ${repLabel(earlier)}${refPart}, recorded the denial reason as ${earlier.value}. ` +
-          `${c.sameBadge ? 'That is the same badge you gave today. ' : ''}Today the reason is ${later.value}. Which reason is on the claim?`,
+        `Hang on, before we go further. I've got a note here from ${when}. ${repLabel(earlier)}${refPart} ` +
+          `told us it was denied for ${earlier.value}. ` +
+          `${c.sameBadge ? "That's the same badge you just gave me. " : ''}` +
+          `Today you're saying ${later.value}. So which one is actually on the claim?`,
         cites,
       );
     case 'existence_denial': {
       const target = ledger.statements.find((s) => s.id === earlierId)!;
       return say(
-        `Our record shows a call on ${when} with ${repLabel(target)}${ref ? `, reference ${spellForSpeech(ref.value)}` : ''}. ` +
-          'Can you look up that reference?',
+        `We do have that call though. ${when}, with ${repLabel(target)}${ref ? `, and they gave us reference ${spellForSpeech(ref.value)}` : ''}. ` +
+          'Could you pull that up on your end?',
         cites,
       );
     }
     case 'status_flip':
       return say(
-        `On ${when}, ${repLabel(earlier)}${refPart}, recorded the status as ${earlier.value}. Today it shows ${later.value}. Which status is correct?`,
+        `One thing - back on ${when}, ${repLabel(earlier)}${refPart} had this as ${earlier.value}. Now you're telling me ${later.value}. Which one is right?`,
         cites,
       );
     case 'commitment_violation': {
       const days = earlier.windowDays ?? 0;
       return say(
-        `On ${when}, ${repLabel(earlier)}${refPart}, instructed us to allow ${sayNumber(days)} days. ` +
-          `The claim is now denied as ${later.value}. Can you confirm how that instruction applies?`,
+        `So on ${when}, ${repLabel(earlier)}${refPart} told us to give it ${sayNumber(days)} days. ` +
+          `We did that, and now it's denied for ${later.value}. Can you help me understand what happened there?`,
         cites,
       );
     }
     case 'policy_inconsistency':
       return say(
-        `On ${when}, ${repLabel(earlier)}${refPart}, stated ${earlier.value} for ${earlier.topic ?? 'this rule'}. Today it is ${later.value}. Which is correct?`,
+        `On ${when}, ${repLabel(earlier)}${refPart} told us ${earlier.value} for ${earlier.topic ?? 'this'}. Today you're saying ${later.value}. Which one applies?`,
         cites,
       );
   }
@@ -127,8 +147,8 @@ export function probePriorCall(ledger: ClaimLedger, statusId: string): Utterance
   const status = factOf(ledger, statusId);
   const ref = callReference(ledger, status.callId);
   return say(
-    `On ${sayDate(status.capturedAt)}, ${repLabel(status)}${ref ? `, reference ${spellForSpeech(ref.value)}` : ''}, ` +
-      `recorded this claim as ${status.value}. Can you confirm that on your end?`,
+    `Quick one - on ${sayDate(status.capturedAt)}, ${repLabel(status)}${ref ? `, reference ${spellForSpeech(ref.value)}` : ''} ` +
+      `had this claim as ${status.value}. Can you confirm that on your end?`,
     ref ? [status.id, ref.id] : [status.id],
   );
 }

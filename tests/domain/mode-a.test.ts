@@ -40,12 +40,12 @@ describe('Mode A: the Witness conducts call 06 against the Rep Simulator', () =>
   it('challenges the same-badge value conflict on the recorded line, quoting the prior call', () => {
     const c = witnessLines(final.events).find((e) => e.move.key === 'challenge:value_conflict')!;
     expect(c.text).toContain('July eighth');
-    expect(c.text).toContain('D. Reese');
+    expect(c.text).toContain('D Reese');
     expect(c.text).toContain('two two one zero');
     expect(c.text).toContain('eight K two J, three three eight');
     expect(c.text).toContain('no prior authorization');
     expect(c.text).toContain('timely filing');
-    expect(c.text).toContain('same badge you gave today');
+    expect(c.text).toContain('same badge'); // the callout survives rewording; the fact is what matters
     expect(c.cites.length).toBeGreaterThanOrEqual(3);
   });
 
@@ -115,7 +115,7 @@ describe('Mode A: the Witness conducts call 06 against the Rep Simulator', () =>
   it('holds on-record hold time for the header and renders the Close-Out from rows only', () => {
     expect(final.holdSeconds).toBe(242);
     const out = closeOutForAgent(final.session.ledger, 'call-06', detectCall06(), final.holdSeconds);
-    expect(out.text).toContain('D. Reese');
+    expect(out.text).toContain('D Reese');
     expect(out.text).toContain('eight K two J, nine eight eight');
     expect(out.text).toContain('Denial reason today: timely filing.');
     expect(out.text).toContain('Conflicts with the same representative');

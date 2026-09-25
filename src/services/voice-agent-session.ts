@@ -42,6 +42,20 @@ export const TURN_DETECTION = {
  * and straight back into the microphone; near-field is what keeps that from being transcribed as
  * the Rep. Set at connect — a mid-session change only applies on the next STT reconnect.
  */
+/**
+ * Chosen by listening, not by picking a name off the list.
+ *
+ * The same challenge line was synthesised in all seven US English voices and ranked blind:
+ * jean came first for natural micro-inflection and conversational pacing, mary second, jane
+ * third; the previous default, alba, placed fourth, and michael last for metronomic timing.
+ * A lower, unhurried register also suits the job - this line has to sound like a claims
+ * specialist reading a file back, not like a bot catching someone out.
+ *
+ * The others remain valid: alba, eve, george, jane, jean, mary, michael (US);
+ * anna, charles, paul, vera (UK). An invented name is rejected silently at session.update.
+ */
+export const DEFAULT_VOICE = 'jean';
+
 export const VOICE_FOCUS = 'near-field';
 export const VOICE_FOCUS_THRESHOLD = 0.85;
 
@@ -128,7 +142,7 @@ export class VoiceAgentSession {
             voice_focus_threshold: VOICE_FOCUS_THRESHOLD,
             continuous_partials: true,
           },
-          output: { voice: config.voice ?? 'alba' },
+          output: { voice: config.voice ?? DEFAULT_VOICE },
           // No `llm` key, deliberately. The server rejects BYO-LLM config on session.update
           // ("define it on a stored agent via POST /v1/agents"), and a rejected session.update
           // does not fail loudly — it drops the greeting and runs the call on defaults. Pinning

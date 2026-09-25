@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionRegistry } from '@/services/session-registry';
-import { VoiceAgentSession, type AgentHandlers, type SessionConfig } from '@/services/voice-agent-session';
+import { DEFAULT_VOICE, VoiceAgentSession, type AgentHandlers, type SessionConfig } from '@/services/voice-agent-session';
 
 class FakeSocket {
   readyState = 0;
@@ -64,7 +64,7 @@ describe('VoiceAgentSession', () => {
     expect(sock().sent).toHaveLength(1);
 
     // output.voice, never voice.voice_id: the server REJECTS the documented shape.
-    expect(first.session.output).toEqual({ voice: 'alba' });
+    expect(first.session.output).toEqual({ voice: DEFAULT_VOICE });
     expect(first.session.voice).toBeUndefined();
 
     // The ledger's identifiers reach the STT through BOTH hints; each was confirmed to apply.
