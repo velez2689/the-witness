@@ -6,7 +6,17 @@ export class FakeSocket {
   addEventListener(type: string, fn: (ev: unknown) => void) {
     (this.listeners[type] ??= []).push(fn);
   }
-  send(data: string) {
+  /**
+   * Streaming STT takes raw PCM as BINARY frames while the Voice Agent takes base64 inside JSON,
+   * so a fake that only understood JSON would throw on exactly the audio path it is meant to
+   * cover. Binary frames are recorded as `{type:'binary'}` with their byte length.
+   */
+  send(data: string | ArrayBufferLike | ArrayBufferView) {
+    if (typeof data !== 'string') {
+      const bytes = 'byteLength' in data ? data.byteLength : 0;
+      this.sent.push({ type: 'binary', bytes });
+      return;
+    }
     this.sent.push(JSON.parse(data));
   }
   close() {

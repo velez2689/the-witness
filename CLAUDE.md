@@ -72,11 +72,21 @@ a connection bug.
 and the demo URL is public — there is no "just for now."
 
 **8 · Speaker identity is structural, never diarization.**
-Live diarization is beta. Two modes (see `docs/PROJECT-STATE.md` §Modes):
-- **Mode A — Witness speaks:** ONE Voice Agent session whose input is the Rep's audio
-  only; transcript.user is always the Rep, transcript.agent is always the Witness.
-- **Mode B — Copilot:** Rep audio -> Streaming v3 (listen-only, keyterms seeded);
-  Agent mic -> Voice Agent session. One session per channel.
+Live diarization is beta. Both modes split the channels; identity comes from which
+socket carried the audio, never from a model's opinion about who was talking.
+- **Mode A — Witness speaks:** Rep audio -> Streaming v3 (transcription only, keyterms
+  seeded); the Voice Agent is a MOUTH and is never sent audio at all. The Rep is
+  whoever the microphone heard; the Witness is only ever what our code assembled.
+- **Mode B — Copilot:** Rep audio -> Streaming v3 (listen-only); Agent mic -> Voice
+  Agent session. One session per channel.
+
+  *Mode A was one Voice Agent socket doing both jobs until Sep 25. The server answers
+  every finalized user turn with its own LLM and there is no setting to disable it, so
+  our assembled line had to queue behind an unheard model turn to stop the two playing
+  at once: a measured median of 3.2 s of dead air before every line, worst 8.6 s. With
+  no audio going in, the Voice Agent never volunteers a reply — spiked at 409 ms to
+  first word, zero unsolicited replies. Two sockets per call is the ceiling; both are
+  registered and both are closed on every exit path (constraint 5 covers both).*
 
 **9 · Audio routing is explicit per mode.**
 Mode B: the Witness's audio must never reach the Rep's line — route to a separate

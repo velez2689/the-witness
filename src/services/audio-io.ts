@@ -52,8 +52,14 @@ function closeQuietly(ctx: AudioContext | null): void {
   void ctx.close().catch(() => undefined);
 }
 
-/** Captures the microphone with echo cancellation and streams ~50 ms PCM16 chunks (base64). */
-export async function startMic(onChunk: (base64Pcm16: string) => void): Promise<Mic> {
+/**
+ * Captures the microphone with echo cancellation and streams ~50 ms PCM16 chunks.
+ *
+ * Chunks are handed over as raw samples rather than base64. Streaming STT takes binary frames
+ * directly, so encoding here would mean encoding on every chunk and decoding again immediately;
+ * the one caller that still wants base64 can ask for it.
+ */
+export async function startMic(onChunk: (pcm: Int16Array) => void): Promise<Mic> {
   const stream = await navigator.mediaDevices.getUserMedia({
     // AssemblyAI recommend the browser path specifically for these three: hardware echo
     // cancellation is what stops the Witness's own TTS being transcribed as the Rep.
@@ -65,7 +71,7 @@ export async function startMic(onChunk: (base64Pcm16: string) => void): Promise<
   URL.revokeObjectURL(url);
   const source = ctx.createMediaStreamSource(stream);
   const node = new AudioWorkletNode(ctx, 'pcm16-chunker');
-  node.port.onmessage = (e: MessageEvent<ArrayBuffer>) => onChunk(toBase64(new Uint8Array(e.data)));
+  node.port.onmessage = (e: MessageEvent<ArrayBuffer>) => onChunk(new Int16Array(e.data));
   source.connect(node);
   return {
     stop() {

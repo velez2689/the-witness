@@ -18,7 +18,7 @@ function harness() {
   let sock!: FakeSocket;
   const log = { witness: [] as string[], rep: [] as string[], flags: [] as string[], drift: [] as string[][], status: [] as string[], done: [] as string[] };
   const mic = { stop: vi.fn() };
-  const tokens = vi.fn(async () => 'single-use-token');
+  const tokens = vi.fn(async (kind: 'agent' | 'stt') => `single-use-token-${kind}`);
   const events: LiveEvents = {
     status: (s) => log.status.push(s),
     rep: (e) => { log.rep.push(e.text); e.contradictions.forEach((c) => log.flags.push(c.kind)); },
@@ -27,13 +27,14 @@ function harness() {
     drift: (u) => log.drift.push(u),
     done: (r) => log.done.push(r),
   };
+  let stt!: FakeSocket;
   const call = new LiveCall({
     brief: BRIEF, ledger: history.ledger, call: { callId: LIVE_CALL.id, capturedAt: LIVE_CALL.startedAt },
     registry, fetchToken: tokens, startMic: async () => mic, playAudio: () => undefined, stopAudio: () => undefined,
-    events, makeSocket: () => (sock = new FakeSocket()),
+    events, makeSocket: () => (sock = new FakeSocket()), makeSttSocket: () => (stt = new FakeSocket()),
   });
   const said = () => sock.sent.filter((m) => m.type === 'reply.create').map((m) => String(m.instructions));
-  return { call, registry, sock: () => sock, log, mic, tokens, said };
+  return { call, registry, sock: () => sock, stt: () => stt, log, mic, tokens, said };
 }
 
 /**
@@ -60,12 +61,18 @@ async function ready(h: ReturnType<typeof harness>) {
 }
 
 describe('LiveCall: Mode A on the Voice Agent API with a person as the Rep', () => {
-  it('does nothing until start(), then mints exactly one token', async () => {
+  /**
+   * Two tokens now, one per socket, and both minted BEFORE either connects. A call that can speak
+   * but cannot hear is worse than one that never started, so the failure has to surface before the
+   * greeting goes out rather than halfway through the conversation.
+   */
+  it('does nothing until start(), then mints one token per socket', async () => {
     const h = harness();
     expect(h.tokens).not.toHaveBeenCalled();
     await ready(h);
-    expect(h.tokens).toHaveBeenCalledTimes(1);
-    expect(h.registry.openCount).toBe(1);
+    expect(h.tokens).toHaveBeenCalledTimes(2);
+    expect(h.tokens.mock.calls.map((c) => c[0]).sort()).toEqual(['agent', 'stt']);
+    expect(h.registry.openCount).toBe(2);
   });
 
   it('seeds keyterms from the claim, the ledger references and the known badges', () => {
@@ -150,7 +157,8 @@ describe('acoustic echo: the Witness must not hear itself', () => {
     const sent: string[] = [];
     const stops: number[] = [];
     let speaking = false;
-    let onChunk: ((b: string) => void) | null = null;
+    let stt!: FakeSocket;
+    let onChunk: ((pcm: Int16Array) => void) | null = null;
     const call = new LiveCall({
       brief: BRIEF,
       ledger: history.ledger,
@@ -166,13 +174,17 @@ describe('acoustic echo: the Witness must not hear itself', () => {
         latency: () => undefined, drift: () => undefined, done: () => undefined,
       },
       makeSocket: () => (sock = new FakeSocket()),
+      makeSttSocket: () => (stt = new FakeSocket()),
     });
     return {
       call,
       sock: () => sock,
-      mic: (b: string) => onChunk?.(b),
+      stt: () => stt,
+      mic: () => onChunk?.(Int16Array.from([1, 2, 3, 4])),
       speak: (v: boolean) => { speaking = v; },
-      audioSent: () => sock.sent.filter((m) => m.type === 'input.audio').length,
+      // The Rep's audio now goes to the transcription socket as binary frames, so what counts is
+      // what that socket received, not input.audio messages on the Voice Agent.
+      audioSent: () => stt.sent.filter((m) => m.type === 'binary').length,
       stops: () => stops.length,
       sent,
     };
@@ -219,14 +231,66 @@ describe('acoustic echo: the Witness must not hear itself', () => {
     await Promise.resolve();
     await Promise.resolve();
 
+    h.stt().open();
+    h.stt().server({ type: 'Begin', id: 'stt-1' });
     const before = h.audioSent();
     h.speak(true);
-    h.mic('AAAA');
-    h.mic('BBBB');
+    h.mic();
+    h.mic();
     expect(h.audioSent(), 'the Witness would be transcribing itself').toBe(before);
 
     h.speak(false);
-    h.mic('CCCC');
+    h.mic();
     expect(h.audioSent()).toBe(before + 1);
+  });
+
+  /**
+   * Barge-in moved to us with the split. The transcription socket cannot interrupt anything - it
+   * is not the one speaking - so a partial transcript while the Witness is talking is now what
+   * stops playback. It must be a partial with words in it: reacting to every noise is what made
+   * the Witness cut off its own sentences the first time round.
+   */
+  it('stops speaking when the Rep starts talking, but not for a stray noise', async () => {
+    const h = echoHarness();
+    await h.call.start();
+    h.sock().open();
+    h.sock().server({ type: 'session.ready', session_id: 's1' });
+    await Promise.resolve();
+    await Promise.resolve();
+    h.stt().open();
+    h.stt().server({ type: 'Begin', id: 'stt-1' });
+
+    h.speak(true);
+    h.stt().server({ type: 'Turn', transcript: 'a', end_of_turn: false });
+    expect(h.stops()).toBe(0);
+    h.stt().server({ type: 'Turn', transcript: 'hold on a second', end_of_turn: false });
+    expect(h.stops()).toBe(1);
+
+    // Silence from the Witness means there is nothing to interrupt.
+    h.speak(false);
+    h.stt().server({ type: 'Turn', transcript: 'it was denied', end_of_turn: false });
+    expect(h.stops()).toBe(1);
+  });
+
+  it('a finalized Turn from the transcription socket drives the call', async () => {
+    const h = harness();
+    await ready(h);
+    h.stt().open();
+    h.stt().server({ type: 'Begin', id: 'stt-1' });
+    h.stt().server({ type: 'Turn', transcript: 'This is Darnell, badge two-two-one-zero.', end_of_turn: true });
+    expect(h.log.rep).toContain('This is Darnell, badge two-two-one-zero.');
+  });
+
+  it('closes BOTH sockets on every exit path: each is billed while it stays open', async () => {
+    const h = harness();
+    await ready(h);
+    h.stt().open();
+    h.stt().server({ type: 'Begin', id: 'stt-1' });
+    expect(h.registry.openCount).toBe(2);
+    h.call.stop('user-stop');
+    expect(h.stt().sent.at(-1)).toEqual({ type: 'Terminate' });
+    expect(h.sock().sent.at(-1)).toEqual({ type: 'session.end' });
+    expect(h.registry.openCount).toBe(0);
+    expect(h.registry.balanced).toBe(true);
   });
 });

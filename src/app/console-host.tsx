@@ -12,8 +12,8 @@ import type { ConsoleProps, LiveDriver } from '@/ui/console-types';
 
 const MAX_SESSION_SECONDS = 300;
 
-async function fetchToken(): Promise<string> {
-  const res = await fetch('/api/token?kind=agent', { cache: 'no-store' });
+async function fetchToken(kind: 'agent' | 'stt'): Promise<string> {
+  const res = await fetch(`/api/token?kind=${kind}`, { cache: 'no-store' });
   const body = (await res.json().catch(() => ({}))) as { token?: string; error?: string; detail?: string };
   if (!res.ok || !body.token) throw new Error(body.detail ?? body.error ?? `token request failed (${res.status})`);
   return body.token;
@@ -49,7 +49,7 @@ export function ConsoleHost(props: ConsoleProps) {
           // The microphone is teed BEFORE the call gates it. rep.wav is then what the room
           // actually sounded like, which is the only way to answer "it did not hear me" - a
           // recording of what we chose to send cannot show what we chose to drop.
-          startMic: (onChunk) => startMic((b64) => { recorder.fromRep(b64); onChunk(b64); }),
+          startMic: (onChunk) => startMic((pcm) => { recorder.fromRep(pcm); onChunk(pcm); }),
           playAudio: (b64) => { recorder.fromWitness(b64); player.enqueue(b64); },
           stopAudio: () => player.stop(),
           isSpeaking: () => player.isSpeaking(),

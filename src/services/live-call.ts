@@ -7,13 +7,26 @@ import { detect } from '@/domain/engine';
 import { estimateDurationMs } from '@/domain/script';
 import { checkSpeech, consentGreeting } from '@/domain/speech';
 import type { Statement } from '@/domain/statement';
+import { SAMPLE_RATE } from './audio-io';
 import { SessionRegistry } from './session-registry';
+import { StreamingSession, type StreamingSocketFactory } from './streaming-session';
 import { VoiceAgentSession, type SocketFactory } from './voice-agent-session';
 
 /**
- * Mode A on the real Voice Agent API: a person plays the Rep (their voice goes in), the Witness
- * conducts the call from the deterministic plan (its assembled lines go out via reply.create).
- * ONE session, on the Rep's audio only, so who-said-what is structural, never diarized.
+ * Mode A, split across two sockets: Streaming STT hears the Rep, the Voice Agent speaks for the
+ * Witness, and the deterministic plan sits between them.
+ *
+ * It was one socket doing both jobs, which is the obvious arrangement and the wrong one. The Voice
+ * Agent answers every finalized user turn with its own LLM and offers no way to disable that, so
+ * our assembled line had to queue behind an unheard model turn to stop the two playing at once -
+ * a measured median of 3.2 seconds of dead air after every answer, worst case 8.6. Feeding the
+ * Rep's audio to a transcription-only socket removes the user turn from the Voice Agent entirely:
+ * it never volunteers a reply, so there is nothing to wait for. Spiked before building: 409 ms to
+ * first audible word, and zero unsolicited replies across a full session.
+ *
+ * Who-said-what stays structural, never diarized: the Rep is whoever the microphone hears, the
+ * Witness is only ever what our code assembled. Two sockets per call is the ceiling the account's
+ * five-new-streams-per-minute limit allows, and both are registered and closed together.
  */
 export interface LiveEvents {
   status(s: 'connecting' | 'live' | 'closed' | 'error', detail?: string): void;
@@ -30,14 +43,16 @@ export interface LiveDeps {
   ledger: ClaimLedger;
   call: { callId: string; capturedAt: string; repSurname?: string | null };
   registry: SessionRegistry;
-  fetchToken: () => Promise<string>;
-  startMic: (onChunk: (b64: string) => void) => Promise<{ stop(): void }>;
+  /** `agent` mints for the Voice Agent (the mouth), `stt` for Streaming (the ears). */
+  fetchToken: (kind: 'agent' | 'stt') => Promise<string>;
+  startMic: (onChunk: (pcm: Int16Array) => void) => Promise<{ stop(): void }>;
   playAudio: (b64: string) => void;
   stopAudio: () => void;
   /** True while the Witness is audibly speaking, so the microphone can be held closed. */
   isSpeaking?: () => boolean;
   events: LiveEvents;
   makeSocket?: SocketFactory;
+  makeSttSocket?: StreamingSocketFactory;
   now?: () => number;
 }
 
@@ -68,6 +83,7 @@ export class LiveCall {
   private session: CallSession;
   private plan: PlanState = initialPlan();
   private voice: VoiceAgentSession | null = null;
+  private ears: StreamingSession | null = null;
   private mic: { stop(): void } | null = null;
   private startedAt = 0;
   private spokeAt: number | null = null;
@@ -87,8 +103,11 @@ export class LiveCall {
   async start(): Promise<void> {
     this.d.events.status('connecting');
     let token: string;
+    let sttToken: string;
     try {
-      token = await this.d.fetchToken();
+      // Both tokens are minted before either socket opens: a call that can speak but cannot hear
+      // is worse than one that never started, and the failure has to surface before the greeting.
+      [token, sttToken] = await Promise.all([this.d.fetchToken('agent'), this.d.fetchToken('stt')]);
     } catch (e) {
       this.d.events.status('error', e instanceof Error ? e.message : 'could not get a session token');
       return;
@@ -98,7 +117,9 @@ export class LiveCall {
     this.voice = new VoiceAgentSession(
       this.d.registry,
       {
-        onReady: () => void this.onReady(greeting.text),
+        onReady: () => void this.onReady(greeting.text, sttToken),
+        // No audio is ever sent to this socket, so it never produces a user turn. Kept wired so a
+        // regression that starts feeding it audio is visible as a doubled turn, not as silence.
         onUserTurn: (text, at) => this.onRepTurn(text, at),
         onAgentTranscript: (text) => {
           const check = checkSpeech(text, this.session.ledger, this.d.brief);
@@ -141,7 +162,7 @@ export class LiveCall {
     });
   }
 
-  private async onReady(greetingText: string): Promise<void> {
+  private async onReady(greetingText: string, sttToken: string): Promise<void> {
     // The greeting is spoken by the session itself; the plan just records that it happened.
     const first = nextMove(this.plan, this.d.brief, this.session.ledger, this.d.call.callId, []);
     this.plan = first.state;
@@ -158,9 +179,34 @@ export class LiveCall {
        * The cost is barge-in on speakers: interrupting mid-sentence needs headphones, where
        * hardware echo cancellation does the job properly and nothing is gated.
        */
-      this.mic = await this.d.startMic((b64) => {
+      this.ears = new StreamingSession(
+        this.d.registry,
+        {
+          onTurn: (text, at) => this.onRepTurn(text, at),
+          /*
+           * Barge-in is ours now. The Voice Agent owned it while it could hear the Rep; a
+           * transcription socket cannot interrupt anything, because it is not the one speaking.
+           * A partial means the Rep has started talking, so the Witness stops - but only if the
+           * Rep is saying something, not on every noise, which is what made it clip itself
+           * mid-sentence the first time round.
+           */
+          onPartial: (text) => {
+            if (text.trim().length > 2 && this.d.isSpeaking?.()) this.d.stopAudio();
+          },
+          onError: (m) => this.d.events.status('error', m),
+          onClosed: () => this.mic?.stop(),
+        },
+        this.d.makeSttSocket,
+        this.d.now,
+      );
+      this.ears.connect(sttToken, {
+        sampleRate: SAMPLE_RATE,
+        keyterms: keytermsFor(this.d.brief, this.d.ledger),
+      });
+
+      this.mic = await this.d.startMic((pcm) => {
         if (this.d.isSpeaking?.()) return;
-        this.voice?.sendAudio(b64);
+        this.ears?.sendAudio(pcm);
       });
     } catch (e) {
       this.d.events.status('error', e instanceof Error ? `microphone: ${e.message}` : 'microphone unavailable');
@@ -222,6 +268,9 @@ export class LiveCall {
   /** Every exit path: user Stop, plan done, error, timeout, page exit (the registry also closes on those). */
   stop(reason: string): void {
     this.mic?.stop();
+    // Both sockets, always. Each is billed on how long it stays open, so closing one and leaking
+    // the other is the same bill as leaking both.
+    this.ears?.close(reason);
     this.voice?.close(reason);
   }
 }

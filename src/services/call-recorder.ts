@@ -83,9 +83,13 @@ export class CallRecorder {
     this.append(this.witness, base64);
   }
 
-  /** Base64 PCM16 from the microphone, recorded as it was sent. */
-  fromRep(base64: string): void {
-    this.append(this.rep, base64);
+  /** Raw PCM16 from the microphone, recorded as the worklet produced it. */
+  fromRep(pcm: Int16Array): void {
+    if (this.startedAt === null || this.rep.samples >= MAX_SAMPLES || !pcm.length) return;
+    // Copy: the caller's buffer is reused by the worklet for the next chunk.
+    const copy = new Int16Array(pcm);
+    this.rep.chunks.push(copy);
+    this.rep.samples += copy.length;
   }
 
   private append(ch: Channel, base64: string): void {
