@@ -29,3 +29,6 @@ fixtures/audio/*.wav
 !fixtures/audio/.gitkeep
 
 .vercel
+
+# Tester screen recordings: large binaries, reviewed locally, never committed.
+Items to show claude/

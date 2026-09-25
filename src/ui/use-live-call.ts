@@ -47,9 +47,20 @@ export function useLiveCall(props: ConsoleProps, objectives: readonly ObjectiveK
 
   const brief = useMemo(() => ({ ...props.brief, objectives }), [props.brief, objectives]);
 
+  /**
+   * The id is taken HERE, not inside the updater.
+   *
+   * Reading `n.current` inside the `setFeed` callback reads it whenever React chooses to run
+   * that callback - which is after any other queued update has already incremented the ref,
+   * and twice over in development. A Rep turn and the Witness reply that follows it therefore
+   * both came out as the same key, and React is explicit that duplicate keys mean children
+   * "may be duplicated and/or omitted": turns silently missing from the call timeline, on the
+   * one screen whose entire job is to be a complete record of what was said.
+   */
   const push = useCallback((item: Omit<FeedItem, 'id'>) => {
     n.current += 1;
-    setFeed((f) => [...f, { ...item, id: `l-${n.current}` }]);
+    const id = `l-${n.current}`;
+    setFeed((f) => [...f, { ...item, id }]);
   }, []);
 
   const start = useCallback(async () => {

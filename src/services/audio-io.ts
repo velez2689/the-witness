@@ -46,6 +46,12 @@ export interface Mic {
   stop(): void;
 }
 
+/** AudioContext.close() rejects if the context is already closed; nothing here can act on that. */
+function closeQuietly(ctx: AudioContext | null): void {
+  if (!ctx || ctx.state === 'closed') return;
+  void ctx.close().catch(() => undefined);
+}
+
 /** Captures the microphone with echo cancellation and streams ~50 ms PCM16 chunks (base64). */
 export async function startMic(onChunk: (base64Pcm16: string) => void): Promise<Mic> {
   const stream = await navigator.mediaDevices.getUserMedia({
@@ -67,10 +73,10 @@ export async function startMic(onChunk: (base64Pcm16: string) => void): Promise<
         stream.getTracks().forEach((t) => t.stop());
         node.disconnect();
         source.disconnect();
-        void ctx.close();
       } catch {
         /* already stopped */
       }
+      closeQuietly(ctx);
     },
   };
 }
@@ -247,14 +253,25 @@ export class PcmPlayer {
   stop(): void {
     this.pending = [];
     this.speaking = false;
-    this.node?.port.postMessage('flush');
+    try {
+      this.node?.port.postMessage('flush');
+    } catch {
+      /* context already torn down */
+    }
   }
 
   dispose(): void {
     this.stop();
-    this.node?.disconnect();
+    try {
+      this.node?.disconnect();
+    } catch {
+      /* already disconnected */
+    }
     this.node = null;
-    void this.ctx?.close();
+    // close() REJECTS on an already-closed context rather than throwing, so a try/catch around
+    // it catches nothing. Reset and unmount both reach this, and the second one surfaced as
+    // "unhandledRejection: Cannot close a closed AudioContext" in the dev overlay.
+    closeQuietly(this.ctx);
     this.ctx = null;
   }
 }
