@@ -186,6 +186,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         onResume={scripted.resume}
         onStep={scripted.advance}
         onReset={isLive ? liveCall.reset : scripted.reset}
+        onSaveCall={isLive ? liveCall.saveCall : undefined}
         onTakeOver={scripted.takeOver}
         canTakeOver={!isLive && scripted.mode === 'A' && phase !== 'idle' && phase !== 'done' && !scripted.tookOver}
         totalHold={totalHistoryHold + v.holdSeconds}

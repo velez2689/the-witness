@@ -62,4 +62,8 @@ export interface LiveDriver {
   ): LiveSession;
   /** Close every open session (Reset, unmount). */
   closeAll(reason: string): void;
+  /** Save the last call: one WAV per speaker plus the event timeline. Local only. */
+  saveCall?(): void;
+  /** Whether there is anything to save yet. */
+  hasRecording?(): boolean;
 }

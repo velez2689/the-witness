@@ -198,8 +198,10 @@ export function nextMove(
     if (count(state, 'recap') === 0) {
       return say('recap', 'recap', speech.closeOutForRep(ledger, callId));
     }
+    // A close move used to carry no line, and a move with no line is the live call's signal to
+    // hang up - so the Witness ended every successful call by going silent mid-conversation.
     return {
-      move: { kind: 'close', key: 'close', line: null, whisper: null },
+      move: { kind: 'close', key: 'close', line: speech.signOff(), whisper: null },
       state: bump(state, 'close', { done: true }),
     };
   }
@@ -211,7 +213,7 @@ function alert(state: PlanState, reason: string): { move: Move; state: PlanState
     move: {
       kind: 'alert_agent',
       key: 'alert_agent',
-      line: { text: "I'll have the billing office follow up on that. Thank you for your time.", cites: [] },
+      line: speech.handOff(),
       whisper: { text: reason, cites: [] },
     },
     state: bump(state, 'alert_agent', { needsAgent: reason, done: true }),

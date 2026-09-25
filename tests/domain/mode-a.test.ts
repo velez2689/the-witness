@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_OBJECTIVES, type CallBrief } from '@/domain/call-brief';
 import { canHangUp, computeGate } from '@/domain/capture-gate';
-import { MAX_CHALLENGES } from '@/domain/call-plan';
+import { MAX_CHALLENGES, nextMove } from '@/domain/call-plan';
 import { runModeA, startModeA, type CallEvent } from '@/domain/mode-a';
 import { buildHistory } from '@/domain/script-runner';
 import { checkSpeech, closeOutForAgent } from '@/domain/speech';
@@ -122,6 +122,40 @@ describe('Mode A: the Witness conducts call 06 against the Rep Simulator', () =>
     expect(out.text).toContain('diagnosis code: not provided, refused.');
     expect(out.text).toContain('No record acknowledged of the August fifth call');
     expect(out.text).toContain('4 minutes 2 seconds on hold');
+  });
+
+  /**
+   * The Witness must never hang up without saying anything.
+   *
+   * A move with no `line` is what tells the live call to end, and the plan's close move used to
+   * carry `line: null` - so a call that went perfectly ended with the Witness going silent
+   * mid-conversation and the session dropping. A tester reported it as "it just stops speaking".
+   * A rep who thinks the line dropped calls back and re-opens everything that was just settled,
+   * so the ending is not a courtesy, it is what makes the record stick.
+   */
+  it('says goodbye: every move that ends the call speaks first', () => {
+    const spoken = witnessLines(final.events);
+    const last = spoken.at(-1)!;
+    expect(last.text.trim()).not.toBe('');
+
+    // Drive the plan past its own exit and prove the terminal move is not mute.
+    let s = final.plan;
+    for (let i = 0; i < 4 && !s.done; i += 1) {
+      const r = nextMove(s, BRIEF, final.session.ledger, 'call-06', []);
+      if (r.move.kind === 'close' || r.move.kind === 'alert_agent') {
+        expect(r.move.line?.text ?? '', r.move.kind).not.toBe('');
+      }
+      s = r.state;
+    }
+  });
+
+  it('the hand-off does not blame the Rep for what is missing', () => {
+    // The commonest way to land here is a rep who genuinely has no reference number to give.
+    const noRef = { ...REP_BANK_CALL_06, 'ask:reference_number': { who: 'REP', text: "I don't have one." } } as const;
+    const s = runModeA(startModeA(history.ledger, BRIEF, { callId: LIVE_CALL.id, capturedAt: LIVE_CALL.startedAt }, noRef));
+    const last = witnessLines(s.events).at(-1)!;
+    expect(last.text).toMatch(/thank|thanks/i);
+    expect(last.text).not.toMatch(/you (did not|didn't|failed)/i);
   });
 
   it('is deterministic: two runs produce the same call', () => {

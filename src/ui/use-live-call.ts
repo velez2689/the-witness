@@ -65,6 +65,21 @@ export function useLiveCall(props: ConsoleProps, objectives: readonly ObjectiveK
 
   const start = useCallback(async () => {
     if (!driver) return;
+    /*
+     * One call at a time, always.
+     *
+     * Nothing stopped a second Start from building a second LiveCall on top of the first. The
+     * old session stayed open and kept streaming: two greetings, two voices out of one speaker,
+     * and two sessions billed on connection time against an account that allows five new streams
+     * a minute. A recording of a slow connect showed the greeting in the feed twice, which is
+     * what that looks like from the outside.
+     *
+     * Anything still open is closed before a new session is built, so a double click, an
+     * impatient second click during a slow connect, or a Start after an error can only ever
+     * leave one session alive.
+     */
+    driver.closeAll('restart');
+    session.current = null;
     setFeed([]); setDismissed([]); setSelected(null); setLatency(null); setDrift([]); setDetail(null);
     const s = driver.create(
       { brief, ledger: props.historyLedger, call: { callId: props.live.id, capturedAt: props.live.startedAt } },
@@ -94,6 +109,7 @@ export function useLiveCall(props: ConsoleProps, objectives: readonly ObjectiveK
   }, [driver, brief, props.historyLedger, props.live.id, props.live.startedAt, push]);
 
   const stop = useCallback(() => session.current?.stop('user-stop'), []);
+  const saveCall = useCallback(() => driver?.saveCall?.(), [driver]);
   const reset = useCallback(() => {
     driver?.closeAll('reset');
     session.current = null;
@@ -107,7 +123,7 @@ export function useLiveCall(props: ConsoleProps, objectives: readonly ObjectiveK
 
   return {
     available: Boolean(driver), status, detail, latency, drift, feed,
-    start, stop, reset, dismiss, select: setSelected, selected, brief,
+    start, stop, reset, saveCall, dismiss, select: setSelected, selected, brief,
     ...derived,
   };
 }

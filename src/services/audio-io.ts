@@ -176,6 +176,13 @@ export class PcmPlayer {
   private speaking = false;
   private lastActivity = 0;
 
+  /**
+   * Notified whenever playback actually starts or runs dry. Paired with the arrival time of each
+   * chunk this is what separates "our player stalled" from "the audio never turned up" - the two
+   * causes of a voice breaking up, which sound identical and have nothing in common otherwise.
+   */
+  onState: ((speaking: boolean) => void) | null = null;
+
   private context(): AudioContext {
     if (!this.ctx) {
       this.ctx = new AudioContext({ sampleRate: SAMPLE_RATE });
@@ -203,6 +210,7 @@ export class PcmPlayer {
     node.port.onmessage = (e: MessageEvent<string>) => {
       this.speaking = e.data === 'speaking';
       this.lastActivity = ctx.currentTime;
+      this.onState?.(this.speaking);
     };
     node.connect(ctx.destination);
     this.node = node;

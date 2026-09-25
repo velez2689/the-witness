@@ -87,6 +87,8 @@ export function BriefPanel(p: {
   onResume: () => void;
   onStep: () => void;
   onReset: () => void;
+  /** Live only: download this call's audio and event timeline for review. */
+  onSaveCall?: () => void;
   onTakeOver: () => void;
   canTakeOver: boolean;
   totalHold: number;
@@ -168,6 +170,11 @@ export function BriefPanel(p: {
             </button>
           )}
           {p.phase !== 'idle' && <button className="w-btn" onClick={p.onReset}>Reset</button>}
+          {live && p.phase !== 'idle' && p.onSaveCall && (
+            <button className="w-btn" onClick={p.onSaveCall} title="Download this call's audio and timeline. Nothing is uploaded.">
+              Save call
+            </button>
+          )}
           {!live && (
             <span className="w-seg" role="group" aria-label="Playback speed">
               {[1, 2, 4].map((n) => (

@@ -83,15 +83,15 @@ export function askObjective(key: ObjectiveKey): Utterance {
 }
 
 export function askIdentityAgain(): Utterance {
-  return say("Sorry, I didn't catch your name and badge number. Could I get those for the record?");
+  return say("Sorry, you cut out there for a second - could I just get your name and badge number?");
 }
 
 export function askReference(): Utterance {
-  return say('And can I grab a reference number for this call?');
+  return say('Last thing, and then I will let you go. Could I get a reference number for this call?');
 }
 
 export function readback(reference: string): Utterance {
-  return say(`Let me read that back to you. ${spellForSpeech(reference)}. Did I get that right?`);
+  return say(`Let me read that back to make sure I have it. ${spellForSpeech(reference)}. Did I get that right?`);
 }
 
 /** A contradiction stated back to the Rep on the recorded line: quote, cite, ask ONE question. */
@@ -175,7 +175,44 @@ export function closeOutForRep(ledger: ClaimLedger, callId: CallId): Utterance {
     parts.push(`reference number ${spellForSpeech(ref.value)}`);
     cites.push(ref.id);
   }
-  return say(`Thank you. To confirm what I recorded: ${parts.join('; ')}. This call was recorded. Goodbye.`, cites);
+  return say(
+    `Okay, let me just read back what I've got so I know we're on the same page. ${sentence(parts)}. ` +
+      `Does that all sound right to you?`,
+    cites,
+  );
+}
+
+/**
+ * How the Witness gets off the phone.
+ *
+ * There was no sign-off at all. The plan's close move carried `line: null`, and a move without a
+ * line is what tells the live call to hang up - so when the Witness was finished it simply went
+ * silent mid-call and dropped the session. A tester described it as "it just stops speaking",
+ * which is exactly what it did. Every ending now says something, because a call that ends without
+ * anyone saying goodbye reads as a dropped call, and a rep who thinks the line dropped calls back
+ * and re-opens everything that was just settled.
+ */
+export function signOff(): Utterance {
+  return say("That's everything I needed. Thanks very much for your help - have a good one.");
+}
+
+/**
+ * The ending used when the Witness cannot finish alone and a person has to pick it up.
+ *
+ * It must close the call warmly and WITHOUT implying the missing thing was the Rep's fault: the
+ * commonest reason to land here is a rep who genuinely has no reference number to give.
+ */
+export function handOff(): Utterance {
+  return say(
+    "Okay, no problem at all. I've got what I need for now, and I'll have someone from the billing " +
+      'office follow up on the rest. Thanks for your time today.',
+  );
+}
+
+/** Join spoken clauses the way a person would, with "and" before the last one rather than a list. */
+function sentence(parts: readonly string[]): string {
+  if (parts.length <= 1) return parts[0] ?? '';
+  return `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`;
 }
 
 // ---- Mode B: whispered to the Agent ---------------------------------------------------------
