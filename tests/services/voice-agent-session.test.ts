@@ -194,6 +194,126 @@ describe('VoiceAgentSession', () => {
   });
 });
 
+/**
+ * The server answers every finalized user turn with its own LLM, and the API has no setting to
+ * disable it. We drive the same session with reply.create, so before this both replies streamed
+ * reply.audio and the caller played them simultaneously: two voices at once. A tester heard it as
+ * a broken connection and as the Witness asking for a badge number he had just given it.
+ *
+ * These tests fix the rule that replaces it: only a reply we asked for is ever audible, and our
+ * line never overlaps the model's.
+ */
+describe('turn ownership: the model may generate, but it is never heard', () => {
+  function live(handlers: AgentHandlers = {}) {
+    const h = setup(handlers);
+    h.session.connect('t', CONFIG);
+    h.sock().open();
+    h.sock().server({ type: 'session.ready', session_id: 's1' });
+    return h;
+  }
+  const replies = (s: FakeSocket) => s.sent.filter((m) => m.type === 'reply.create');
+
+  it('drops audio from a reply the model volunteered', () => {
+    const heard: string[] = [];
+    const { session, sock } = live({ onAudio: (b) => heard.push(b) });
+    sock().server({ type: 'reply.done', reply_id: 'greet', status: 'completed' }); // greeting over
+    sock().server({ type: 'transcript.user', text: 'This is Darnell, badge 2210.' });
+    sock().server({ type: 'reply.started', reply_id: 'model-1' });
+    sock().server({ type: 'reply.audio', data: 'TU9ERUw=' });
+    expect(heard).toEqual([]);
+    expect(session.isReady).toBe(true);
+  });
+
+  it('plays audio from the line we asked for', () => {
+    const heard: string[] = [];
+    const { session, sock } = live({ onAudio: (b) => heard.push(b) });
+    sock().server({ type: 'reply.done', reply_id: 'greet', status: 'completed' });
+    sock().server({ type: 'transcript.user', text: 'Denied for timely filing.' });
+    session.say('Hang on, before we go further.');
+    sock().server({ type: 'reply.started', reply_id: 'model-1' }); // model answers first
+    sock().server({ type: 'reply.audio', data: 'TU9ERUw=' });
+    sock().server({ type: 'reply.done', reply_id: 'model-1', status: 'completed' });
+    sock().server({ type: 'reply.started', reply_id: 'ours-1' }); // now ours
+    sock().server({ type: 'reply.audio', data: 'T1VSUw==' });
+    expect(heard).toEqual(['T1VSUw==']);
+  });
+
+  /** The overlap itself: our line must not be sent while the model still owes a reply. */
+  it('holds our line until the model has finished its unheard turn', () => {
+    const { session, sock } = live();
+    sock().server({ type: 'reply.done', reply_id: 'greet', status: 'completed' });
+    sock().server({ type: 'transcript.user', text: 'Timely filing.' });
+    session.say('Which one is actually on the claim?');
+    expect(replies(sock())).toHaveLength(0); // still waiting on the model
+    sock().server({ type: 'reply.started', reply_id: 'model-1' });
+    sock().server({ type: 'reply.done', reply_id: 'model-1', status: 'completed' });
+    expect(replies(sock())).toHaveLength(1);
+    expect(String((replies(sock())[0] as { instructions: string }).instructions)).toContain('actually on the claim');
+  });
+
+  it('never has two of our lines in flight at once', () => {
+    const { session, sock } = live();
+    sock().server({ type: 'reply.done', reply_id: 'greet', status: 'completed' });
+    session.say('one');
+    session.say('two');
+    expect(replies(sock())).toHaveLength(1);
+    sock().server({ type: 'reply.started', reply_id: 'a' });
+    sock().server({ type: 'reply.done', reply_id: 'a', status: 'completed' });
+    expect(replies(sock())).toHaveLength(2);
+  });
+
+  /** If the model ever skips a turn, our line must not be stuck behind it forever. */
+  it('speaks anyway when the model never replies', () => {
+    const { session, sock } = live();
+    sock().server({ type: 'reply.done', reply_id: 'greet', status: 'completed' });
+    sock().server({ type: 'transcript.user', text: 'Hello?' });
+    session.say('Could I get your name and badge number?');
+    expect(replies(sock())).toHaveLength(0);
+    vi.advanceTimersByTime(1_500);
+    expect(replies(sock())).toHaveLength(1);
+  });
+
+  /**
+   * The greeting carries the AI and recording disclosure. It is spoken by the session itself, so
+   * it arrives with no reply.create behind it - and muting it would put out a call that never
+   * discloses it is an AI. Of every line in the call this is the one that must always be heard.
+   */
+  it('always plays the greeting', () => {
+    const heard: string[] = [];
+    const { sock } = live({ onAudio: (b) => heard.push(b) });
+    sock().server({ type: 'reply.started', reply_id: 'greet' });
+    sock().server({ type: 'reply.audio', data: 'R1JFRVQ=' });
+    expect(heard).toEqual(['R1JFRVQ=']);
+  });
+
+  it('self-checks only what the Witness actually said, and reports the rest as suppressed', () => {
+    const checked: string[] = [];
+    const muted: string[] = [];
+    const { session, sock } = live({ onAgentTranscript: (t) => checked.push(t), onSuppressed: (t) => muted.push(t) });
+    sock().server({ type: 'reply.done', reply_id: 'greet', status: 'completed' });
+    sock().server({ type: 'transcript.user', text: 'Badge 2210.' });
+    session.say('Let me read that back: eight K two J, nine eight eight.');
+    sock().server({ type: 'reply.started', reply_id: 'model-1' });
+    sock().server({ type: 'transcript.agent', text: "I didn't catch your name and badge number." });
+    sock().server({ type: 'reply.done', reply_id: 'model-1', status: 'completed' });
+    sock().server({ type: 'reply.started', reply_id: 'ours-1' });
+    sock().server({ type: 'transcript.agent', text: 'Let me read that back: eight K two J, nine eight eight.' });
+    expect(muted).toEqual(["I didn't catch your name and badge number."]);
+    expect(checked).toEqual(['Let me read that back: eight K two J, nine eight eight.']);
+  });
+
+  /** A barge-in on the model's unheard turn must not flush OUR playback or close the call. */
+  it('reports reply.done only for our own replies', () => {
+    const dones: boolean[] = [];
+    const { sock } = live({ onReplyDone: (i) => dones.push(i) });
+    sock().server({ type: 'reply.done', reply_id: 'greet', status: 'completed' }); // ours
+    sock().server({ type: 'transcript.user', text: 'Hold on.' });
+    sock().server({ type: 'reply.started', reply_id: 'model-1' });
+    sock().server({ type: 'reply.done', reply_id: 'model-1', status: 'interrupted' });
+    expect(dones).toEqual([false]);
+  });
+});
+
 describe('SessionRegistry: every exit path ends the session', () => {
   it('kills a session at the hard timeout even if the client never closes it', () => {
     const { session, sock, registry } = setup();

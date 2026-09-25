@@ -36,6 +36,21 @@ function harness() {
   return { call, registry, sock: () => sock, log, mic, tokens, said };
 }
 
+/**
+ * Play out a Rep turn the way the server really does it.
+ *
+ * The server answers every finalized user turn with its own LLM before we get a word in, and
+ * that reply is never played. Our assembled line is held until it finishes, so a test that
+ * asserts on what the Witness said has to let the unheard turn happen first - otherwise it is
+ * asserting against a protocol the server does not follow.
+ */
+function finishTurn(h: ReturnType<typeof harness>) {
+  h.sock().server({ type: 'reply.started', reply_id: 'model' });
+  h.sock().server({ type: 'reply.done', reply_id: 'model', status: 'completed' });
+  h.sock().server({ type: 'reply.started', reply_id: 'ours' });
+  h.sock().server({ type: 'reply.done', reply_id: 'ours', status: 'completed' });
+}
+
 async function ready(h: ReturnType<typeof harness>) {
   await h.call.start();
   h.sock().open();
@@ -72,7 +87,9 @@ describe('LiveCall: Mode A on the Voice Agent API with a person as the Rep', () 
     const h = harness();
     await ready(h);
     h.sock().server({ type: 'transcript.user', text: 'Meridian claims, this is Darnell, badge two-two-one-zero.' });
+    finishTurn(h);
     h.sock().server({ type: 'transcript.user', text: 'Okay. That claim denied. Timely filing.' });
+    finishTurn(h);
     expect(h.log.flags).toContain('value_conflict');
     const spoken = h.said();
     expect(spoken.at(-1)).toContain('Say exactly the following and nothing else:');
@@ -177,9 +194,20 @@ describe('acoustic echo: the Witness must not hear itself', () => {
     await h.call.start();
     h.sock().open();
     h.sock().server({ type: 'session.ready', session_id: 's1' });
-    h.sock().server({ type: 'reply.done', status: 'completed' });
+    h.sock().server({ type: 'reply.started', reply_id: 'greet' });
+    h.sock().server({ type: 'reply.done', reply_id: 'greet', status: 'completed' });
     expect(h.stops()).toBe(0);
-    h.sock().server({ type: 'reply.done', status: 'interrupted' });
+
+    // The model's own unheard turn being cut short must NOT flush our playback: nothing of ours
+    // was playing, and flushing on it would clip the line we are about to speak.
+    h.sock().server({ type: 'transcript.user', text: 'Okay. That claim denied. Timely filing.' });
+    h.sock().server({ type: 'reply.started', reply_id: 'model' });
+    h.sock().server({ type: 'reply.done', reply_id: 'model', status: 'interrupted' });
+    expect(h.stops()).toBe(0);
+
+    // Ours being cut short does: that is a real barge-in by the Rep.
+    h.sock().server({ type: 'reply.started', reply_id: 'ours' });
+    h.sock().server({ type: 'reply.done', reply_id: 'ours', status: 'interrupted' });
     expect(h.stops()).toBe(1);
   });
 

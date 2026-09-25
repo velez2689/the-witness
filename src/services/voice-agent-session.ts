@@ -59,12 +59,22 @@ export const DEFAULT_VOICE = 'jean';
 export const VOICE_FOCUS = 'near-field';
 export const VOICE_FOCUS_THRESHOLD = 0.85;
 
+/**
+ * How long to wait for the model's automatic reply before assuming it is not coming.
+ *
+ * Every finalized user turn triggers one; there is no setting to disable it. If one is ever
+ * skipped, our own line must not be stuck behind it forever, so the wait is bounded.
+ */
+const MODEL_REPLY_GRACE_MS = 1_500;
+
 export interface AgentHandlers {
   onReady?: (sessionId: string | null) => void;
   /** A FINALIZED user (Rep) turn. Deltas are not surfaced: nothing is written from a partial. */
   onUserTurn?: (text: string, receivedAt: number) => void;
-  /** What the agent actually said (transcript.agent), for the self-check. */
+  /** What the agent actually said (transcript.agent), for the self-check. OUR lines only. */
   onAgentTranscript?: (text: string) => void;
+  /** What the model wanted to say on its own, and was never allowed to. Observability only. */
+  onSuppressed?: (text: string) => void;
   onAudio?: (base64Pcm16: string, receivedAt: number) => void;
   onSpeechStarted?: () => void;
   /** True when the Rep talked over the Witness and the server cut the reply short. */
@@ -95,6 +105,24 @@ export class VoiceAgentSession {
   private ready = false;
   private resumeToken: string | null = null;
   private sessionId: string | null = null;
+
+  /*
+   * Turn ownership. The server runs its own LLM and answers every finalized user turn with it;
+   * the API has no switch to stop that. We also drive the session with reply.create, so without
+   * this bookkeeping BOTH replies stream reply.audio and the caller plays them on top of each
+   * other - two voices at once, which is heard as a broken connection and as the Witness asking
+   * questions the Rep has already answered.
+   *
+   * So: every reply is owned. Ours is played. The model's is dropped before it reaches the
+   * speaker, and our own line is held back until nothing is in flight, so the two can never
+   * overlap. This is where "the agent is a mouth, not a hand" stops being a comment and starts
+   * being enforced - the model may generate whatever it likes and it is physically inaudible.
+   */
+  private inFlight: { ours: boolean } | null = null;
+  private oursPending = false;
+  private expectModelReply = false;
+  private graceTimer: ReturnType<typeof setTimeout> | null = null;
+  private queue: string[] = [];
 
   constructor(
     private readonly registry: SessionRegistry,
@@ -176,27 +204,51 @@ export class VoiceAgentSession {
         // free; USING it is an explicit operator action (see `resume`), never automatic.
         this.resumeToken = typeof m.resume_token === 'string' ? m.resume_token : null;
         this.sessionId = typeof m.session_id === 'string' ? m.session_id : null;
+        // The greeting is OUR assembled text, spoken by the session itself. It carries the AI
+        // and recording disclosure, so of everything in the call it is the one line that must
+        // never be muted.
+        this.oursPending = true;
         this.handlers.onReady?.(this.sessionId);
         break;
       case 'transcript.user':
-        if (text.trim()) this.handlers.onUserTurn?.(text, at);
+        if (text.trim()) {
+          // The server will now answer this turn with its own LLM. Expect it, so the reply it
+          // produces is recognised as the model's and not mistaken for the line we asked for.
+          this.expectModelReply = true;
+          this.armGrace();
+          this.handlers.onUserTurn?.(text, at);
+        }
+        break;
+      case 'reply.started':
+        this.inFlight = { ours: this.claimReply() };
         break;
       case 'transcript.agent':
-        if (text.trim()) this.handlers.onAgentTranscript?.(text);
+        if (text.trim()) {
+          if (this.playing()) this.handlers.onAgentTranscript?.(text);
+          else this.handlers.onSuppressed?.(text);
+        }
         break;
       case 'reply.audio': {
         // The documented field is `data`. `audio` is accepted only so a field rename upstream
         // degrades to "still works" rather than "agent goes silent with no error anywhere".
         const chunk = typeof m.data === 'string' ? m.data : typeof m.audio === 'string' ? m.audio : null;
-        if (chunk) this.handlers.onAudio?.(chunk, at);
+        if (chunk && this.playing()) this.handlers.onAudio?.(chunk, at);
         break;
       }
       case 'input.speech.started':
         this.handlers.onSpeechStarted?.();
         break;
-      case 'reply.done':
-        this.handlers.onReplyDone?.(m.status === 'interrupted');
+      case 'reply.done': {
+        const wasOurs = this.playing();
+        // Whatever was outstanding is finished now. Clearing both here rather than only on
+        // reply.started means a reply that never announced itself cannot wedge the queue and
+        // leave the Witness mute for the rest of the call.
+        this.inFlight = null;
+        this.oursPending = false;
+        if (wasOurs) this.handlers.onReplyDone?.(m.status === 'interrupted');
+        this.drain();
         break;
+      }
       case 'session.error':
       case 'error':
         this.handlers.onError?.(String(m.message ?? m.code ?? 'session error'));
@@ -252,8 +304,56 @@ export class VoiceAgentSession {
     this.send({ type: 'input.audio', audio: base64Pcm16 });
   }
 
-  /** Speak assembled text. The instruction forbids the model from adding facts. */
+  /**
+   * Who owns the reply that just started.
+   *
+   * A turn the server volunteered is the model's; one we asked for is ours. The order is not a
+   * guess: our own reply.create is never sent while a reply is in flight or while the model's
+   * answer to the last turn is still expected, so at most one of the two can be outstanding.
+   */
+  private claimReply(): boolean {
+    if (this.expectModelReply) {
+      this.expectModelReply = false;
+      this.clearGrace();
+      return false;
+    }
+    if (this.oursPending) {
+      this.oursPending = false;
+      return true;
+    }
+    return false;
+  }
+
+  /** Is the reply currently streaming one the caller should hear? */
+  private playing(): boolean {
+    return this.inFlight ? this.inFlight.ours : this.oursPending;
+  }
+
+  private armGrace(): void {
+    this.clearGrace();
+    this.graceTimer = setTimeout(() => {
+      this.graceTimer = null;
+      this.expectModelReply = false;
+      this.drain();
+    }, MODEL_REPLY_GRACE_MS);
+  }
+
+  private clearGrace(): void {
+    if (this.graceTimer) clearTimeout(this.graceTimer);
+    this.graceTimer = null;
+  }
+
+  /** Speak assembled text. Queued, never overlapped: see the turn-ownership note above. */
   say(text: string): void {
+    this.queue.push(text);
+    this.drain();
+  }
+
+  private drain(): void {
+    if (this.closed || this.inFlight || this.expectModelReply || this.oursPending) return;
+    const text = this.queue.shift();
+    if (text === undefined) return;
+    this.oursPending = true;
     this.send({ type: 'reply.create', instructions: `Say exactly the following and nothing else: ${text}` });
   }
 
@@ -278,6 +378,8 @@ export class VoiceAgentSession {
   private finish(reason: string): void {
     if (this.closed) return;
     this.closed = true;
+    this.clearGrace();
+    this.queue = [];
     const why = this.exitReason ?? reason;
     this.registry.released(this.id, why);
     this.handlers.onClosed?.(why, this.now() - this.openedAt);

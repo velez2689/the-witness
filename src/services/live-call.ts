@@ -41,9 +41,19 @@ export interface LiveDeps {
   now?: () => number;
 }
 
+/**
+ * Written to make the model's UNHEARD turn as short as possible.
+ *
+ * The server answers every finalized Rep turn with its own LLM and offers no way to switch that
+ * off. None of it is played - VoiceAgentSession drops any reply we did not ask for - but our own
+ * line waits for it to finish so the two never overlap, so every word it generates is pure delay
+ * before the Witness speaks. Asking for one word instead of "one short polite sentence" is worth
+ * roughly a second on every turn.
+ */
 const SYSTEM_PROMPT =
-  'You are a courteous phone assistant for a medical billing office. You never state facts of your own. ' +
-  'When told to say something, say exactly that and nothing else. Keep any other reply to one short polite sentence.';
+  'You are a silent transcription assistant. Never volunteer information, questions or facts. ' +
+  'When you are given an explicit instruction to say something, say exactly that and nothing else. ' +
+  'Otherwise reply with the single word: Okay.';
 
 export function keytermsFor(brief: CallBrief, ledger: ClaimLedger): string[] {
   const terms = new Set<string>([brief.claimId, brief.memberId, brief.payer, ...brief.dxCodes]);
