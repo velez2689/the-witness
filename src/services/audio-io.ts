@@ -109,6 +109,20 @@ export class PcmPlayer {
     src.onended = () => this.sources.delete(src);
   }
 
+  /**
+   * Is the Witness audibly speaking right now?
+   *
+   * Used to hold the microphone closed while it talks. Browser echo cancellation is built around
+   * a single capture-and-render path, and this player renders through its own AudioContext, so
+   * on speakers the Witness's voice returns through the microphone, is transcribed as the Rep,
+   * and the call plan answers its own questions. The tail covers the speaker and room delay
+   * after the last sample is scheduled.
+   */
+  isSpeaking(tailSeconds = 0.25): boolean {
+    if (!this.ctx) return false;
+    return this.next > this.ctx.currentTime - tailSeconds;
+  }
+
   stop(): void {
     for (const s of this.sources) {
       try {

@@ -120,3 +120,85 @@ describe('LiveCall: Mode A on the Voice Agent API with a person as the Rep', () 
     expect(h.log.drift[0]).toEqual(['8K2J-444']);
   });
 });
+
+/**
+ * The bug that ruined the first live test: the Witness's audio broke up, it could not hear the
+ * tester, and it asked the same question over and over. All three came from its own voice
+ * returning through the microphone, so these pin both halves of the fix.
+ */
+describe('acoustic echo: the Witness must not hear itself', () => {
+  function echoHarness() {
+    const registry = new SessionRegistry(300);
+    let sock!: FakeSocket;
+    const sent: string[] = [];
+    const stops: number[] = [];
+    let speaking = false;
+    let onChunk: ((b: string) => void) | null = null;
+    const call = new LiveCall({
+      brief: BRIEF,
+      ledger: history.ledger,
+      call: { callId: LIVE_CALL.id, capturedAt: LIVE_CALL.startedAt },
+      registry,
+      fetchToken: async () => 'tok',
+      startMic: async (cb) => { onChunk = cb; return { stop: () => undefined }; },
+      playAudio: () => undefined,
+      stopAudio: () => stops.push(1),
+      isSpeaking: () => speaking,
+      events: {
+        status: () => undefined, rep: () => undefined, witness: () => undefined,
+        latency: () => undefined, drift: () => undefined, done: () => undefined,
+      },
+      makeSocket: () => (sock = new FakeSocket()),
+    });
+    return {
+      call,
+      sock: () => sock,
+      mic: (b: string) => onChunk?.(b),
+      speak: (v: boolean) => { speaking = v; },
+      audioSent: () => sock.sent.filter((m) => m.type === 'input.audio').length,
+      stops: () => stops.length,
+      sent,
+    };
+  }
+
+  it('does not flush playback every time the server hears something', async () => {
+    const h = echoHarness();
+    await h.call.start();
+    h.sock().open();
+    h.sock().server({ type: 'session.ready', session_id: 's1' });
+    h.sock().server({ type: 'input.speech.started' });
+    h.sock().server({ type: 'input.speech.started' });
+    // Flushing here cut the Witness off mid-sentence, heard as a call breaking up.
+    expect(h.stops()).toBe(0);
+  });
+
+  it('flushes only when the server reports a real interruption', async () => {
+    const h = echoHarness();
+    await h.call.start();
+    h.sock().open();
+    h.sock().server({ type: 'session.ready', session_id: 's1' });
+    h.sock().server({ type: 'reply.done', status: 'completed' });
+    expect(h.stops()).toBe(0);
+    h.sock().server({ type: 'reply.done', status: 'interrupted' });
+    expect(h.stops()).toBe(1);
+  });
+
+  it('holds the microphone closed while the Witness is speaking', async () => {
+    const h = echoHarness();
+    await h.call.start();
+    h.sock().open();
+    h.sock().server({ type: 'session.ready', session_id: 's1' });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const before = h.audioSent();
+    h.speak(true);
+    h.mic('AAAA');
+    h.mic('BBBB');
+    expect(h.audioSent(), 'the Witness would be transcribing itself').toBe(before);
+
+    h.speak(false);
+    h.mic('CCCC');
+    expect(h.audioSent()).toBe(before + 1);
+  });
+});

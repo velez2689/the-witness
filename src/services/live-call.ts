@@ -34,6 +34,8 @@ export interface LiveDeps {
   startMic: (onChunk: (b64: string) => void) => Promise<{ stop(): void }>;
   playAudio: (b64: string) => void;
   stopAudio: () => void;
+  /** True while the Witness is audibly speaking, so the microphone can be held closed. */
+  isSpeaking?: () => boolean;
   events: LiveEvents;
   makeSocket?: SocketFactory;
   now?: () => number;
@@ -99,8 +101,17 @@ export class LiveCall {
           }
           this.d.playAudio(b64);
         },
-        onSpeechStarted: () => this.d.stopAudio(),
-        onReplyDone: () => {
+        /*
+         * NOT a place to stop playback. input.speech.started fires whenever the server's VAD
+         * hears anything on the input - including the Witness's own voice arriving back through
+         * the microphone. Flushing here meant every syllable it spoke could cut off the rest of
+         * its own sentence, which is heard as a call breaking up. The server already owns
+         * barge-in (interrupt_response is on); it reports a real interruption on reply.done.
+         */
+        onSpeechStarted: () => undefined,
+        onReplyDone: (interrupted) => {
+          // A genuine barge-in: drop whatever is still queued so stale speech does not play on.
+          if (interrupted) this.d.stopAudio();
           if (this.pendingClose) this.stop('plan-complete');
         },
         onError: (m) => this.d.events.status('error', m),
@@ -128,7 +139,19 @@ export class LiveCall {
     this.d.events.witness({ text: greetingText, cites: [], tag: 'greet', atMs: 0 });
     this.d.events.status('live');
     try {
-      this.mic = await this.d.startMic((b64) => this.voice?.sendAudio(b64));
+      /*
+       * Hold the microphone closed while the Witness speaks. Without this its own voice comes
+       * back through the microphone on any machine using speakers, is transcribed as the Rep,
+       * and the call plan ends up answering itself - which presents as the Witness repeating
+       * the same question and never hearing the person actually talking.
+       *
+       * The cost is barge-in on speakers: interrupting mid-sentence needs headphones, where
+       * hardware echo cancellation does the job properly and nothing is gated.
+       */
+      this.mic = await this.d.startMic((b64) => {
+        if (this.d.isSpeaking?.()) return;
+        this.voice?.sendAudio(b64);
+      });
     } catch (e) {
       this.d.events.status('error', e instanceof Error ? `microphone: ${e.message}` : 'microphone unavailable');
       this.stop('mic-denied');

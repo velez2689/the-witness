@@ -53,7 +53,8 @@ export interface AgentHandlers {
   onAgentTranscript?: (text: string) => void;
   onAudio?: (base64Pcm16: string, receivedAt: number) => void;
   onSpeechStarted?: () => void;
-  onReplyDone?: () => void;
+  /** True when the Rep talked over the Witness and the server cut the reply short. */
+  onReplyDone?: (interrupted: boolean) => void;
   onError?: (message: string) => void;
   onClosed?: (reason: string, durationMs: number) => void;
 }
@@ -180,7 +181,7 @@ export class VoiceAgentSession {
         this.handlers.onSpeechStarted?.();
         break;
       case 'reply.done':
-        this.handlers.onReplyDone?.();
+        this.handlers.onReplyDone?.(m.status === 'interrupted');
         break;
       case 'session.error':
       case 'error':

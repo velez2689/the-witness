@@ -34,6 +34,7 @@ export function ConsoleHost(props: ConsoleProps) {
           startMic,
           playAudio: (b64) => player.enqueue(b64),
           stopAudio: () => player.stop(),
+          isSpeaking: () => player.isSpeaking(),
           events,
         }),
       closeAll: (reason) => {
