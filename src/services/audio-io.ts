@@ -75,15 +75,142 @@ export async function startMic(onChunk: (base64Pcm16: string) => void): Promise<
   };
 }
 
-/** Plays the agent's PCM16 chunks back-to-back. `stop()` flushes the queue (barge-in). */
+/**
+ * How much audio to hold before the first sample is heard, and after any under-run.
+ *
+ * This is the whole reason the Witness sounded like a robot rather than a person. The voice
+ * arrives as ~50 ms websocket messages; the previous player gave each one its own
+ * AudioBufferSourceNode scheduled 20 ms ahead of the clock. Twenty milliseconds is less than
+ * the jitter on a normal connection, so the queue ran dry mid-word, over and over, and each
+ * refill restarted the clock — a gap and a discontinuity inside individual syllables. The
+ * rendered audio was fine; the playback was shredding it. One continuous stream with a real
+ * jitter buffer is the fix.
+ *
+ * 120 ms is the smallest buffer that survived jitter without being audible as delay. It is
+ * added to time-to-first-word, so it is deliberately small and stated honestly, not hidden.
+ */
+export const PREBUFFER_SECONDS = 0.12;
+const RING_SECONDS = 30;
+
+/**
+ * Playback processor: one output stream fed from a ring buffer, never a schedule of clips.
+ *
+ * Under-run outputs silence and re-arms the pre-buffer, so a slow network costs one clean
+ * pause instead of a stutter on every 128-sample render quantum. Overflow drops the incoming
+ * tail rather than wrapping over audio that has not been heard yet — losing the end of a
+ * sentence is recoverable, corrupting the middle of one is not.
+ */
+export const PLAYER_WORKLET = `
+class PcmQueue extends AudioWorkletProcessor {
+  constructor(options) {
+    super();
+    const o = options.processorOptions;
+    this.ring = new Float32Array(o.capacity);
+    this.prebuffer = o.prebuffer;
+    this.read = 0; this.write = 0; this.count = 0;
+    this.draining = false; this.active = false;
+    this.port.onmessage = (e) => {
+      if (e.data === 'flush') {
+        this.read = 0; this.write = 0; this.count = 0;
+        this.draining = false; this.report(false);
+        return;
+      }
+      const s = new Float32Array(e.data);
+      const cap = this.ring.length;
+      for (let i = 0; i < s.length && this.count < cap; i++) {
+        this.ring[this.write] = s[i];
+        this.write = (this.write + 1) % cap;
+        this.count++;
+      }
+    };
+  }
+  report(on) {
+    if (on === this.active) return;
+    this.active = on;
+    this.port.postMessage(on ? 'speaking' : 'idle');
+  }
+  process(_inputs, outputs) {
+    const out = outputs[0] && outputs[0][0];
+    if (!out) return true;
+    if (!this.draining) {
+      if (this.count < this.prebuffer) { out.fill(0); return true; }
+      this.draining = true;
+    }
+    const cap = this.ring.length;
+    const n = Math.min(out.length, this.count);
+    for (let i = 0; i < n; i++) {
+      out[i] = this.ring[this.read];
+      this.read = (this.read + 1) % cap;
+    }
+    this.count -= n;
+    if (n < out.length) {
+      out.fill(0, n);
+      this.draining = false;
+      this.report(false);
+    } else {
+      this.report(true);
+    }
+    return true;
+  }
+}
+registerProcessor('pcm-queue', PcmQueue);
+`;
+
+/**
+ * Plays the agent's PCM16 chunks as one gapless stream. `stop()` flushes the queue (barge-in).
+ *
+ * Chunks handed over before the worklet module finishes loading are held, not dropped: the
+ * first reply.audio arrives within a second of connecting, which is the same moment this
+ * context is being built.
+ */
 export class PcmPlayer {
   private ctx: AudioContext | null = null;
-  private next = 0;
-  private sources = new Set<AudioBufferSourceNode>();
+  private node: AudioWorkletNode | null = null;
+  private pending: Float32Array[] = [];
+  private speaking = false;
+  private lastActivity = 0;
 
   private context(): AudioContext {
-    if (!this.ctx) this.ctx = new AudioContext({ sampleRate: SAMPLE_RATE });
+    if (!this.ctx) {
+      this.ctx = new AudioContext({ sampleRate: SAMPLE_RATE });
+      void this.open(this.ctx);
+    }
     return this.ctx;
+  }
+
+  private async open(ctx: AudioContext): Promise<void> {
+    const url = URL.createObjectURL(new Blob([PLAYER_WORKLET], { type: 'application/javascript' }));
+    try {
+      await ctx.audioWorklet.addModule(url);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+    if (this.ctx !== ctx) return; // disposed while loading
+    const node = new AudioWorkletNode(ctx, 'pcm-queue', {
+      numberOfInputs: 0,
+      outputChannelCount: [1],
+      processorOptions: {
+        capacity: Math.round(RING_SECONDS * SAMPLE_RATE),
+        prebuffer: Math.round(PREBUFFER_SECONDS * SAMPLE_RATE),
+      },
+    });
+    node.port.onmessage = (e: MessageEvent<string>) => {
+      this.speaking = e.data === 'speaking';
+      this.lastActivity = ctx.currentTime;
+    };
+    node.connect(ctx.destination);
+    this.node = node;
+    // A context created before any user gesture starts suspended; without this the stream is
+    // built correctly and stays silent.
+    if (ctx.state === 'suspended') await ctx.resume();
+    const held = this.pending;
+    this.pending = [];
+    for (const chunk of held) this.push(chunk);
+  }
+
+  private push(samples: Float32Array): void {
+    if (this.node) this.node.port.postMessage(samples.buffer, [samples.buffer]);
+    else this.pending.push(samples);
   }
 
   /** Route output to a specific device (e.g. the Agent's earpiece in Copilot mode). Chrome only. */
@@ -95,18 +222,11 @@ export class PcmPlayer {
   enqueue(base64Pcm16: string): void {
     const ctx = this.context();
     const bytes = fromBase64(base64Pcm16);
-    const samples = new Int16Array(bytes.buffer, bytes.byteOffset, Math.floor(bytes.byteLength / 2));
-    const buffer = ctx.createBuffer(1, samples.length, SAMPLE_RATE);
-    const ch = buffer.getChannelData(0);
-    for (let i = 0; i < samples.length; i += 1) ch[i] = samples[i] / 0x8000;
-    const src = ctx.createBufferSource();
-    src.buffer = buffer;
-    src.connect(ctx.destination);
-    this.next = Math.max(this.next, ctx.currentTime + 0.02);
-    src.start(this.next);
-    this.next += buffer.duration;
-    this.sources.add(src);
-    src.onended = () => this.sources.delete(src);
+    const pcm = new Int16Array(bytes.buffer, bytes.byteOffset, Math.floor(bytes.byteLength / 2));
+    const samples = new Float32Array(pcm.length);
+    for (let i = 0; i < pcm.length; i += 1) samples[i] = pcm[i] / 0x8000;
+    this.lastActivity = ctx.currentTime;
+    this.push(samples);
   }
 
   /**
@@ -115,28 +235,25 @@ export class PcmPlayer {
    * Used to hold the microphone closed while it talks. Browser echo cancellation is built around
    * a single capture-and-render path, and this player renders through its own AudioContext, so
    * on speakers the Witness's voice returns through the microphone, is transcribed as the Rep,
-   * and the call plan answers its own questions. The tail covers the speaker and room delay
-   * after the last sample is scheduled.
+   * and the call plan answers its own questions. The tail covers the speaker and room delay,
+   * and also the pre-buffer window, where audio is in hand but not yet audible.
    */
   isSpeaking(tailSeconds = 0.25): boolean {
     if (!this.ctx) return false;
-    return this.next > this.ctx.currentTime - tailSeconds;
+    if (this.speaking) return true;
+    return this.ctx.currentTime - this.lastActivity < tailSeconds;
   }
 
   stop(): void {
-    for (const s of this.sources) {
-      try {
-        s.stop();
-      } catch {
-        /* already ended */
-      }
-    }
-    this.sources.clear();
-    this.next = 0;
+    this.pending = [];
+    this.speaking = false;
+    this.node?.port.postMessage('flush');
   }
 
   dispose(): void {
     this.stop();
+    this.node?.disconnect();
+    this.node = null;
     void this.ctx?.close();
     this.ctx = null;
   }
