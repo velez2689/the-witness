@@ -71,11 +71,60 @@ export function consentGreeting(brief: CallBrief): Utterance {
   );
 }
 
-export function verifyClaim(brief: CallBrief): Utterance {
-  return say(
-    `Thanks. So that's member ${spellForSpeech(brief.memberId)}, date of service ${sayDate(brief.dateOfService)}. ` +
-      `Can you tell me where claim ${spellForSpeech(brief.claimId)} stands right now?`,
-  );
+/**
+ * Which call this is: the first anyone has made on the claim, or one in a series.
+ *
+ * The Witness has to open differently for each, and not as a flourish. On a follow-up it holds a
+ * record the Rep does not, so it says so up front - a rep who is told at the start that previous
+ * calls are on file answers differently from one who finds that out when they are contradicted
+ * four minutes in. On a first call there is nothing to check against, so claiming otherwise would
+ * be a lie, and the job is purely to gather.
+ */
+export type CallApproach = 'first_contact' | 'follow_up';
+
+export interface CallContext {
+  approach: CallApproach;
+  /** Distinct prior calls on this claim, oldest first. */
+  priorCallIds: readonly CallId[];
+  /** The most recent prior call's date, for saying aloud. */
+  lastCallAt: string | null;
+}
+
+/** Read the approach from the ledger. Never configured by hand: the record decides. */
+export function callContext(ledger: ClaimLedger, callId: CallId): CallContext {
+  const ids: CallId[] = [];
+  let lastAt: string | null = null;
+  for (const s of ledger.statements) {
+    if (s.callId === callId) continue;
+    if (!ids.includes(s.callId)) ids.push(s.callId);
+    if (!lastAt || s.capturedAt > lastAt) lastAt = s.capturedAt;
+  }
+  return {
+    approach: ids.length ? 'follow_up' : 'first_contact',
+    priorCallIds: ids,
+    lastCallAt: lastAt,
+  };
+}
+
+export function verifyClaim(brief: CallBrief, context?: CallContext): Utterance {
+  const identify =
+    `Thanks. So that's member ${spellForSpeech(brief.memberId)}, date of service ${sayDate(brief.dateOfService)}.`;
+  const ask = `Can you tell me where claim ${spellForSpeech(brief.claimId)} stands right now?`;
+
+  // No context supplied means the scripted paths and older callers keep their exact wording.
+  if (!context || context.approach === 'first_contact') {
+    if (context) {
+      // Said plainly, because it is true and it sets the Rep's expectation for what follows:
+      // this call is for gathering, and nothing is being checked against anything yet.
+      return say(`${identify} This is our first call on this one, so I'm just after the current status. ${ask}`);
+    }
+    return say(`${identify} ${ask}`);
+  }
+
+  const n = context.priorCallIds.length;
+  const when = context.lastCallAt ? `, the last one on ${sayDate(context.lastCallAt)}` : '';
+  const many = n === 1 ? "we've called on this claim once before" : `we've called on this claim ${sayNumber(n)} times before`;
+  return say(`${identify} Just so you know, ${many}${when}, and I've got notes from those calls in front of me. ${ask}`);
 }
 
 export function askObjective(key: ObjectiveKey): Utterance {

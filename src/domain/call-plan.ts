@@ -158,9 +158,16 @@ export function nextMove(
     }
   }
 
-  // 3 · Verify the claim and ask for status (once).
+  /*
+   * 3 · Verify the claim and ask for status (once).
+   *
+   * How this is said depends on whether anyone has called on this claim before, read from the
+   * ledger rather than configured. A follow-up says up front that prior calls are on file; a
+   * first call says it is a first call and gathers. Both then ask the same question.
+   */
   if (count(state, 'verify') === 0) {
-    return say('verify', 'verify', speech.verifyClaim(brief), speech.whisperMissing('Claim status'));
+    const ctx = speech.callContext(ledger, callId);
+    return say('verify', 'verify', speech.verifyClaim(brief, ctx), speech.whisperMissing('Claim status'));
   }
 
   // 4 · Ask the Rep to confirm a prior call the ledger holds (once). This is what surfaces an existence denial.
