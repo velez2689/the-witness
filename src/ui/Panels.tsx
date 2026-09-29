@@ -314,12 +314,12 @@ export function Inspector(p: {
       <div className="w-kindlabel">{KIND_LABEL[f.kind]}{f.sameBadge ? ' · SAME BADGE' : ''}</div>
       <div className="w-quote">
         <span className="said">{quoteOf(later)}</span>
-        <button className="w-play" onClick={() => speak(quoteOf(later))} aria-label="Play this quote"><Icon name="play" size={11} />Play</button>
+        <button className="w-play" onClick={() => speak(quoteOf(later))} aria-label="Read this quote aloud"><Icon name="play" size={11} />Read aloud</button>
         <div className="meta">just now · {later.speaker ? `${later.speaker.name} · badge ${later.speaker.badge}` : 'rep'}</div>
       </div>
       <div className="w-quote">
         <span className="said">{quoteOf(earlier)}</span>
-        <button className="w-play" onClick={() => speak(quoteOf(earlier))} aria-label="Play the earlier quote"><Icon name="play" size={11} />Play</button>
+        <button className="w-play" onClick={() => speak(quoteOf(earlier))} aria-label="Read the earlier quote aloud"><Icon name="play" size={11} />Read aloud</button>
         <div className="meta">{metaOf(p.ledger, earlier)}</div>
       </div>
       {related.map((r) => (
@@ -333,14 +333,14 @@ export function Inspector(p: {
           <span className="w-note">{said.side === 'witness' ? 'The Witness said to the Rep' : 'Whispered to the Agent'} (assembled from the {said.cites.length} rows above, not composed by the model):</span>
           <br />
           {said.text}
-          {said.side === 'witness' && <button className="w-play" onClick={() => speak(said.text, 'witness')} aria-label="Play what the Witness said"><Icon name="play" size={11} />Play</button>}
+          {said.side === 'witness' && <button className="w-play" onClick={() => speak(said.text, 'witness')} aria-label="Read aloud what the Witness said"><Icon name="play" size={11} />Read aloud</button>}
         </p>
       )}
       {p.closeOut && (
         <div className="w-closeout">
           <h2>Close-out · rendered from the statement rows</h2>
           <p style={{ margin: 0 }}>{p.closeOut.text}</p>
-          <button className="w-play" style={{ margin: '6px 0 0' }} onClick={() => speak(p.closeOut!.text, 'witness')}><Icon name="play" size={11} />Play close-out</button>
+          <button className="w-play" style={{ margin: '6px 0 0' }} onClick={() => speak(p.closeOut!.text, 'witness')}><Icon name="play" size={11} />Read the close-out aloud</button>
         </div>
       )}
     </section>

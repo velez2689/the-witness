@@ -54,6 +54,8 @@ interface Props {
   contradictions: readonly Contradiction[];
   focus: Contradiction | null;
   liveStartedAt: string;
+  /** The id the live call's statements carry in the ledger. */
+  liveCallId: string;
   liveDuration: number;
   liveNumber: number;
   holdSeconds: number;
@@ -181,9 +183,9 @@ export function ClaimTimeline(p: Props) {
         )}
 
         {cards.map((c) => {
-          const rep = c.live ? repOf(p.ledger, 'call-06') : repOf(p.ledger, c.id);
-          const ref = callReference(p.ledger, c.live ? 'call-06' : c.id);
-          const isFlagged = flagged.has(c.live ? 'call-06' : c.id);
+          const rep = c.live ? repOf(p.ledger, p.liveCallId) : repOf(p.ledger, c.id);
+          const ref = callReference(p.ledger, c.live ? p.liveCallId : c.id);
+          const isFlagged = flagged.has(c.live ? p.liveCallId : c.id);
           // Everything on this claim is involved in some contradiction, so a red border on
           // all six would mean nothing. Only the pair being examined gets the full treatment.
           const isFocus = showLink && (c.id === linkFrom?.id || c.id === linkTo?.id);
@@ -202,7 +204,7 @@ export function ClaimTimeline(p: Props) {
               type="button"
               className={cls}
               style={{ left: `${c.pct}%` }}
-              onClick={() => p.onSelectCall?.(c.live ? 'call-06' : c.id)}
+              onClick={() => p.onSelectCall?.(c.live ? p.liveCallId : c.id)}
               aria-label={`Call ${c.number}, ${shortDate(c.startedAt)}${rep ? `, ${rep}` : ', no rep identified'}`}
             >
               <span className="band" aria-hidden="true" />
@@ -274,7 +276,7 @@ export function ClaimTimeline(p: Props) {
           {cards.map((c) => (
             <span
               key={c.id}
-              className={`w-axis-dot${flagged.has(c.live ? 'call-06' : c.id) ? ' flagged' : ''}${c.live ? ' live' : ''}`}
+              className={`w-axis-dot${flagged.has(c.live ? p.liveCallId : c.id) ? ' flagged' : ''}${c.live ? ' live' : ''}`}
               style={{ left: `${c.truePct}%` }}
             />
           ))}

@@ -215,6 +215,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         contradictions={v.contradictions}
         focus={v.focus}
         liveStartedAt={props.live.startedAt}
+        liveCallId={props.live.id}
         liveDuration={props.live.durationSeconds}
         liveNumber={active.historyCalls.length + 1}
         holdSeconds={v.holdSeconds}

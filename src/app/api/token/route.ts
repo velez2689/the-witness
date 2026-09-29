@@ -15,7 +15,9 @@ const ENDPOINTS = {
 
 const TOKEN_TTL_SECONDS = 60;
 const WINDOW_MS = 10 * 60_000;
-const MAX_TOKENS_PER_WINDOW = 10;
+// A call needs two tokens. Ten meant five starts per ten minutes, which a testing session hits
+// before AssemblyAI's own five-new-streams-per-minute limit does, and it presents as a dead call.
+const MAX_TOKENS_PER_WINDOW = 20;
 const hits = new Map<string, number[]>();
 
 function sessionCapSeconds(): number {

@@ -252,3 +252,14 @@ Create these outside the repo root (see `.repo-layout.yml`; images/recordings be
 
 ### Suggested order
 A1 (owner, ~2 min) in parallel with B1, B2, B3, B4 (no dependence on the live call) -> A2/A3 as needed -> B5 (needs a working call or a labelled replay) -> C answers -> B6 on owner's word -> D only with spare time.
+
+
+---
+
+## 13. Addendum, later on 2026-09-29: what changed after this report was written
+
+The four saved calls were committed to `docs/assets/calls/` and measured (see that folder's README). The finding that matters: in both failing calls the greeting audio stopped *arriving* from the server after about two seconds, and one of the two had a dead microphone (15 s of digital silence). Neither is something the mic-gate fix touches, so sections 7 and 7b overstate what `586db95` proved. The timeline could not say why the audio stopped because it recorded no socket events; it does now.
+
+Landed on branch `claude/wizardly-edison-7fk3g9` (draft PR against `main`): socket-level events in the saved call; a single zip from "Save call"; the recap no longer ends the session (sign-off follows the Rep's answer or an 8 s silence); the microphone gate applies on speakers only, with a Headphones/Speakers control; an interruption mutes the rest of the reply; the transcription socket pins `speech_model` and raises `max_turn_silence` to 2000 ms (the 16:24 recording shows a badge number split under the default). Also: README, diagram source, config and punctuation cleaned; console design pass; cover image, README animation, deck, descriptions, judging template and runbook in `docs/submission/`.
+
+Still open, in this order: an owner-side saved call on this build (with the new events), the live spike of the transcription parameters, the video, slide 11 verification, submission. All in `docs/submission/RUNBOOK.md`.

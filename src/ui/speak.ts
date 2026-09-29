@@ -1,6 +1,8 @@
 /**
- * Plays a line with the browser's voice. This is the SCRIPTED path: it stands in for the recorded
- * call audio until the rendered corpus is wired in. Client-only; never throws.
+ * Reads a line aloud with the browser's voice. This is text-to-speech of the transcript, not a
+ * recording, and the buttons that call it say "Read aloud" for that reason: the scripted corpus
+ * has no audio, and playing a live call's recorded span is a separate control. Client-only; never
+ * throws.
  */
 export function speak(text: string, voiceHint: 'rep' | 'witness' = 'rep'): void {
   try {
