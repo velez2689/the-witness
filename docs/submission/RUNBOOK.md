@@ -17,7 +17,7 @@ Live call first (your machine, headphones, key; about 45 minutes):
 Then to submission:
 
 8. Done 2026-09-29: the five competitor rows on deck slide 11 were checked against the vendors' pages and a 2026 category review; sources are printed on the slide. Re-render after any edit with `PLAYWRIGHT_CORE=<path> node fixtures/scripts/render-deck.mjs`.
-9. Fill the last paragraph of `long-description.md` and deck slide 8 to match the video.
+9. Done 2026-09-29: the last paragraph of `long-description.md` and deck slide 8 say the video is the scripted Rep on the real console, narrated by an AssemblyAI voice agent. If a clean live call is recorded and cut in later, change both.
 10. Merge the PR to `main`; confirm production shows the Headphones/Speakers control; open it in a fresh incognito window and run the scripted call end to end. Regenerate `docs/assets/d2-architecture.svg` from the updated `.d2` (`d2` is not installed in the cloud sandbox).
 11. Commit something on Sep 30 before 10:30 ET. The commit log is judged.
 12. Submit on lablab.ai with the fields in B6. Nothing is submitted until you click.
@@ -27,10 +27,10 @@ Then to submission:
 | Item | State |
 |---|---|
 | B1 short description | Done: `docs/submission/short-description.txt` (252 chars) |
-| B2 long description | Done except the last paragraph, which says what the video shows; fill it after B5 |
+| B2 long description | Done, including the last paragraph (what the video shows) |
 | B3 cover image | Done: `docs/assets/cover-16x9.png` (3840x2160, downscale to 1920x1080 on upload if the form wants it) |
 | B4 deck | Done as `docs/submission/deck.html` and `deck.pdf`; slide 11 (competitors) needs the verification step below before it ships |
-| B5 video | Draft picture track exists: `docs/assets/demo-draft.mp4` (3:55, silent, captions carry the narration; made by `fixtures/scripts/capture-footage.mjs`). Needs narration, and the demo segment swapped for a live call if one is captured |
+| B5 video | Done: `docs/assets/demo-narrated.mp4` (4:16, 1920x1080, H.264 + AAC), narrated by an AssemblyAI voice agent from `docs/submission/narration.md`; the per-line audio is in `docs/assets/narration/`. Rebuild: `node --env-file=.env fixtures/scripts/render-narration.mjs`, then `PLAYWRIGHT_CORE=<path> node fixtures/scripts/capture-footage.mjs <footageDir> http://localhost:3000 docs/assets/narration`, then `node fixtures/scripts/mux-narration.mjs <footageDir> docs/assets/narration docs/assets/demo-narrated.mp4`. The owner watches it end to end before upload |
 | B6 submission | Owner only; checklist below |
 | Live call on the current build | Not yet proven; steps below |
 
