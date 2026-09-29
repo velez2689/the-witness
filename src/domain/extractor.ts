@@ -2,6 +2,8 @@ import type { ConfidenceState, Speaker, StatementCategory } from './statement';
 import { findAlnumRuns, formatReference, parseSpokenDigits } from '@/lib/alphanumeric';
 import { parseMonthDay } from '@/lib/dates';
 import { parseNumberWords } from '@/lib/number-words';
+import { findSpokenCodes } from '@/lib/spoken-codes';
+import { claimStatusCode, remarkCode } from './x12-codes';
 
 /** A finalized Rep turn. Extraction never runs on partials. */
 export interface RepTurn {
@@ -204,6 +206,22 @@ export function extractFromTurn(turn: RepTurn, ctx: ExtractContext): Extraction 
   if (/(?:don'?t|do not) have a record of (?:a|that|the) call/.test(lower)) {
     fact('existence_claim', 'no record of call', /record of/, {
       subjectDate: parseMonthDay(text, year) ?? undefined,
+    });
+  }
+
+  // --- X12 codes read aloud ---------------------------------------------------------------
+  // A code on the current X12 list is filed as confirmed; a well-formed code that is not on the
+  // list, or a CARC (no list is shipped), is filed unconfirmed and the plan reads it back, the
+  // same rule as a reference number. Only identifiers are known here, never what a code means.
+  for (const c of findSpokenCodes(text)) {
+    const category = c.kind === 'remark' ? 'remark_code' : c.kind === 'status' ? 'claim_status_code' : 'denial_code';
+    const known = c.kind === 'remark' ? remarkCode(c.code) : c.kind === 'status' ? claimStatusCode(c.code) : null;
+    drafts.push({
+      kind: 'fact',
+      category,
+      value: c.code,
+      span: { quote: text, startMs: turn.startMs, endMs: turn.endMs },
+      confidence: known?.known && known.active ? 'captured_confirmed' : 'captured_unconfirmed',
     });
   }
 

@@ -54,6 +54,9 @@ function make(
   };
 }
 
+/** Same question, a different answer on a later call: the reason, or any X12 code the Rep read out. */
+const CONFLICT_CATEGORIES = new Set(['denial_reason', 'remark_code', 'denial_code', 'claim_status_code']);
+
 export function detect(ledger: ClaimLedger): Contradiction[] {
   const out: Contradiction[] = [];
   const all = ledger.statements;
@@ -63,8 +66,8 @@ export function detect(ledger: ClaimLedger): Contradiction[] {
     const earlier = all.slice(0, index).filter(isFact).filter((e) => e.callId !== s.callId);
 
     // 1 · value conflict, same question, a different answer in a different call.
-    if (s.category === 'denial_reason' && !s.additional) {
-      const prior = earlier.filter((e) => e.category === 'denial_reason' && !e.additional && e.value !== s.value);
+    if (CONFLICT_CATEGORIES.has(s.category) && !s.additional && s.confirms === undefined) {
+      const prior = earlier.filter((e) => e.category === s.category && !e.additional && e.confirms === undefined && e.value !== s.value);
       const byValue = new Map<string, FactStatement>();
       for (const e of prior) {
         const current = byValue.get(e.value);

@@ -61,6 +61,14 @@ export function buildClaimUpdate(
   reasons.forEach((r, i) => row(i === 0 ? 'Denial reason' : 'Additional reason', r, r.value, 'confirmed'));
   if (reasons.length === 0) row('Denial reason', undefined, 'not captured', 'missing');
 
+  for (const [category, label] of [['denial_code', 'Denial code (CARC)'], ['remark_code', 'Remark code'], ['claim_status_code', 'Claim status code']] as const) {
+    const code = lastFact(ledger, callId, (f) => f.category === category);
+    if (code) {
+      const confirmed = code.confidence === 'captured_confirmed' || ledger.statements.some((s) => s.kind === 'fact' && s.confirms === code.id);
+      row(label, code, code.value, confirmed ? 'confirmed' : 'unconfirmed');
+    }
+  }
+
   for (const r of ledger.statements.filter((s) => s.callId === callId && s.kind === 'refusal')) {
     row(REFUSAL_LABEL[r.category] ?? r.category.replace(/_/g, ' '), r, 'not provided: the rep declined to specify', 'refused');
   }

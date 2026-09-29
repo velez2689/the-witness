@@ -321,6 +321,10 @@ is scored nowhere.
   denied claim; ~15% initial denial rate, Premier, Feb 2025.
 - **19%** of in-network claims denied, range 3%-36% by issuer; ~85M denied claims;
   **under 1% appealed**; insurers **upheld 66%** of internal appeals, KFF, Mar 2026.
+- **X12 code lists**, fetched 2026-09-29 from x12.org: 1216 Remittance Advice Remark Code
+  identifiers and 796 Claim Status Code identifiers, with deactivated ones flagged. Only the
+  identifier, the active flag and a coarse bucket we assign are stored; X12's descriptions are
+  copyrighted and never ship. Regenerate with `fixtures/scripts/build-x12-codes.mjs`.
 - **73% of providers cite unclear denial reasons or underpayments**, HFMA/Guidehouse,
   Apr 2026. Closest current quantification of our exact problem.
 - **90% of denied claims require human review before resubmission**, Experian State of
