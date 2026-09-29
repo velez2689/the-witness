@@ -212,3 +212,43 @@ Questions the owner must answer:
 ## 10. Key files for a reader
 
 `src/services/live-call.ts` (orchestration, mic gate, barge-in), `src/services/audio-io.ts` (mic + player + `isSpeaking`), `src/services/voice-agent-session.ts` (socket, `session.update`, owned-reply filter), `src/services/streaming-session.ts`, `src/services/call-recorder.ts`, `src/domain/call-plan.ts` and `speech.ts` (what the Witness says), `src/app/api/token/`, `.ai/decisions.md` (the reasoning behind every design choice, dated), `.ai/handoff.md`, `docs/PROJECT-STATE.md`, `CLAUDE.md`.
+
+---
+
+## 12. WORK REMAINING - checklist for the planner (deadline 2026-09-30 11:00 ET)
+
+Owner decisions already made: **keep the LIVE call** (do not fall back to replay-only unless live cannot be fixed in time); owner tests with **headphones** and follows the Rep script; **nothing is submitted to the contest until the owner says so**.
+
+### A. Prove the live call works (blocks the video)
+- [ ] **A1. Owner-side saved call on the current build (`0ac36ef`).** Owner runs one call at https://the-witness-omega.vercel.app, clicks "Save call", and copies any red errors from Chrome DevTools > Console. Done when: a `call-*.json` + `witness-*.wav` + `rep-*.wav` exist for a call made AFTER commit `0ac36ef`, plus console text. (Only the owner can do this; no recording of the current build exists.)
+- [ ] **A2. Diagnose if A1 fails.** Compare against §7b: the headless replay passes on the current build, so a failure on the owner's machine points to environment (browser/profile, cached bundle, real mic/room, the 5-new-streams-per-minute limit refusing the second socket, network). Timebox ~4 h, then decide with the owner whether to fall back.
+- [ ] **A3. Full-plan run.** Done when one saved call reaches `plan-complete` on the current build with: greeting heard in full, identity captured, at least one contradiction challenge spoken, read-back spoken, closing line heard in full, and no `playback-idle` gaps mid-sentence. Only the opening exchange has been verified since the fixes; the full plan last ran in the two PRE-split calls.
+- [ ] **A4. Headless full-call harness** (nice to have, removes dependence on the owner): drive the whole plan with the Rep's lines as separate WAV segments timed off `witness-line` events. Recipe in §7b. Mind the 5 streams/minute limit (each run = 2 streams).
+
+### B. Mandatory contest artifacts - ALL STILL ZERO
+Create these outside the repo root (see `.repo-layout.yml`; images/recordings belong in `docs/assets`). Follow the standing prohibitions: **no transcription-accuracy percentages anywhere; no CPT code descriptors; no PHI; no rep reputation scoring.** Use the `witness-judge-package` cite-guard rules. Do not overclaim what is live vs replayed.
+- [ ] **B1. Short description**, <= 255 characters. Done when: counted, <= 255.
+- [ ] **B2. Long description**, >= 100 words. Done when: word-counted, states the problem (payer call statements vanish; ~19% of in-network claims denied, <1% appealed), the line "we don't predict what the payer will pay - we record what the payer said", the AssemblyAI angle (spoken alphanumerics; agent speaks a read-back rather than guessing), and how it uses Voice Agent + Streaming v3.
+- [ ] **B3. Cover image**, 16:9. Done when: exported PNG/JPG at 16:9 (e.g. 1920x1080), legible at thumbnail size.
+- [ ] **B4. Slide deck PDF**, must include a **competitive-analysis slide**. Done when: PDF exported; slides cover problem, product, live demo, architecture (two sockets), evidence model (append-only ledger, hash chain), competitive analysis, roadmap (telephony, Mode B live).
+- [ ] **B5. Demo video**, 3-5 minutes. Done when: length in range; shows a real live call (from A3) or clearly-labelled replay; shows a contradiction being caught and the appeal packet (`/packet`). Owner's approval before anything is published.
+- [ ] **B6. Submission on lablab.ai.** Done when: OWNER explicitly says submit. Deadline 2026-09-30 11:00 ET.
+- Also required by CLAUDE.md: a meaningful commit each day through Sep 30 (commit-spread is judged).
+
+### C. Owner decisions still open
+- [ ] **C1.** "Let the AI speak freely" - built as the two call approaches (first-call vs follow-up), NOT model-composed sentences (constraints 2-3 forbid the model supplying facts). Owner to confirm the reading before anyone loosens it.
+- [ ] **C2.** Is a clearly-labelled replay acceptable in the video if live stays flaky? (Owner currently wants live kept.)
+
+### D. Optional - only if time remains (cut rule: drop anything the video or Judge Mode will not show)
+- [ ] D1. Judge Mode at `/judge`. D2. Payer Inconsistency Index (aggregate at payer level only). D3. Contradiction Autopsy scrubber. D4. Deadline Guard. D5. Denial-letter cross-check.
+- [ ] D6. ElevenLabs demo corpus: needs `ELEVENLABS_API_KEY`, then write `fixtures/scripts/render-corpus.mjs`; until then scripted "Play" buttons use the browser voice. Unknown whether Recorded mode plays end to end - check before relying on it as a fallback.
+- [ ] D7. Mode B (Copilot) on live audio (Streaming v3 second session). Scripted-only today.
+
+### E. Hygiene
+- [ ] E1. Re-run `npm run typecheck`, `npm run lint`, `npm run build` (only `vitest run` = 195 passing was re-run in this session).
+- [ ] E2. Correct the comment in `src/services/audio-io.ts` (`isSpeaking`) claiming the server sends audio "far faster than real time"; the §7b trace measured roughly real-time delivery (6.57 s of audio by +7.3 s). The end-time accumulation logic is still correct; only the stated rationale is doubtful.
+- [ ] E3. Keep `Items to show claude/` gitignored; never `git add -A`.
+- [ ] E4. Update `.ai/handoff.md` (local, outside repo) at the end of each session.
+
+### Suggested order
+A1 (owner, ~2 min) in parallel with B1, B2, B3, B4 (no dependence on the live call) -> A2/A3 as needed -> B5 (needs a working call or a labelled replay) -> C answers -> B6 on owner's word -> D only with spare time.
