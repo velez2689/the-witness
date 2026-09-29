@@ -1,0 +1,13 @@
+# Store and check out text files with LF so generated sources and their tests
+# behave the same on Windows and Linux (the X12 code test matches line-by-line).
+* text=auto eol=lf
+
+# Binary assets: never touch line endings.
+*.png binary
+*.jpg binary
+*.gif binary
+*.mp4 binary
+*.pdf binary
+*.wav binary
+*.zip binary
+*.xlsx binary

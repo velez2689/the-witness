@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { isSameOriginRequest } from '@/lib/same-origin';
 
 /**
  * Mints a SHORT-LIVED, SINGLE-USE AssemblyAI token for the browser. This is the ONLY place the API
@@ -38,18 +39,18 @@ function rateLimited(client: string): boolean {
 
 export async function GET(req: NextRequest) {
   const headers = { 'Cache-Control': 'no-store' };
+  // Checked before anything else: a bare command-line request learns nothing, not even whether
+  // the key is configured.
+  if (!isSameOriginRequest(req.headers)) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403, headers });
+  }
+
   const key = process.env.ASSEMBLYAI_API_KEY;
   if (!key) {
     return NextResponse.json(
       { error: 'not_configured', detail: 'ASSEMBLYAI_API_KEY is not set on the server. Copy .env.example to .env.' },
       { status: 503, headers },
     );
-  }
-
-  const origin = req.headers.get('origin');
-  const host = req.headers.get('host');
-  if (origin && host && new URL(origin).host !== host) {
-    return NextResponse.json({ error: 'forbidden' }, { status: 403, headers });
   }
 
   const kind = req.nextUrl.searchParams.get('kind') === 'stt' ? 'stt' : 'agent';
