@@ -68,7 +68,7 @@ function findRunsInSentence(text: string, minChars: number): AlnumRun[] {
 }
 
 /** Spoken digits only: "two two one zero" -> "2210". Returns null unless exactly `count` digits. */
-export function parseSpokenDigits(text: string, count: number): string | null {
+export function parseSpokenDigits(text: string, count: number | { min: number; max: number }): string | null {
   const tokens = tokenize(text);
   let out = '';
   for (const t of tokens) {
@@ -76,7 +76,8 @@ export function parseSpokenDigits(text: string, count: number): string | null {
     if (d === null) continue;
     out += d;
   }
-  return out.length === count ? out : null;
+  const ok = typeof count === 'number' ? out.length === count : out.length >= count.min && out.length <= count.max;
+  return ok ? out : null;
 }
 
 /** "8K2J988" -> "8K2J-988" when it matches the payer reference format, else unchanged. */

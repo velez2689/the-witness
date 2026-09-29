@@ -86,7 +86,7 @@ function objectivePending(
       return count(state, 'ask:remit_reason') === 0 && facts.some((f) => f.category === 'denial_reason');
     case 'specific_code':
       return (
-        facts.some((f) => f.category === 'denial_reason' && f.value === 'diagnosis code') &&
+        facts.some((f) => f.category === 'denial_reason' && (f.value === 'diagnosis code' || f.value === 'procedure code')) &&
         !hasRefusal(ledger, callId, 'diagnosis_code') &&
         count(state, 'ask:specific_code') === 0
       );
@@ -112,12 +112,22 @@ function priorStatusToProbe(ledger: ClaimLedger, callId: CallId): FactStatement 
  * Decide the next move after a Rep turn (or at the start of the call). `contradictions` are all
  * contradictions the ledger currently derives; only those raised by this call are acted on.
  */
+/** What the live path knows that the ledger does not yet: the words of the last Rep turn and a half-captured identity. */
+export interface PlanInput {
+  lastRepText?: string;
+  identity?: { first: string | null; badge: string | null };
+}
+
+/** "Badge number." / "My badge is" with no digits: the number is still coming, so the plan holds its turn. */
+const BADGE_WITHOUT_DIGITS = /^\s*(?:my |the )?badge(?: number)?(?: is)?[\s.?!,]*$/i;
+
 export function nextMove(
   state: PlanState,
   brief: CallBrief,
   ledger: ClaimLedger,
   callId: CallId,
   contradictions: readonly Contradiction[],
+  input: PlanInput = {},
 ): { move: Move; state: PlanState } {
   const gate = computeGate(ledger, callId, brief.objectives);
   const item = (key: string) => gate.find((g) => g.key === key)!;
@@ -137,8 +147,15 @@ export function nextMove(
   }
 
   // 1 · Identity: one re-ask, then carry on (a refusal is recorded by the extractor).
-  if (item('rep_name').state === 'missing' && count(state, 'identify') < 1) {
-    return say('identify', 'identify', speech.askIdentityAgain(), speech.whisperMissing('Rep name and badge'));
+  if (item('rep_name').state === 'missing') {
+    // The Rep said "badge number" and stopped; the STT closed the turn before the digits (live
+    // call 2026-09-29 12:57). Say nothing and let the next turn carry the number.
+    if (input.lastRepText && BADGE_WITHOUT_DIGITS.test(input.lastRepText)) {
+      return { move: { kind: 'wait', key: 'wait', line: null, whisper: null }, state };
+    }
+    if (count(state, 'identify') < 1) {
+      return say('identify', 'identify', speech.askIdentityAgain(input.identity), speech.whisperMissing('Rep name and badge'));
+    }
   }
 
   // 2 · Contradictions raised by THIS call preempt everything else. Worst first, capped.
@@ -181,7 +198,7 @@ export function nextMove(
   // 5 · Objectives, in the Agent's order.
   for (const key of brief.objectives) {
     if (objectivePending(key, ledger, callId, state)) {
-      return say('ask', `ask:${key}`, speech.askObjective(key));
+      return say('ask', `ask:${key}`, speech.askObjective(key, count(state, `ask:${key}`)));
     }
   }
 

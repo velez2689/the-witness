@@ -54,6 +54,16 @@ export interface Extraction {
   identity: { first: string | null; badge: string | null; name: string | null };
 }
 
+const NAME_FILLER = new Set(['it\'s', 'its', 'my', 'name', 'is', 'speaking', 'here', 'this', 'i\'m', 'im', 'the', 'a', 'an', 'yes', 'yeah', 'hi', 'hello']);
+
+function tokenize(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[.,!?;:"()[\]]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
 const DEFLECTION =
   /(don'?t|do not) have that level of detail|(doesn'?t|does not) (specify|say)|refer you to the denial letter|you should have (gotten|received) a letter|how can i help you|just says the diagnosis/;
 
@@ -97,13 +107,22 @@ export function extractFromTurn(turn: RepTurn, ctx: ExtractContext): Extraction 
   const who = /\bthis is ([a-z]+)/.exec(lower);
   if (who && !['the', 'a', 'an'].includes(who[1])) {
     first = who[1][0].toUpperCase() + who[1].slice(1);
+  } else if (!first && ctx.askedFor === 'rep_identity') {
+    // A bare answer to "your name and badge?": "Smith.", "It's Smith", "Smith speaking" (live call
+    // 2026-09-29 12:57, where "Smith." alone was never taken as a name).
+    const words = tokenize(lower).filter((w) => !NAME_FILLER.has(w));
+    if (words.length >= 1 && words.length <= 2 && !/\d/.test(lower)) {
+      first = words[0][0].toUpperCase() + words[0].slice(1);
+    }
   }
+  // Badges are three to six digits in the wild; the demo payer's are four (live call 12:57: "227").
+  const BADGE_LEN = { min: 3, max: 6 };
   const badgeAt = lower.indexOf('badge');
   if (badgeAt >= 0) {
     const rest = lower.slice(badgeAt + 5).split(/[.?!]/)[0];
-    badge = parseSpokenDigits(rest, 4) ?? badge;
-  } else if (!badge && text.split(/\s+/).length <= 6) {
-    badge = parseSpokenDigits(lower, 4) ?? badge;
+    badge = parseSpokenDigits(rest, BADGE_LEN) ?? badge;
+  } else if (!badge && ctx.askedFor !== 'reference_number' && text.split(/\s+/).length <= 6) {
+    badge = parseSpokenDigits(lower, BADGE_LEN) ?? badge;
   }
   const known = badge ? ctx.knownReps.find((r) => r.badge === badge) : undefined;
   const surname = ctx.nameHint ?? known?.name.replace(/^[A-Z]\.\s*/, '') ?? null;
@@ -143,6 +162,15 @@ export function extractFromTurn(turn: RepTurn, ctx: ExtractContext): Extraction 
   }
   if (/denying on a diagnosis|diagnosis (issue|isn'?t supported|is not supported)|just says the diagnosis/.test(lower)) {
     fact('denial_reason', 'diagnosis code', /diagnosis/, { additional });
+  }
+  // Heard on the 2026-09-29 live calls and not typed until now: "non-covered" / "denied for
+  // non-coverage", and "an issue with the CPT code" (a category with no value, so the plan
+  // then asks which code, as it does for a diagnosis issue).
+  if (/\bnon-?\s?cover(?:ed|age)\b|\bnot covered\b/.test(lower)) {
+    fact('denial_reason', 'non-covered', /non-?\s?cover(?:ed|age)|not covered/, { additional });
+  }
+  if (/\b(?:cpt|procedure) code\b|\bcoding (?:issue|error|problem)\b/.test(lower) && !/\bwhich\b/.test(lower)) {
+    fact('denial_reason', 'procedure code', /(?:cpt|procedure) code|coding (?:issue|error|problem)/, { additional });
   }
 
   // --- status ---------------------------------------------------------------------------

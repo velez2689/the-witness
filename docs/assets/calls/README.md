@@ -40,3 +40,20 @@ Each zip holds `call-<ts>.json` (full trace: `stt-partial`, `reply-started`, `re
 | `call-2026-09-29T13-00-23.zip` | 91 s | Full plan to `plan-complete`. `denial_reason` asked twice again ("Non-covered" not extracted); reference number 627762 read back; recap and close spoken. The `verify` line took about 15 s to speak. |
 
 Things worth a second look: the rule-based extractor does not type "non-covered" as a denial reason (the Witness re-asks); a one-word answer ("Smith.") triggers "Sorry, you cut out there for a second"; the `verify` line is 10-15 s long with the slowed identifier pacing.
+
+### Measured 2026-09-29 (read from the three timelines and both audio tracks of each)
+
+All three: both tokens `ok`, `stt-begin` within 1.4 s, every `reply-started` was `ours`, every `reply-done` was `completed`, no `session-error`, both sockets closed on `plan-complete`. Microphone peaks 0.28 to 0.41 (a live voice; the Sep 25 dead-mic call peaked at 0.004). Server audio delivered: 89.5 s, 48.0 s, 50.6 s. On the 12:52 call the first audible syllable of the value-conflict challenge came 0.35 s after the Rep's end of turn; the greeting's first audio took 3.9 s (first reply of the session, server warm-up; every later reply 0.2 to 0.4 s).
+
+Defects seen, and their fix (commit on 2026-09-29, "fix(live): what the first three live calls taught"):
+
+| Seen on | Defect | Fix |
+|---|---|---|
+| 12:57 | "Smith." alone was not taken as a name (the extractor needed "this is") | a bare one- or two-word answer to the identity question is the name |
+| 12:57 | the re-ask said "you cut out there for a second", which was false; the Rep then answered "Badge number" and nothing else | the re-ask names only the missing half ("Thanks, Smith. And your badge number?") and never says the Rep cut out |
+| 12:57 | "Badge number." was finalised as its own turn before the digits, and the plan moved on | the plan holds its turn when the last Rep turn is "badge number" with no digits |
+| 12:57 | a three-digit badge ("227") was rejected (the parser wanted exactly four) | badges of three to six digits |
+| 12:57, 13:00 | "Non-covered" and "an issue with the CPT code" were not typed, so the same question was asked twice verbatim | both are denial reasons now, and the second ask of any objective uses different words |
+| 12:57 | the muted remainder of an interrupted line was traced as `reply-done: model completed` | traced as `reply-done: muted completed` |
+
+Not changed: the transcription turn settings. All three reference numbers (8K2J-988, 726247KMB26, 627762) arrived as single turns; the "Badge number." split is a confident semantic end of turn, handled by the plan rather than by widening the silence for the whole call.

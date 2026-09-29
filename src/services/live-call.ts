@@ -209,7 +209,7 @@ export class LiveCall {
         },
         onSuppressed: (text) => this.trace('suppressed', text),
         onReplyStarted: (ours) => this.trace('reply-started', ours ? 'ours' : 'model'),
-        onReplyEnded: (ours, status) => this.trace('reply-done', `${ours ? 'ours' : 'model'} ${status}`),
+        onReplyEnded: (ours, status) => this.trace('reply-done', ours ? `ours ${status}` : status.startsWith('muted') ? status : `model ${status}`),
         onAudio: (b64, at) => {
           if (this.spokeAt !== null) {
             this.d.events.latency({ flagMs: this.lastFlagMs, engineMs: this.lastEngineMs, speakMs: at - this.spokeAt });
@@ -338,12 +338,17 @@ export class LiveCall {
       this.d.events.latency({ flagMs: this.lastFlagMs, engineMs, speakMs: null });
     }
 
-    const { move, state } = nextMove(this.plan, this.d.brief, this.session.ledger, this.d.call.callId, contradictions);
+    const { move, state } = nextMove(this.plan, this.d.brief, this.session.ledger, this.d.call.callId, contradictions, {
+      lastRepText: text,
+      identity: this.session.identity,
+    });
     this.plan = state;
     this.speak(move, atMs + 400);
   }
 
   private speak(move: Move, atMs: number): void {
+    // A wait is the plan holding its turn (the Rep is mid-answer); the call goes on.
+    if (move.kind === 'wait') return;
     if (!move.line) {
       this.stop('plan-complete');
       return;
