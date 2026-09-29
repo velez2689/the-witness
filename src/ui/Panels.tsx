@@ -76,6 +76,8 @@ export function BriefPanel(p: {
   setSource: (s: Source) => void;
   liveAvailable: boolean;
   liveDetail: string | null;
+  audioSetup: 'headphones' | 'speakers';
+  setAudioSetup: (a: 'headphones' | 'speakers') => void;
   objectives: readonly ObjectiveKey[];
   setObjectives: (o: readonly ObjectiveKey[]) => void;
   phase: Phase;
@@ -147,6 +149,12 @@ export function BriefPanel(p: {
             <button aria-pressed={!live} disabled={p.locked || p.imported} title={p.imported ? "The scripted Rep replays the sample conversation. Playing it against a real claim would file the sample rep's words into this patient's ledger." : undefined} onClick={() => p.setSource('scripted')}>Scripted Rep</button>
             <button aria-pressed={live} disabled={p.locked || !p.liveAvailable} onClick={() => p.setSource('live')}>Be the Rep (live)</button>
           </span>
+          {live && (
+            <span className="w-seg" role="group" aria-label="How you are listening">
+              <button aria-pressed={p.audioSetup === 'headphones'} disabled={p.locked} onClick={() => p.setAudioSetup('headphones')}>Headphones</button>
+              <button aria-pressed={p.audioSetup === 'speakers'} disabled={p.locked} onClick={() => p.setAudioSetup('speakers')}>Speakers</button>
+            </span>
+          )}
           {!live && (
             <span className="w-seg" role="group" aria-label="Who speaks to the Rep">
               <button aria-pressed={p.mode === 'A'} disabled={p.locked} onClick={() => p.setMode('A')}>Witness speaks</button>
@@ -185,7 +193,9 @@ export function BriefPanel(p: {
         </div>
         <p className="w-note" style={{ margin: '8px 0 0' }}>
           {live
-            ? 'Live: you speak as the payer rep into your microphone; the Witness (AssemblyAI Voice Agent) calls you. Use headphones. Opens one AssemblyAI session only when you press Start.'
+            ? p.audioSetup === 'headphones'
+              ? 'Live: you speak as the payer rep into your microphone and the Witness calls you. On headphones you can talk over it. Two AssemblyAI sessions open only when you press Start.'
+              : 'Live: you speak as the payer rep into your microphone and the Witness calls you. On speakers the microphone closes while it talks, so wait for it to finish. Two AssemblyAI sessions open only when you press Start.'
             : 'Scripted path: no microphone, no network, no session opens until you press Start.'}
         </p>
         {p.liveDetail && <p role="alert" style={{ margin: '6px 0 0', color: 'var(--flag)' }}>{p.liveDetail}</p>}

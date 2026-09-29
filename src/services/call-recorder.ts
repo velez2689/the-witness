@@ -21,9 +21,16 @@ export const RECORDER_SAMPLE_RATE = 24_000;
 /** Stop before a runaway call can exhaust the tab. 10 minutes per channel. */
 const MAX_SAMPLES = RECORDER_SAMPLE_RATE * 600;
 
+/**
+ * Everything a saved call can say about itself. The playback pair and the socket-level events are
+ * what separate "our player stalled", "the server stopped sending" and "our ownership filter
+ * dropped it": three faults that all sound like the Witness cutting out and share nothing else.
+ * The Sep 25 recordings had only the first pair, and could not tell the three apart.
+ */
 export type CallEventKind =
   | 'start' | 'ready' | 'greeting' | 'rep-turn' | 'witness-line' | 'suppressed'
-  | 'playback-started' | 'playback-idle' | 'reply-done' | 'interrupted' | 'drift'
+  | 'playback-started' | 'playback-idle' | 'reply-started' | 'reply-done' | 'interrupted' | 'drift'
+  | 'transcript-agent' | 'session-error' | 'stt-begin' | 'stt-partial' | 'stt-error' | 'token' | 'socket-closed'
   | 'error' | 'stop';
 
 export interface CallEvent {

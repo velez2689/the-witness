@@ -79,6 +79,10 @@ export interface AgentHandlers {
   onSpeechStarted?: () => void;
   /** True when the Rep talked over the Witness and the server cut the reply short. */
   onReplyDone?: (interrupted: boolean) => void;
+  /** Every reply.started, ours or the model's. Observability for the saved-call timeline. */
+  onReplyStarted?: (ours: boolean) => void;
+  /** Every reply.done with its status, ours or the model's. Observability only. */
+  onReplyEnded?: (ours: boolean, status: string) => void;
   onError?: (message: string) => void;
   onClosed?: (reason: string, durationMs: number) => void;
 }
@@ -219,9 +223,12 @@ export class VoiceAgentSession {
           this.handlers.onUserTurn?.(text, at);
         }
         break;
-      case 'reply.started':
-        this.inFlight = { ours: this.claimReply() };
+      case 'reply.started': {
+        const ours = this.claimReply();
+        this.inFlight = { ours };
+        this.handlers.onReplyStarted?.(ours);
         break;
+      }
       case 'transcript.agent':
         if (text.trim()) {
           if (this.playing()) this.handlers.onAgentTranscript?.(text);
@@ -245,6 +252,7 @@ export class VoiceAgentSession {
         // leave the Witness mute for the rest of the call.
         this.inFlight = null;
         this.oursPending = false;
+        this.handlers.onReplyEnded?.(wasOurs, String(m.status ?? 'unknown'));
         if (wasOurs) this.handlers.onReplyDone?.(m.status === 'interrupted');
         this.drain();
         break;
@@ -341,6 +349,20 @@ export class VoiceAgentSession {
   private clearGrace(): void {
     if (this.graceTimer) clearTimeout(this.graceTimer);
     this.graceTimer = null;
+  }
+
+  /**
+   * Stop hearing the reply that is playing now.
+   *
+   * There is no client event that cancels a reply in flight (the client vocabulary is input.audio,
+   * session.update, session.resume, session.end, tool.result, reply.create, conversation.message),
+   * and the server only interrupts itself when it hears the user, which on this socket it never
+   * does. So a barge-in the Rep makes on the transcription socket has to be finished here: the
+   * rest of the reply is treated as not ours and never reaches the speaker. Flushing the player
+   * alone only dropped what was buffered at that instant; the sentence then carried on.
+   */
+  muteCurrent(): void {
+    if (this.inFlight?.ours) this.inFlight = { ours: false };
   }
 
   /** Speak assembled text. Queued, never overlapped: see the turn-ownership note above. */

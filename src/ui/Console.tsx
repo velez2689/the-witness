@@ -27,6 +27,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
   const [objectives, setObjectives] = useState<readonly ObjectiveKey[]>(props.brief.objectives);
   const [source, setSource] = useState<Source>('scripted');
   const [theme, setTheme] = useState<(typeof THEMES)[number]>('auto');
+  const [audioSetup, setAudioSetup] = useState<'headphones' | 'speakers'>('headphones');
   const worklist = useWorklist(props.readWorkbook, props.worklistStore);
 
   /**
@@ -58,7 +59,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
   }, [imported, objectives, props, worklist.chosen]);
 
   const scripted = useCallRunner(active, objectives);
-  const liveCall = useLiveCall(active, objectives, props.driver);
+  const liveCall = useLiveCall(active, objectives, props.driver, audioSetup);
   // A real claim has no recorded conversation to replay, so Live is the only honest source.
   const isLive = imported ? true : source === 'live';
 
@@ -175,6 +176,8 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         setSource={setSource}
         liveAvailable={liveCall.available}
         liveDetail={isLive ? liveCall.detail : null}
+        audioSetup={audioSetup}
+        setAudioSetup={setAudioSetup}
         objectives={objectives}
         setObjectives={setObjectives}
         phase={phase}

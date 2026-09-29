@@ -7,6 +7,7 @@ import { CallRecorder } from '@/services/call-recorder';
 import { SessionRegistry } from '@/services/session-registry';
 import { readWorkbook } from '@/services/workbook-reader';
 import { createWorklistStore } from '@/services/worklist-store';
+import { zipStored } from '@/services/zip-writer';
 import { Console } from '@/ui/Console';
 import type { ConsoleProps, LiveDriver } from '@/ui/console-types';
 
@@ -19,7 +20,13 @@ async function fetchToken(kind: 'agent' | 'stt'): Promise<string> {
   return body.token;
 }
 
-/** Hand a file to the operator. Nothing is uploaded; the call never leaves the machine. */
+/**
+ * Hand ONE file to the operator. Nothing is uploaded; the call never leaves the machine.
+ *
+ * One file, because three clicks in a row are not three downloads: Chrome blocks the second and
+ * third automatic downloads until the user allows them, and the Sep 25 saves came out with a
+ * timeline and no audio, or audio with no timeline. The archive carries all three.
+ */
 function download(name: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -45,7 +52,16 @@ export function ConsoleHost(props: ConsoleProps) {
         return new LiveCall({
           ...input,
           registry,
-          fetchToken,
+          fetchToken: async (kind) => {
+            try {
+              const t = await fetchToken(kind);
+              recorder.note('token', `${kind} ok`);
+              return t;
+            } catch (e) {
+              recorder.note('token', `${kind} failed: ${e instanceof Error ? e.message : String(e)}`);
+              throw e;
+            }
+          },
           // The microphone is teed BEFORE the call gates it. rep.wav is then what the room
           // actually sounded like, which is the only way to answer "it did not hear me" - a
           // recording of what we chose to send cannot show what we chose to drop.
@@ -60,6 +76,7 @@ export function ConsoleHost(props: ConsoleProps) {
             witness: (e) => { recorder.note('witness-line', `${e.tag}: ${e.text}`); events.witness(e); },
             drift: (u) => { recorder.note('drift', u.join(', ')); events.drift(u); },
             done: (r) => { recorder.end(r); events.done(r); },
+            trace: (k, d) => { recorder.note(k, d); events.trace?.(k, d); },
           },
         });
       },
@@ -68,8 +85,10 @@ export function ConsoleHost(props: ConsoleProps) {
         player.stop();
         recorder.end(reason);
       },
-      saveCall: () => {
-        for (const f of recorder.files()) download(f.name, f.blob);
+      saveCall: async () => {
+        const files = recorder.files();
+        const stamp = files.find((f) => f.name.startsWith('call-'))?.name.replace(/\.json$/, '') ?? 'call';
+        download(`${stamp}.zip`, await zipStored(files));
       },
       hasRecording: () => recorder.hasAudio,
     };

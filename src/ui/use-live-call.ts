@@ -34,7 +34,12 @@ function startFailureMessage(e: unknown): string {
 }
 
 /** "Be the Rep": the same console, fed by a live Voice Agent session instead of a script. */
-export function useLiveCall(props: ConsoleProps, objectives: readonly ObjectiveKey[], driver: LiveDriver | undefined) {
+export function useLiveCall(
+  props: ConsoleProps,
+  objectives: readonly ObjectiveKey[],
+  driver: LiveDriver | undefined,
+  audioSetup: 'headphones' | 'speakers' = 'headphones',
+) {
   const [status, setStatus] = useState<LiveStatus>('idle');
   const [detail, setDetail] = useState<string | null>(null);
   const [feed, setFeed] = useState<FeedItem[]>([]);
@@ -82,7 +87,7 @@ export function useLiveCall(props: ConsoleProps, objectives: readonly ObjectiveK
     session.current = null;
     setFeed([]); setDismissed([]); setSelected(null); setLatency(null); setDrift([]); setDetail(null);
     const s = driver.create(
-      { brief, ledger: props.historyLedger, call: { callId: props.live.id, capturedAt: props.live.startedAt } },
+      { brief, ledger: props.historyLedger, call: { callId: props.live.id, capturedAt: props.live.startedAt }, audioSetup },
       {
         status: (st, d) => { setStatus(st); setDetail(d ?? null); },
         rep: (e) => push({ side: 'rep', text: e.text, atMs: e.atMs, durationMs: estimateDurationMs(e.text), holdSeconds: 0, cites: [], added: e.added, contradictions: e.contradictions, engineMs: e.engineMs, lowConfidence: false, tag: null }),
@@ -106,10 +111,10 @@ export function useLiveCall(props: ConsoleProps, objectives: readonly ObjectiveK
       setStatus('error');
       setDetail(startFailureMessage(e));
     }
-  }, [driver, brief, props.historyLedger, props.live.id, props.live.startedAt, push]);
+  }, [driver, brief, props.historyLedger, props.live.id, props.live.startedAt, push, audioSetup]);
 
   const stop = useCallback(() => session.current?.stop('user-stop'), []);
-  const saveCall = useCallback(() => driver?.saveCall?.(), [driver]);
+  const saveCall = useCallback(() => void driver?.saveCall?.(), [driver]);
   const reset = useCallback(() => {
     driver?.closeAll('reset');
     session.current = null;
