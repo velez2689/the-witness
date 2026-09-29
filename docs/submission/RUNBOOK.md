@@ -30,7 +30,7 @@ Then to submission:
 | B2 long description | Done except the last paragraph, which says what the video shows; fill it after B5 |
 | B3 cover image | Done: `docs/assets/cover-16x9.png` (3840x2160, downscale to 1920x1080 on upload if the form wants it) |
 | B4 deck | Done as `docs/submission/deck.html` and `deck.pdf`; slide 11 (competitors) needs the verification step below before it ships |
-| B5 video | Not started; recipe below |
+| B5 video | Draft picture track exists: `docs/assets/demo-draft.mp4` (3:55, silent, captions carry the narration; made by `fixtures/scripts/capture-footage.mjs`). Needs narration, and the demo segment swapped for a live call if one is captured |
 | B6 submission | Owner only; checklist below |
 | Live call on the current build | Not yet proven; steps below |
 

@@ -118,13 +118,16 @@ const beats = [
 ];
 for (const [text, seconds] of beats) {
   await caption(text);
+  // Clicking Step scrolls the button into view; put the flag lane back at the top each time.
   await page.getByRole('button', { name: 'Step' }).click().catch(() => undefined);
   await page.waitForTimeout(300);
+  await scrollTo('.w-flaglane');
   await hold(seconds, text.slice(0, 40));
 }
-// Let the runner finish any remaining items.
+// Let the runner finish the remaining items; the update sheet appears once the call is done.
 await page.getByRole('button', { name: 'Resume' }).click().catch(() => undefined);
-await page.waitForTimeout(4000);
+await page.locator('.w-update').waitFor({ timeout: 60_000 }).catch(() => undefined);
+await page.waitForTimeout(500);
 
 await caption('The inspector holds both quotes, the capture sheet fills a CMS-1500, and the hang-up gate is an exit condition: every required field captured or refused.');
 await scrollTo('.w-lower');
