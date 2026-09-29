@@ -6,7 +6,7 @@ Deadline: 2026-09-30 11:00 ET. Nothing is submitted until the owner says so. Sta
 
 Live call first (your machine, headphones, key; about 45 minutes):
 
-1. Test on the branch's Vercel preview, not production: `https://the-witness-git-claude-wizardly-ed-7caeed-chris-velezs-projects.vercel.app`. You are on the right build when a "Headphones / Speakers" control sits beside "Be the Rep (live)". If the page reports the key is not configured, add `ASSEMBLYAI_API_KEY` to the Vercel Preview environment, or merge the PR and use production.
+1. Test on production: `https://the-witness-omega.vercel.app`. You are on the right build when a "Headphones / Speakers" control sits beside "Be the Rep (live)". If the page reports the key is not configured, add `ASSEMBLYAI_API_KEY` to the Vercel Production environment.
 2. Fix the input device before anything else. The 17:26 recording on Sep 25 is 15 s of microphone silence. Windows Settings, Sound, Input: headset microphone selected, unmuted, audio enhancements off. Chrome's mic permission: same device. Speak and watch the input meter move.
 3. One tab, headphones, DevTools Console open, extensions off, no VPN, no screen recorder. Wait two minutes since the last attempt (5 new streams per minute; a call opens two).
 4. Run one call with "Headphones" selected. Follow the Rep script in `fixtures/scripts/rep-bank-call-06.ts`. Let it reach "have a good one". Press "Save call": one zip downloads.
