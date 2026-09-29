@@ -6,6 +6,8 @@
 
 **Live demo:** https://the-witness-omega.vercel.app (Chrome, headphones for the live path) · **Built on:** AssemblyAI Streaming STT v3 + Voice Agent API · **Submission:** AssemblyAI Voice Agent Hackathon on lablab.ai, September 2026
 
+**Demo video (4:32):** [watch it on GitHub](https://github.com/velez2689/the-witness/blob/main/docs/assets/demo-narrated.mp4)
+
 ---
 
 ## The problem
