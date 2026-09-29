@@ -2,6 +2,26 @@
 
 Deadline: 2026-09-30 11:00 ET. Nothing is submitted until the owner says so. Standing rules for every artifact: no transcription accuracy percentage; no CPT descriptor text; no PHI (say the data is synthetic); no rep reputation scoring; never call footage live unless it is; every number carries its source and year from `docs/PROJECT-STATE.md` section 9; plain punctuation; no emoji.
 
+## The twelve steps from here to submission
+
+Live call first (your machine, headphones, key; about 45 minutes):
+
+1. Test on the branch's Vercel preview, not production: `https://the-witness-git-claude-wizardly-ed-7caeed-chris-velezs-projects.vercel.app`. You are on the right build when a "Headphones / Speakers" control sits beside "Be the Rep (live)". If the page reports the key is not configured, add `ASSEMBLYAI_API_KEY` to the Vercel Preview environment, or merge the PR and use production.
+2. Fix the input device before anything else. The 17:26 recording on Sep 25 is 15 s of microphone silence. Windows Settings, Sound, Input: headset microphone selected, unmuted, audio enhancements off. Chrome's mic permission: same device. Speak and watch the input meter move.
+3. One tab, headphones, DevTools Console open, extensions off, no VPN, no screen recorder. Wait two minutes since the last attempt (5 new streams per minute; a call opens two).
+4. Run one call with "Headphones" selected. Follow the Rep script in `fixtures/scripts/rep-bank-call-06.ts`. Let it reach "have a good one". Press "Save call": one zip downloads.
+5. If anything went wrong, read the zip's `call-*.json` in this order: both `token` events say `ok`; `stt-begin` arrived; `reply-started: ours` for the greeting and its `reply-done: ours completed`. Audio that stops with no `reply-done` means the server stalled, and any `session-error` says why. A `reply-started: model` means the ownership filter dropped the rest. Push the zip to `docs/assets/calls/` and add a row to its README with the build hash.
+6. Confirm the transcription parameters once with the spike in section A step 6. If the server rejects a parameter, remove it from `STT_SETTINGS` in `src/services/live-call.ts`, run the checks, commit.
+7. Timebox 18:00 ET on Sep 29. A clean saved call means the video uses it (B5 below). No clean call means the scripted Rep on the real console with the on-screen caption.
+
+Then to submission:
+
+8. Verify the five competitor rows on deck slide 11 against each vendor's site; delete any row you cannot confirm; re-render with `PLAYWRIGHT_CORE=<path> node fixtures/scripts/render-deck.mjs`.
+9. Fill the last paragraph of `long-description.md` and deck slide 8 to match the video.
+10. Merge the PR to `main`; confirm production shows the Headphones/Speakers control; open it in a fresh incognito window and run the scripted call end to end. Regenerate `docs/assets/d2-architecture.svg` from the updated `.d2` (`d2` is not installed in the cloud sandbox).
+11. Commit something on Sep 30 before 10:30 ET. The commit log is judged.
+12. Submit on lablab.ai with the fields in B6. Nothing is submitted until you click.
+
 ## State on 2026-09-29 (what is done, what is not)
 
 | Item | State |
