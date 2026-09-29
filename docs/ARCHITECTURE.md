@@ -124,3 +124,4 @@ appeal packet that says "the representative stated" has to match audio a human c
 So the Rep's channel stays verbatim, deliberately. The Dictation API is a good fit for one place
 we may use it later: the Agent's own spoken annotations ("Witness, flag that"), which are the
 biller's notes and explicitly not payer statements.
+- `docs/submission/` holds the contest submission copy (descriptions, deck, runbook). Text only; images stay in `docs/assets/`.
