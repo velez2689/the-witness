@@ -16,7 +16,7 @@ Live call first (your machine, headphones, key; about 45 minutes):
 
 Then to submission:
 
-8. Verify the five competitor rows on deck slide 11 against each vendor's site; delete any row you cannot confirm; re-render with `PLAYWRIGHT_CORE=<path> node fixtures/scripts/render-deck.mjs`.
+8. Done 2026-09-29: the five competitor rows on deck slide 11 were checked against the vendors' pages and a 2026 category review; sources are printed on the slide. Re-render after any edit with `PLAYWRIGHT_CORE=<path> node fixtures/scripts/render-deck.mjs`.
 9. Fill the last paragraph of `long-description.md` and deck slide 8 to match the video.
 10. Merge the PR to `main`; confirm production shows the Headphones/Speakers control; open it in a fresh incognito window and run the scripted call end to end. Regenerate `docs/assets/d2-architecture.svg` from the updated `.d2` (`d2` is not installed in the cloud sandbox).
 11. Commit something on Sep 30 before 10:30 ET. The commit log is judged.
