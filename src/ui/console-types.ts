@@ -38,9 +38,10 @@ export interface LiveHandlers {
     contradictions: import('@/domain/contradiction').Contradiction[];
     engineMs: number;
     atMs: number;
+    audio?: { startMs: number; endMs: number };
   }): void;
   witness(e: { text: string; cites: readonly string[]; tag: string; atMs: number }): void;
-  latency(e: { flagMs: number; speakMs: number | null }): void;
+  latency(e: { flagMs: number | null; engineMs: number; speakMs: number | null }): void;
   drift(unknown: string[]): void;
   done(reason: string): void;
   /** Socket-level events for the saved call's timeline. Kinds mirror services/live-call TraceKind. */
@@ -70,4 +71,8 @@ export interface LiveDriver {
   saveCall?(): void | Promise<void>;
   /** Whether there is anything to save yet. */
   hasRecording?(): boolean;
+  /** Play what the microphone heard between two offsets on the transcription clock. */
+  playSpan?(startMs: number, endMs: number): void;
+  /** Peak envelope of that audio, for the edit view. Null when nothing is recorded there. */
+  peaks?(startMs: number, endMs: number, buckets: number): number[] | null;
 }

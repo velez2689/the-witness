@@ -17,15 +17,16 @@ const history = buildHistory(CLAIM.id, CALLS);
 function harness() {
   const registry = new SessionRegistry(300);
   let sock!: FakeSocket;
-  const log = { witness: [] as string[], tags: [] as string[], rep: [] as string[], flags: [] as string[], drift: [] as string[][], status: [] as string[], done: [] as string[], trace: [] as string[], played: 0 };
+  const log = { witness: [] as string[], tags: [] as string[], rep: [] as string[], flags: [] as string[], drift: [] as string[][], status: [] as string[], done: [] as string[], trace: [] as string[], played: 0, spans: [] as Array<{ startMs: number; endMs: number }>, latency: [] as Array<{ flagMs: number | null; engineMs: number; speakMs: number | null }> };
   let sttUrl = '';
   const mic = { stop: vi.fn() };
+  let micCb: ((pcm: Int16Array) => void) | null = null;
   const tokens = vi.fn(async (kind: 'agent' | 'stt') => `single-use-token-${kind}`);
   const events: LiveEvents = {
     status: (s) => log.status.push(s),
-    rep: (e) => { log.rep.push(e.text); e.contradictions.forEach((c) => log.flags.push(c.kind)); },
+    rep: (e) => { log.rep.push(e.text); e.contradictions.forEach((c) => log.flags.push(c.kind)); e.added.forEach((st) => log.spans.push({ startMs: st.span.startMs, endMs: st.span.endMs })); },
     witness: (e) => { log.witness.push(e.text); log.tags.push(e.tag); },
-    latency: () => undefined,
+    latency: (e) => log.latency.push(e),
     drift: (u) => log.drift.push(u),
     done: (r) => log.done.push(r),
     trace: (k, d) => log.trace.push(d ? `${k}: ${d}` : k),
@@ -33,11 +34,11 @@ function harness() {
   let stt!: FakeSocket;
   const call = new LiveCall({
     brief: BRIEF, ledger: history.ledger, call: { callId: LIVE_CALL.id, capturedAt: LIVE_CALL.startedAt },
-    registry, fetchToken: tokens, startMic: async () => mic, playAudio: () => { log.played += 1; }, stopAudio: () => undefined,
+    registry, fetchToken: tokens, startMic: async (cb) => { micCb = cb; return mic; }, playAudio: () => { log.played += 1; }, stopAudio: () => undefined,
     events, makeSocket: () => (sock = new FakeSocket()), makeSttSocket: (url) => { sttUrl = url; return (stt = new FakeSocket()); },
   });
   const said = () => sock.sent.filter((m) => m.type === 'reply.create').map((m) => String(m.instructions));
-  return { call, registry, sock: () => sock, stt: () => stt, sttUrl: () => sttUrl, log, mic, tokens, said };
+  return { call, registry, sock: () => sock, stt: () => stt, sttUrl: () => sttUrl, log, mic, tokens, said, sendMic: (samples: number) => micCb?.(new Int16Array(samples)) };
 }
 
 /** The server plays the line we just asked for: reply.started then reply.done, both ours. */
@@ -450,5 +451,47 @@ describe('the whole plan on the live path', () => {
     ]));
     h.call.stop('user-stop');
     expect(h.log.trace).toEqual(expect.arrayContaining(['socket-closed: stt user-stop', 'socket-closed: voice user-stop']));
+  });
+});
+
+describe('latency is measured from the end of the Rep turn, and offsets come from the words', () => {
+  it('uses the server word timings for the statement span and the flag figure', async () => {
+    const h = harness();
+    await live(h);
+    h.stt().server({ type: 'Turn', transcript: 'This is Darnell, badge two-two-one-zero.', end_of_turn: true });
+    ourReply(h);
+    // Two seconds of microphone audio have gone to the server when the next turn lands, and the
+    // server says the words ended 300 ms before the end of what it has heard.
+    h.sendMic(24_000);
+    h.sendMic(24_000);
+    h.stt().server({
+      type: 'Turn',
+      transcript: 'Okay. That claim denied. Timely filing.',
+      end_of_turn: true,
+      words: [{ text: 'Okay.', start: 1100, end: 1300 }, { text: 'filing.', start: 1500, end: 1700 }],
+    });
+    expect(h.log.flags).toContain('value_conflict');
+    // Each statement's quote is placed proportionally inside the turn's word window.
+    for (const span of h.log.spans.slice(-2)) {
+      expect(span.startMs).toBeGreaterThanOrEqual(1100);
+      expect(span.endMs).toBeLessThanOrEqual(1700);
+      expect(span.endMs).toBeGreaterThan(span.startMs);
+    }
+    const l = h.log.latency.at(-1)!;
+    expect(l.flagMs).not.toBeNull();
+    // 2000 ms sent, turn ended at 1700: the end of turn was 300 ms before the last chunk went out.
+    expect(l.flagMs!).toBeGreaterThanOrEqual(300);
+    expect(l.flagMs!).toBeLessThan(1500);
+    expect(l.engineMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it('falls back to an estimated span and no flag figure when a turn carries no words', async () => {
+    const h = harness();
+    await live(h);
+    h.stt().server({ type: 'Turn', transcript: 'This is Darnell, badge two-two-one-zero.', end_of_turn: true });
+    ourReply(h);
+    h.stt().server({ type: 'Turn', transcript: 'Okay. That claim denied. Timely filing.', end_of_turn: true });
+    expect(h.log.latency.at(-1)!.flagMs).toBeNull();
+    expect(h.log.spans.at(-1)!.endMs).toBeGreaterThan(h.log.spans.at(-1)!.startMs);
   });
 });

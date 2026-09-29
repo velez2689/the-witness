@@ -9,7 +9,7 @@ import { checkSpeech, consentGreeting } from '@/domain/speech';
 import type { Statement } from '@/domain/statement';
 import { SAMPLE_RATE } from './audio-io';
 import { SessionRegistry } from './session-registry';
-import { StreamingSession, type StreamingSocketFactory } from './streaming-session';
+import { StreamingSession, type StreamingSocketFactory, type TurnTiming } from './streaming-session';
 import { VoiceAgentSession, type SocketFactory } from './voice-agent-session';
 
 /**
@@ -44,9 +44,21 @@ export type TraceKind =
 
 export interface LiveEvents {
   status(s: 'connecting' | 'live' | 'closed' | 'error', detail?: string): void;
-  rep(e: { text: string; added: Statement[]; contradictions: Contradiction[]; engineMs: number; atMs: number }): void;
+  rep(e: {
+    text: string;
+    added: Statement[];
+    contradictions: Contradiction[];
+    engineMs: number;
+    atMs: number;
+    /** Where the turn sits in the audio the server heard, when it sent word timings. */
+    audio?: { startMs: number; endMs: number };
+  }): void;
   witness(e: { text: string; cites: readonly string[]; tag: string; atMs: number }): void;
-  latency(e: { flagMs: number; speakMs: number | null }): void;
+  /**
+   * `flagMs` is end of the Rep's turn to the flag, from the server's word timings, or null when
+   * the turn carried none; `engineMs` is extract, diff and plan alone. Never smoothed.
+   */
+  latency(e: { flagMs: number | null; engineMs: number; speakMs: number | null }): void;
   /** The agent said something with an alphanumeric that is not in the record. */
   drift(unknown: string[]): void;
   done(reason: string): void;
@@ -152,7 +164,8 @@ export class LiveCall {
   private pendingClose = false;
   private awaitingRecapAnswer = false;
   private recapTimer: ReturnType<typeof setTimeout> | null = null;
-  private lastFlagMs = 0;
+  private lastFlagMs: number | null = null;
+  private lastEngineMs = 0;
   private turnAt: number | null = null;
 
   constructor(private readonly d: LiveDeps) {
@@ -199,7 +212,7 @@ export class LiveCall {
         onReplyEnded: (ours, status) => this.trace('reply-done', `${ours ? 'ours' : 'model'} ${status}`),
         onAudio: (b64, at) => {
           if (this.spokeAt !== null) {
-            this.d.events.latency({ flagMs: this.lastFlagMs, speakMs: at - this.spokeAt });
+            this.d.events.latency({ flagMs: this.lastFlagMs, engineMs: this.lastEngineMs, speakMs: at - this.spokeAt });
             this.spokeAt = null;
           }
           this.d.playAudio(b64);
@@ -250,7 +263,7 @@ export class LiveCall {
         this.d.registry,
         {
           onReady: (id) => this.trace('stt-begin', id ?? undefined),
-          onTurn: (text, at) => this.onRepTurn(text, at),
+          onTurn: (text, at, timing) => this.onRepTurn(text, at, timing),
           /*
            * Barge-in is ours now. The Voice Agent owned it while it could hear the Rep; a
            * transcription socket cannot interrupt anything, because it is not the one speaking.
@@ -301,18 +314,29 @@ export class LiveCall {
     }
   }
 
-  private onRepTurn(text: string, receivedAt: number): void {
+  private onRepTurn(text: string, receivedAt: number, timing?: TurnTiming): void {
     this.awaitingRecapAnswer = false;
     this.clearRecapTimer();
     const atMs = receivedAt - this.startedAt;
-    this.turnAt = receivedAt;
+    // The end of the Rep's turn is what latency is measured from. The transcript arrives after
+    // the server's end-of-turn wait, so `receivedAt` alone would flatter the figure.
+    this.turnAt = timing ? timing.endOfTurnWall : receivedAt;
+    // Statement offsets come from the server's word timings when it sends them (offsets into
+    // the audio we sent, which is what the saved recording holds); otherwise estimated.
+    const span = timing
+      ? { startMs: timing.startMs, endMs: timing.endMs }
+      : { startMs: atMs, endMs: atMs + estimateDurationMs(text) };
     const p0 = performance.now();
-    const r = ingestRepTurn(this.session, { text, startMs: atMs, endMs: atMs + estimateDurationMs(text) });
+    const r = ingestRepTurn(this.session, { text, ...span });
     const contradictions = detect(r.session.ledger);
     const engineMs = performance.now() - p0;
-    this.lastFlagMs = engineMs;
+    this.lastEngineMs = engineMs;
+    this.lastFlagMs = timing ? this.now() - timing.endOfTurnWall : null;
     this.session = r.session;
-    this.d.events.rep({ text, added: r.added, contradictions: r.contradictions, engineMs, atMs });
+    this.d.events.rep({ text, added: r.added, contradictions: r.contradictions, engineMs, atMs, audio: timing ? span : undefined });
+    if (r.contradictions.length > 0) {
+      this.d.events.latency({ flagMs: this.lastFlagMs, engineMs, speakMs: null });
+    }
 
     const { move, state } = nextMove(this.plan, this.d.brief, this.session.ledger, this.d.call.callId, contradictions);
     this.plan = state;

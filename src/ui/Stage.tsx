@@ -28,6 +28,17 @@ interface Props {
   focus: Contradiction | null;
   mode: Mode;
   totalMs: number;
+  /** Live only: peak envelope of the recorded Rep audio, so the track shows what was heard. */
+  peaks?: (startMs: number, endMs: number, buckets: number) => number[] | null;
+}
+
+/** A polyline of the real amplitude inside a block: the audio, not a decoration. */
+function envelope(peaks: readonly number[], x: number, w: number, y: number, h: number): string {
+  const mid = y + h / 2;
+  const step = w / Math.max(peaks.length - 1, 1);
+  const top = peaks.map((v, i) => `${(x + i * step).toFixed(1)},${(mid - v * (h / 2)).toFixed(1)}`);
+  const bottom = [...peaks].reverse().map((v, i) => `${(x + (peaks.length - 1 - i) * step).toFixed(1)},${(mid + v * (h / 2)).toFixed(1)}`);
+  return `${top.join(' ')} ${bottom.join(' ')}`;
 }
 
 function layoutBlocks(shown: readonly FeedItem[], scale: number) {
@@ -91,6 +102,10 @@ export function Stage(p: Props) {
               </g>
             )}
             <rect x={b.x} y={y + 6} width={b.w} height={TRACK_H - 12} rx={3} fill={fill} opacity={b.item.side === 'whisper' ? 0.85 : 0.9} />
+            {rep && b.item.audio && p.peaks && (() => {
+              const pk = p.peaks(b.item.audio.startMs, b.item.audio.endMs, Math.max(8, Math.round(b.w / 2)));
+              return pk ? <polygon points={envelope(pk, b.x, b.w, y + 6, TRACK_H - 12)} fill="var(--bg)" opacity={0.85} /> : null;
+            })()}
             {b.item.side === 'whisper' && (
               <text x={b.x} y={y + TRACK_H + 11} className="mono" style={{ fontSize: 9.5, fill: 'var(--signal)' }}>earpiece</text>
             )}

@@ -52,6 +52,12 @@ export class CallRecorder {
   private rep = channel();
   private events: CallEvent[] = [];
   private startedAt: number | null = null;
+  /**
+   * Sample index in the Rep channel where the transcription socket started hearing. Microphone
+   * chunks before that moment are recorded but were never sent, so the server's word timings
+   * (offsets into what it heard) line up with the recording only from here.
+   */
+  private sttStartSample = 0;
 
   constructor(private readonly now: () => number = () => Date.now()) {}
 
@@ -76,8 +82,58 @@ export class CallRecorder {
     this.witness = channel();
     this.rep = channel();
     this.events = [];
+    this.sttStartSample = 0;
     this.startedAt = this.now();
     this.note('start');
+  }
+
+  /** Call when the transcription socket reports Begin: word timings count from here. */
+  markSttStart(): void {
+    this.sttStartSample = this.rep.samples;
+  }
+
+  /** The Rep audio between two offsets on the transcription clock. Empty outside the recording. */
+  repSlice(startMs: number, endMs: number): Int16Array {
+    const from = this.sttStartSample + Math.max(0, Math.round((startMs / 1000) * RECORDER_SAMPLE_RATE));
+    const to = this.sttStartSample + Math.max(0, Math.round((endMs / 1000) * RECORDER_SAMPLE_RATE));
+    if (to <= from) return new Int16Array(0);
+    const out = new Int16Array(Math.min(to, this.rep.samples) - Math.min(from, this.rep.samples));
+    let cursor = 0;
+    let written = 0;
+    for (const c of this.rep.chunks) {
+      const cStart = cursor;
+      const cEnd = cursor + c.length;
+      cursor = cEnd;
+      if (cEnd <= from) continue;
+      if (cStart >= to) break;
+      const a = Math.max(from, cStart) - cStart;
+      const b = Math.min(to, cEnd) - cStart;
+      out.set(c.subarray(a, b), written);
+      written += b - a;
+    }
+    return out.subarray(0, written);
+  }
+
+  /**
+   * Peak amplitude (0 to 1) in `buckets` equal slices of the Rep audio between two offsets, for
+   * drawing a real envelope in the edit view. Null when nothing is recorded there.
+   */
+  repPeaks(startMs: number, endMs: number, buckets: number): number[] | null {
+    const pcm = this.repSlice(startMs, endMs);
+    if (pcm.length === 0 || buckets <= 0) return null;
+    const size = pcm.length / buckets;
+    const out: number[] = [];
+    for (let i = 0; i < buckets; i += 1) {
+      const a = Math.floor(i * size);
+      const b = Math.max(a + 1, Math.floor((i + 1) * size));
+      let peak = 0;
+      for (let j = a; j < b && j < pcm.length; j += 1) {
+        const v = Math.abs(pcm[j]);
+        if (v > peak) peak = v;
+      }
+      out.push(peak / 32768);
+    }
+    return out;
   }
 
   note(kind: CallEventKind, detail?: string): void {

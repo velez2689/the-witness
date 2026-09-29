@@ -101,7 +101,9 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
   const lastWitness = [...v.shown].reverse().find((i) => i.side === 'witness');
   const suggestion = lastWitness?.tag ? (props.bank[lastWitness.tag]?.text ?? null) : null;
   const banner = v.banner;
-  const flagMs = isLive ? (liveCall.latency?.flagMs ?? v.flagLatencyMs) : v.flagLatencyMs;
+  // Live: end of the Rep's turn to the flag, from the server's word timings. Scripted: engine time only.
+  const flagMs = isLive ? (liveCall.latency?.flagMs ?? null) : v.flagLatencyMs;
+  const engineMs = isLive ? (liveCall.latency?.engineMs ?? v.flagLatencyMs) : v.flagLatencyMs;
 
   // The rest of the batch: same call, same rep, separate ledgers. Opens once the lead claim is worked.
   const roster = useRoster(
@@ -141,6 +143,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         contradictionCount={v.contradictions.length}
         refusalCount={refusalCount}
         flagLatencyMs={flagMs}
+        engineMs={engineMs}
         extractMs={v.extractMs}
         replyMs={isLive ? (liveCall.latency?.speakMs ?? null) : null}
         live={isLive}
@@ -233,7 +236,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
             {mode === 'A' ? 'the Witness is speaking to the Rep' : 'the Agent is speaking, the Witness whispers'}
           </p>
         </header>
-        <Stage shown={v.shown} focus={v.focus} mode={mode} totalMs={isLive ? 180_000 : 150_000} />
+        <Stage shown={v.shown} focus={v.focus} mode={mode} totalMs={isLive ? 180_000 : 150_000} peaks={isLive ? props.driver?.peaks : undefined} />
       </div>
       <Transcript items={v.shown} mode={mode} />
       {isLive && liveCall.drift.length > 0 && (
@@ -261,7 +264,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         onDiscard={roster.discard}
       />
       <div className="w-lower">
-        <Inspector ledger={v.ledger} focus={v.focus} shown={v.shown} callCount={active.historyCalls.length} closeOut={closeOut} finished={finished} />
+        <Inspector ledger={v.ledger} focus={v.focus} shown={v.shown} callCount={active.historyCalls.length} closeOut={closeOut} finished={finished} liveCallId={isLive ? props.live.id : null} playSpan={isLive ? props.driver?.playSpan : undefined} />
         <CaptureSheet brief={{ ...active.brief, objectives }} patientLabel={active.patientLabel} ledger={v.ledger} gate={v.gate} callId={props.live.id} />
         <HangUpGate gate={v.gate} ok={v.hangUpOk} phase={phase} batch={roster.started ? roster.outstanding : null} />
       </div>
