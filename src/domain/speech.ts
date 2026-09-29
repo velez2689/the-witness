@@ -2,7 +2,7 @@ import type { ClaimLedger } from './claim-ledger';
 import type { CallBrief, ObjectiveKey } from './call-brief';
 import { OBJECTIVES, briefFacts } from './call-brief';
 import type { Contradiction } from './contradiction';
-import type { CallId, FactStatement, Statement } from './statement';
+import type { CallId, FactStatement, Statement, StatementCategory } from './statement';
 import { findAlnumRuns, formatReference, spellForSpeech } from '@/lib/alphanumeric';
 import { sayDate } from '@/lib/dates';
 import { sayNumber } from '@/lib/number-words';
@@ -24,6 +24,13 @@ function byId(ledger: ClaimLedger, id: string): Statement {
   if (!s) throw new Error(`statement ${id} is not in the ledger`);
   return s;
 }
+/** Spoken labels for the X12 codes a Rep can read out. Codes are spelled; nothing says what they mean. */
+const CODE_LABELS: readonly (readonly [StatementCategory, string])[] = [
+  ['denial_code', 'denial code'],
+  ['remark_code', 'remark code'],
+  ['claim_status_code', 'claim status code'],
+];
+
 function factOf(ledger: ClaimLedger, id: string): FactStatement {
   const s = byId(ledger, id);
   if (s.kind !== 'fact') throw new Error(`statement ${id} is not a fact`);
@@ -227,6 +234,13 @@ export function closeOutForRep(ledger: ClaimLedger, callId: CallId): Utterance {
     parts.push(`the denial reason is ${reason.value}`);
     cites.push(reason.id);
   }
+  for (const [category, label] of CODE_LABELS) {
+    const code = [...inCall].reverse().find((s): s is FactStatement => s.kind === 'fact' && s.category === category);
+    if (code) {
+      parts.push(`${label} ${spellForSpeech(code.value)}`);
+      cites.push(code.id);
+    }
+  }
   const ref = callReference(ledger, callId);
   if (ref) {
     parts.push(`reference number ${spellForSpeech(ref.value)}`);
@@ -357,6 +371,15 @@ export function closeOutForAgent(
         `Conflicts with ${conflict.sameBadge ? "the same representative's" : `${prior.speaker?.name ?? 'an earlier'}'s`} ${sayDate(prior.capturedAt)} statement of ${prior.value}.`,
       );
       cites.push(prior.id);
+    }
+  }
+
+  for (const [category, label] of CODE_LABELS) {
+    const code = [...inCall].reverse().find((s): s is FactStatement => s.kind === 'fact' && s.category === category);
+    if (code) {
+      const confirmed = code.confidence === 'captured_confirmed' || inCall.some((s) => s.kind === 'fact' && s.confirms === code.id);
+      lines.push(`${label[0].toUpperCase()}${label.slice(1)} ${spellForSpeech(code.value)}${confirmed ? '' : ', unconfirmed'}.`);
+      cites.push(code.id);
     }
   }
 

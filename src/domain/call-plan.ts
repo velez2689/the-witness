@@ -48,6 +48,7 @@ export interface PlanState {
 }
 
 export const MAX_CHALLENGES = 2;
+const CODE_CATEGORIES = new Set(['remark_code', 'claim_status_code', 'denial_code']);
 const MAX_ASKS = 2;
 
 export function initialPlan(): PlanState {
@@ -80,7 +81,8 @@ function objectivePending(
     case 'claim_status':
       return !facts.some((f) => f.category === 'status');
     case 'denial_reason':
-      return !facts.some((f) => f.category === 'denial_reason' && !f.additional);
+      // A CARC read out ("CO fifty") answers the question as well as a reason in words.
+      return !facts.some((f) => (f.category === 'denial_reason' && !f.additional) || f.category === 'denial_code');
     case 'remit_reason':
       // The remit may say something the Rep has not: ask once, after the first reason is known.
       return count(state, 'ask:remit_reason') === 0 && facts.some((f) => f.category === 'denial_reason');
@@ -91,7 +93,13 @@ function objectivePending(
         count(state, 'ask:specific_code') === 0
       );
     case 'remark_code':
-      return hasRefusal(ledger, callId, 'diagnosis_code') && !hasRefusal(ledger, callId, 'remark_code') && count(state, 'ask:remark_code') === 0;
+      // Once a denial reason is on record (or the code was refused), ask for the remark code once.
+      return (
+        (facts.some((f) => f.category === 'denial_reason') || hasRefusal(ledger, callId, 'diagnosis_code')) &&
+        !facts.some((f) => f.category === 'remark_code') &&
+        !hasRefusal(ledger, callId, 'remark_code') &&
+        count(state, 'ask:remark_code') === 0
+      );
     default:
       return count(state, `ask:${key}`) === 0;
   }
@@ -215,6 +223,19 @@ export function nextMove(
       return say('readback', 'readback', speech.readback(ref.value), speech.whisperReadback(ref.value));
     }
     return alert(state, 'The reference number is still unconfirmed. Take over and have the Rep repeat it.');
+  }
+
+  // 6b · An X12 code the Rep read that is not on the list (or a CARC): read it back once.
+  const unverified = callFacts(ledger, callId).find(
+    (f) =>
+      CODE_CATEGORIES.has(f.category) &&
+      f.confidence === 'captured_unconfirmed' &&
+      f.confirms === undefined &&
+      !callFacts(ledger, callId).some((c) => c.confirms === f.id) &&
+      count(state, `readback:${f.value}`) < 1,
+  );
+  if (unverified) {
+    return say('readback', `readback:${unverified.value}`, speech.readback(unverified.value), speech.whisperReadback(unverified.value));
   }
 
   // 7 · Gate satisfied: recap, then close.

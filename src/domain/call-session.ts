@@ -8,7 +8,7 @@ import {
   type Draft,
   type RepTurn,
 } from './extractor';
-import type { CallId, ClaimId, Speaker, Statement } from './statement';
+import type { CallId, ClaimId, FactStatement, Speaker, Statement } from './statement';
 import { findAlnumRuns, formatReference } from '@/lib/alphanumeric';
 
 /**
@@ -76,6 +76,10 @@ function isRepeat(session: CallSession, draft: Draft): boolean {
 
 const AFFIRM = /^(?:yes|yeah|yep|right|correct|that'?s (?:correct|right)|that is (?:correct|right))\b/i;
 
+/** Values the Witness reads back and the Rep confirms: reference numbers and X12 codes it could not verify. */
+const READ_BACK_CATEGORIES = new Set(['reference_number', 'remark_code', 'claim_status_code', 'denial_code']);
+const norm = (v: string) => v.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+
 export function ingestRepTurn(session: CallSession, turn: RepTurn): IngestResult {
   const ext = extractFromTurn(turn, {
     capturedAt: session.capturedAt,
@@ -136,12 +140,12 @@ export function ingestRepTurn(session: CallSession, turn: RepTurn): IngestResult
   // Confirm a pending read-back when the Rep agrees. Append-only: a NEW row, the original stays.
   if (session.pendingReadback && AFFIRM.test(turn.text.trim())) {
     const original = ledger.statements.find(
-      (s) => s.kind === 'fact' && s.category === 'reference_number' && s.value === session.pendingReadback,
+      (s) => s.kind === 'fact' && READ_BACK_CATEGORIES.has(s.category) && s.value === session.pendingReadback && s.confirms === undefined,
     );
     if (original && original.kind === 'fact') {
-      const b = base({ kind: 'fact', category: 'reference_number', value: original.value, span: {
+      const b = base({ kind: 'fact', category: original.category, value: original.value, span: {
         quote: turn.text, startMs: turn.startMs, endMs: turn.endMs }, confidence: 'captured_confirmed' });
-      push({ ...b, kind: 'fact', category: 'reference_number', value: original.value, confirms: original.id,
+      push({ ...b, kind: 'fact', category: original.category, value: original.value, confirms: original.id,
         span: { quote: `${original.span.quote} / ${turn.text}`, startMs: original.span.startMs, endMs: turn.endMs } });
       next = { ...next, pendingReadback: null };
     }
@@ -157,11 +161,23 @@ export function noteUsLine(session: CallSession, text: string): CallSession {
     (s) => s.callId === session.callId && s.kind === 'fact' && s.category === 'denial_reason' && s.value === 'diagnosis code',
   );
   const runs = findAlnumRuns(text).map((r) => formatReference(r.raw));
-  const pending = runs.find((r) =>
-    session.ledger.statements.some(
-      (s) => s.callId === session.callId && s.kind === 'fact' && s.category === 'reference_number' && s.value === r && !s.confirms,
-    ),
-  );
+  const codeRuns = new Set(findAlnumRuns(text, 2).map((r) => norm(r.raw)));
+  const pending =
+    runs.find((r) =>
+      session.ledger.statements.some(
+        (s) => s.callId === session.callId && s.kind === 'fact' && s.category === 'reference_number' && s.value === r && !s.confirms,
+      ),
+    ) ??
+    session.ledger.statements.find(
+      (s): s is FactStatement =>
+        s.callId === session.callId &&
+        s.kind === 'fact' &&
+        READ_BACK_CATEGORIES.has(s.category) &&
+        s.category !== 'reference_number' &&
+        s.confidence === 'captured_unconfirmed' &&
+        !s.confirms &&
+        codeRuns.has(norm(s.value)),
+    )?.value;
   return {
     ...session,
     askedFor: classifyAsk(text, lastReasonWasDiagnosis),

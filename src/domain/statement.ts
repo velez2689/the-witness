@@ -37,7 +37,11 @@ export type StatementCategory =
   | 'existence_claim'
   | 'reference_number'
   | 'policy'
-  | 'rep_identity';
+  | 'rep_identity'
+  /** X12 codes as the Rep read them: a remark code (N30), a claim status code (21), a claim adjustment reason code (CO-50). */
+  | 'remark_code'
+  | 'claim_status_code'
+  | 'denial_code';
 
 /** A statement that asserts a value the contradiction engine can compare against history. */
 export interface FactStatement extends StatementBase {
