@@ -101,7 +101,7 @@ export function RosterBand(p: Props) {
                   <span className="w-pt-top">
                     <b>{String(i + 1).padStart(2, '0')}</b>
                     <span className="w-pt-name">{g.patientLabel}</span>
-                    {g.active && <span className="w-pt-now">ON NOW</span>}
+                    {g.active && <span className="w-pt-now"><span className="pulse" aria-hidden="true" />on now</span>}
                   </span>
                   <span className="id w-pt-claim">{g.claimId}</span>
                   <span className="w-pt-gate">
@@ -118,7 +118,7 @@ export function RosterBand(p: Props) {
             <div className={`w-wrongclaim${p.openWarning.resolved ? ' resolved' : ''}`} role="alert">
               <span className="w-wc-tag">
                 <Icon name={p.openWarning.resolved ? 'check' : 'ban'} size={15} />
-                {p.openWarning.resolved ? 'WRONG CLAIM · CHALLENGED, CORRECTED' : 'WRONG CLAIM'}
+                {p.openWarning.resolved ? 'Wrong claim: challenged, corrected' : 'Wrong claim'}
               </span>
               <p>
                 The rep read <span className="id">{p.openWarning.warning.spoken}</span>, that is{' '}
@@ -178,7 +178,7 @@ export function RosterBand(p: Props) {
             <ul className="w-roster-feed">
               {p.items.map((it) => (
                 <li key={it.key} className={`${it.side}${it.warning ? ' flagged' : ''}`}>
-                  <span className="w-rf-who id">{it.side === 'rep' ? 'REP' : 'AGENT'}</span>
+                  <span className="w-rf-who">{it.side === 'rep' ? 'Rep' : 'Agent'}</span>
                   <span className="w-rf-text">{it.text}</span>
                   <span className="id w-rf-dest">
                     {it.warning ? 'not filed' : it.addedCount > 0 ? `${it.addedCount} to ${it.claimId}` : ''}

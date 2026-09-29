@@ -121,20 +121,29 @@ export function ClaimTimeline(p: Props) {
     },
   ]);
 
-  // The link: from the earlier statement's call to the one that contradicted it.
-  const linkFrom = p.focus ? cards.find((c) => c.id === callOf(p.focus!.statementIds[0])) : undefined;
-  const linkToId = p.focus ? callOf(p.focus.statementIds[1]) : undefined;
+  /*
+   * The link: from the earlier statement's call to the one that contradicted it.
+   *
+   * Before a call starts there is no live flag, but the record already holds contradictions
+   * between earlier calls, and the screen should show what the product does before anyone
+   * presses Start. So at idle the worst contradiction already on record is drawn in grey and
+   * labelled as on record; the moment a live flag fires it takes over in flag colour.
+   */
+  const onRecord = !p.running && !p.focus ? [...p.contradictions].sort((a, b) => b.severity - a.severity)[0] ?? null : null;
+  const focus = p.focus ?? onRecord;
+  const linkFrom = focus ? cards.find((c) => c.id === callOf(focus.statementIds[0])) : undefined;
+  const linkToId = focus ? callOf(focus.statementIds[1]) : undefined;
   const linkTo = cards.find((c) => c.id === linkToId || (c.live && linkToId !== undefined && !p.historyCalls.some((h) => h.id === linkToId)));
-  const showLink = Boolean(p.focus && linkFrom && linkTo && linkFrom !== linkTo);
-  const linkLabel = !p.focus
-    ? ''
-    : p.focus.kind === 'value_conflict' && p.focus.sameBadge
-      ? `same badge · ${p.focus.daysApart} days · two answers`
-      : p.focus.kind === 'existence_denial'
-        ? `payer's own reference · ${p.focus.daysApart} days earlier`
-        : p.focus.kind === 'commitment_violation'
-          ? `told to wait · ${p.focus.daysApart} days elapsed`
-          : `${p.focus.kind.replace(/_/g, ' ')} · ${p.focus.daysApart} days apart`;
+  const showLink = Boolean(focus && linkFrom && linkTo && linkFrom !== linkTo);
+  const describe = (f: Contradiction) =>
+    f.kind === 'value_conflict' && f.sameBadge
+      ? `same badge · ${f.daysApart} days · two answers`
+      : f.kind === 'existence_denial'
+        ? `payer's own reference · ${f.daysApart} days earlier`
+        : f.kind === 'commitment_violation'
+          ? `told to wait · ${f.daysApart} days elapsed`
+          : `${f.kind.replace(/_/g, ' ')} · ${f.daysApart} days apart`;
+  const linkLabel = !focus ? '' : onRecord ? `on record · ${describe(focus)}` : describe(focus);
 
   return (
     <section className="w-claim" aria-label="Claim timeline">
@@ -150,15 +159,15 @@ export function ClaimTimeline(p: Props) {
         </p>
       </header>
 
-      <div className="w-claim-track">
+      <div className={onRecord && showLink ? 'w-claim-track on-record' : 'w-claim-track'}>
         {showLink && linkFrom && linkTo && (
           <>
             <svg className="w-link-line" viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true">
               <polyline
                 points={`${linkFrom.pct},34 ${linkFrom.pct},14 ${linkTo.pct},14 ${linkTo.pct},34`}
                 fill="none"
-                stroke="var(--flag)"
-                strokeWidth={1.5}
+                stroke={onRecord ? 'var(--ink-soft)' : 'var(--flag)'}
+                strokeWidth={2.5}
                 strokeDasharray="6 4"
                 vectorEffect="non-scaling-stroke"
               />
@@ -202,7 +211,7 @@ export function ClaimTimeline(p: Props) {
                 {c.live && p.running ? (
                   <span className="livelabel">
                     <span className="pulse" aria-hidden="true" />
-                    LIVE
+                    live
                   </span>
                 ) : (
                   <span className="id when">{shortDate(c.startedAt)}</span>

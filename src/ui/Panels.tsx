@@ -37,6 +37,8 @@ export function TransportBar(p: {
   claimId: string;
   payer: string;
   statementCount: number;
+  contradictionCount: number;
+  refusalCount: number;
   flagLatencyMs: number | null;
   extractMs: number | null;
   replyMs: number | null;
@@ -57,6 +59,8 @@ export function TransportBar(p: {
       {p.live && <span className="w-stat">first audio <b>{p.replyMs === null ? 'none' : `${Math.round(p.replyMs)} ms`}</b> <span title="From the end of the Rep's turn to the first audible syllable of the Witness.">after Rep turn</span></span>}
       <span className="w-stat">extract <b>{p.extractMs === null ? 'none' : `${p.extractMs.toFixed(1)} ms`}</b></span>
       <span className="w-stat">statements <b>{p.statementCount}</b></span>
+      <span className="w-stat" style={p.contradictionCount > 0 ? { color: 'var(--flag)' } : undefined}>contradictions <b style={p.contradictionCount > 0 ? { color: 'var(--flag)' } : undefined}>{p.contradictionCount}</b></span>
+      <span className="w-stat">refusals <b>{p.refusalCount}</b></span>
       <span className="w-spacer" />
       <button className="w-btn" onClick={p.onTheme} aria-label="Toggle colour theme">theme: {p.theme}</button>
     </header>
@@ -129,6 +133,11 @@ export function BriefPanel(p: {
           <dt>Member ID</dt><dd className="id">{p.brief.memberId}</dd>
           <dt>Date of service</dt><dd className="id">{p.brief.dateOfService}</dd>
           <dt>Diagnosis codes</dt><dd className="id">{p.brief.dxCodes.join('  ')}</dd>
+          <dt>This claim so far</dt>
+          <dd className="w-sofar">
+            <b>{holdLabel(p.totalHold)}</b> on hold across {p.callsCount} {p.callsCount === 1 ? 'call' : 'calls'} · <b>${(p.callsCount * p.costPerCall).toFixed(2)}</b> at the ${p.costPerCall.toFixed(2)} per-call CAQH average
+            <span className="w-note">CAQH Index 2024 edition, 2023 data year. Computed for this claim, not cited.</span>
+          </dd>
         </dl>
       </div>
       <div>
@@ -221,25 +230,35 @@ export function RepCue({ lastAsk, suggestion }: { lastAsk: string | null; sugges
 }
 
 // ---------------------------------------------------------------- banner
-export function Banner(p: { group: Contradiction[]; ledger: ClaimLedger; queued: number; onDismiss: () => void }) {
+/**
+ * A contradiction with both quotes. `onRecord` renders one that happened between earlier calls,
+ * in grey and without a Dismiss, so the console shows what it catches before a call starts.
+ */
+export function Banner(p: { group: Contradiction[]; ledger: ClaimLedger; queued: number; onDismiss?: () => void; onRecord?: boolean }) {
   const c = p.group[0];
   const earlier = p.ledger.statements.find((s) => s.id === c.statementIds[0])!;
   const later = p.ledger.statements.find((s) => s.id === c.statementIds[1])!;
   return (
-    <div className="w-banner" role="alert" aria-live="assertive">
-      <div className="kind">{KIND_LABEL[c.kind]}{c.sameBadge ? ' · SAME BADGE' : ''} · {c.daysApart} DAYS APART</div>
+    <div className={p.onRecord ? 'w-banner muted' : 'w-banner'} role={p.onRecord ? undefined : 'alert'} aria-live={p.onRecord ? undefined : 'assertive'}>
+      <div className="kind">{p.onRecord ? 'ON RECORD · ' : ''}{KIND_LABEL[c.kind]}{c.sameBadge ? ' · SAME BADGE' : ''} · {c.daysApart} DAYS APART</div>
       <div>
         <p style={{ margin: '4px 0' }}><span className="said">{quoteOf(later)}</span></p>
-        <p className="w-note" style={{ margin: 0 }}>now · {later.speaker ? `${later.speaker.name} · badge ${later.speaker.badge}` : 'rep'}</p>
+        <p className="w-note" style={{ margin: 0 }}>{p.onRecord ? metaOf(p.ledger, later) : `now · ${later.speaker ? `${later.speaker.name} · badge ${later.speaker.badge}` : 'rep'}`}</p>
       </div>
       <div>
         <p style={{ margin: '4px 0' }}><span className="said">{quoteOf(earlier)}</span></p>
         <p className="w-note" style={{ margin: 0 }}>{metaOf(p.ledger, earlier)}</p>
       </div>
       <div className="row">
-        <button className="w-btn" onClick={p.onDismiss}>Dismiss</button>
-        {p.queued > 0 && <span className="w-note">{p.queued} more waiting</span>}
-        {p.group.length > 1 && <span className="w-note">also contradicts {p.group.length - 1} earlier statement{p.group.length > 2 ? 's' : ''}</span>}
+        {p.onRecord ? (
+          <span className="w-note">Caught on an earlier call and kept. When the Rep contradicts the record on this call, it lands here in red.</span>
+        ) : (
+          <>
+            <button className="w-btn" onClick={p.onDismiss}>Dismiss</button>
+            {p.queued > 0 && <span className="w-note">{p.queued} more waiting</span>}
+            {p.group.length > 1 && <span className="w-note">also contradicts {p.group.length - 1} earlier statement{p.group.length > 2 ? 's' : ''}</span>}
+          </>
+        )}
       </div>
     </div>
   );
@@ -291,7 +310,7 @@ export function Inspector(p: {
   const related = f.relatedStatementIds.map((id) => p.ledger.statements.find((s) => s.id === id)).filter(Boolean) as Statement[];
   return (
     <section className="w-panel" aria-label="Contradiction inspector">
-      <h2>Contradiction inspector</h2>
+      <h2><Icon name="alert" size={15} /><span>Contradiction inspector</span></h2>
       <div className="w-kindlabel">{KIND_LABEL[f.kind]}{f.sameBadge ? ' · SAME BADGE' : ''}</div>
       <div className="w-quote">
         <span className="said">{quoteOf(later)}</span>
