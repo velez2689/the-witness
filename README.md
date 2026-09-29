@@ -6,6 +6,12 @@
 
 **Live demo:** https://the-witness-omega.vercel.app (Chrome, headphones for the live path) · **Built on:** AssemblyAI Streaming STT v3 + Voice Agent API · **Submission:** AssemblyAI Voice Agent Hackathon on lablab.ai, September 2026
 
+## Watch the demo (4:32)
+
+[![Watch the 4:32 narrated demo of The Witness](docs/assets/cover-16x9.png)](https://github.com/velez2689/the-witness/blob/main/docs/assets/demo-narrated.mp4)
+
+Click the image to play the video on GitHub. The narration is spoken by an AssemblyAI voice agent through the same Voice Agent API the product uses. The call shown uses synthetic data.
+
 ---
 
 ## The problem
