@@ -39,7 +39,9 @@ export function TransportBar(p: {
   statementCount: number;
   contradictionCount: number;
   refusalCount: number;
+  /** Live: end of the Rep's turn to the flag. Scripted: the engine time, labelled as such. */
   flagLatencyMs: number | null;
+  engineMs: number | null;
   extractMs: number | null;
   replyMs: number | null;
   live: boolean;
@@ -55,7 +57,14 @@ export function TransportBar(p: {
       <span className="w-state" style={{ color: p.phase === 'running' ? 'var(--flag)' : 'var(--ink-soft)' }}>{state}</span>
       <span className="w-stat">claim <b>{p.claimId}</b> · {p.payer}</span>
       <span className="w-stat">on hold <b>{holdLabel(p.holdSeconds)}</b></span>
-      <span className="w-stat">flag <b>{p.flagLatencyMs === null ? 'none' : `${p.flagLatencyMs.toFixed(1)} ms`}</b> <span title="Time to extract, diff and plan for the last flagged turn, measured in the browser.">{p.live ? 'engine' : 'scripted · no network'}</span></span>
+      {p.live ? (
+        <span className="w-stat" title="From the end of the Rep's turn (the server's word timings) to the flag, measured in the browser. Never smoothed.">
+          flag <b>{p.flagLatencyMs === null ? 'none' : `${(p.flagLatencyMs / 1000).toFixed(2)} s`}</b> after end of turn
+          {p.engineMs !== null && <> · engine <b>{p.engineMs.toFixed(1)} ms</b></>}
+        </span>
+      ) : (
+        <span className="w-stat">flag <b>{p.flagLatencyMs === null ? 'none' : `${p.flagLatencyMs.toFixed(1)} ms`}</b> <span title="Time to extract, diff and plan for the last flagged turn, measured in the browser.">scripted · no network</span></span>
+      )}
       {p.live && <span className="w-stat">first audio <b>{p.replyMs === null ? 'none' : `${Math.round(p.replyMs)} ms`}</b> <span title="From the end of the Rep's turn to the first audible syllable of the Witness.">after Rep turn</span></span>}
       <span className="w-stat">extract <b>{p.extractMs === null ? 'none' : `${p.extractMs.toFixed(1)} ms`}</b></span>
       <span className="w-stat">statements <b>{p.statementCount}</b></span>
@@ -294,8 +303,18 @@ export function Inspector(p: {
   callCount: number;
   closeOut: { text: string; cites: readonly string[] } | null;
   finished: boolean;
+  /** When set, statements from this call can play the microphone recording behind them. */
+  liveCallId?: string | null;
+  playSpan?: (startMs: number, endMs: number) => void;
 }) {
   const f = p.focus;
+  // The recording, when this statement came from the live call; text-to-speech otherwise.
+  const playFor = (s: Statement) =>
+    p.playSpan && p.liveCallId && s.callId === p.liveCallId ? (
+      <button className="w-play" onClick={() => p.playSpan!(s.span.startMs, s.span.endMs)} aria-label="Play the recording of this quote"><Icon name="play" size={11} />Play recording</button>
+    ) : (
+      <button className="w-play" onClick={() => speak(quoteOf(s))} aria-label="Read this quote aloud"><Icon name="play" size={11} />Read aloud</button>
+    );
   if (!f) {
     return (
       <section className="w-panel" aria-label="Contradiction inspector">
@@ -314,12 +333,12 @@ export function Inspector(p: {
       <div className="w-kindlabel">{KIND_LABEL[f.kind]}{f.sameBadge ? ' · SAME BADGE' : ''}</div>
       <div className="w-quote">
         <span className="said">{quoteOf(later)}</span>
-        <button className="w-play" onClick={() => speak(quoteOf(later))} aria-label="Read this quote aloud"><Icon name="play" size={11} />Read aloud</button>
+        {playFor(later)}
         <div className="meta">just now · {later.speaker ? `${later.speaker.name} · badge ${later.speaker.badge}` : 'rep'}</div>
       </div>
       <div className="w-quote">
         <span className="said">{quoteOf(earlier)}</span>
-        <button className="w-play" onClick={() => speak(quoteOf(earlier))} aria-label="Read the earlier quote aloud"><Icon name="play" size={11} />Read aloud</button>
+        {playFor(earlier)}
         <div className="meta">{metaOf(p.ledger, earlier)}</div>
       </div>
       {related.map((r) => (

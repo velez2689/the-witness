@@ -38,10 +38,25 @@ export interface StreamingConfig {
   inactivityTimeoutSeconds?: number;
 }
 
+/**
+ * Where a finalized turn sits in the audio, from the server's word timings, plus where our
+ * microphone clock stood when the turn arrived. Both are milliseconds on the same timeline: the
+ * audio we have sent. `endOfTurnWall` converts the turn's end into wall-clock time using the
+ * last chunk sent, so the flag latency can be measured from the end of the Rep's turn rather
+ * than from when the transcript happened to arrive (which already includes the server's
+ * end-of-turn wait). Gated chunks are not sent, so on speakers the clock pauses with the gate.
+ */
+export interface TurnTiming {
+  startMs: number;
+  endMs: number;
+  audioSentMs: number;
+  endOfTurnWall: number;
+}
+
 export interface StreamingHandlers {
   onReady?: (sessionId: string | null) => void;
   /** A FINALIZED Rep turn. Nothing is ever written to the ledger from a partial. */
-  onTurn?: (text: string, receivedAt: number) => void;
+  onTurn?: (text: string, receivedAt: number, timing?: TurnTiming) => void;
   /**
    * The Rep has started saying something, before it is final. Used ONLY for barge-in: the server
    * no longer owns interruption in this arrangement, because it is not the one speaking.
@@ -71,6 +86,9 @@ export class StreamingSession {
   private exitReason: string | null = null;
   private ready = false;
   private sessionId: string | null = null;
+  private sampleRate = 24_000;
+  private sentSamples = 0;
+  private lastSendWall = 0;
 
   constructor(
     private readonly registry: SessionRegistry,
@@ -83,6 +101,7 @@ export class StreamingSession {
   connect(token: string, config: StreamingConfig): void {
     if (this.socket) throw new Error('streaming session already connected');
     const url = new URL(STREAMING_URL);
+    this.sampleRate = config.sampleRate;
     url.searchParams.set('sample_rate', String(config.sampleRate));
     // Formatted turns give punctuation and casing, which the extractor reads and the packet quotes.
     url.searchParams.set('format_turns', 'true');
@@ -125,7 +144,7 @@ export class StreamingSession {
       case 'Turn': {
         const text = String(m.transcript ?? '');
         if (!text.trim()) return;
-        if (m.end_of_turn === true) this.handlers.onTurn?.(text, this.now());
+        if (m.end_of_turn === true) this.handlers.onTurn?.(text, this.now(), this.timingOf(m));
         else this.handlers.onPartial?.(text);
         break;
       }
@@ -146,6 +165,27 @@ export class StreamingSession {
   sendAudio(pcm: Int16Array): void {
     if (!this.isReady || !this.socket || this.socket.readyState !== OPEN) return;
     this.socket.send(pcm.buffer.slice(pcm.byteOffset, pcm.byteOffset + pcm.byteLength));
+    this.sentSamples += pcm.length;
+    this.lastSendWall = this.now();
+  }
+
+  /** Milliseconds of audio sent so far: the timeline the server's word timings are on. */
+  get audioSentMs(): number {
+    return (this.sentSamples / this.sampleRate) * 1000;
+  }
+
+  private timingOf(m: Record<string, unknown>): TurnTiming | undefined {
+    const words = Array.isArray(m.words) ? (m.words as Array<{ start?: unknown; end?: unknown }>) : [];
+    const first = words[0];
+    const last = words[words.length - 1];
+    if (!first || !last || typeof first.start !== 'number' || typeof last.end !== 'number') return undefined;
+    const audioSentMs = this.audioSentMs;
+    return {
+      startMs: first.start,
+      endMs: last.end,
+      audioSentMs,
+      endOfTurnWall: this.lastSendWall - (audioSentMs - last.end),
+    };
   }
 
   /**

@@ -45,7 +45,7 @@ export function useLiveCall(
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [dismissed, setDismissed] = useState<readonly string[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [latency, setLatency] = useState<{ flagMs: number; speakMs: number | null } | null>(null);
+  const [latency, setLatency] = useState<{ flagMs: number | null; engineMs: number; speakMs: number | null } | null>(null);
   const [drift, setDrift] = useState<string[]>([]);
   const session = useRef<LiveSession | null>(null);
   const n = useRef(0);
@@ -90,9 +90,10 @@ export function useLiveCall(
       { brief, ledger: props.historyLedger, call: { callId: props.live.id, capturedAt: props.live.startedAt }, audioSetup },
       {
         status: (st, d) => { setStatus(st); setDetail(d ?? null); },
-        rep: (e) => push({ side: 'rep', text: e.text, atMs: e.atMs, durationMs: estimateDurationMs(e.text), holdSeconds: 0, cites: [], added: e.added, contradictions: e.contradictions, engineMs: e.engineMs, lowConfidence: false, tag: null }),
+        rep: (e) => push({ side: 'rep', text: e.text, atMs: e.atMs, durationMs: e.audio ? Math.max(400, e.audio.endMs - e.audio.startMs) : estimateDurationMs(e.text), holdSeconds: 0, cites: [], added: e.added, contradictions: e.contradictions, engineMs: e.engineMs, lowConfidence: false, tag: null, audio: e.audio }),
         witness: (e) => push({ side: 'witness', text: e.text, atMs: e.atMs, durationMs: estimateDurationMs(e.text), holdSeconds: 0, cites: e.cites, added: [], contradictions: [], engineMs: null, lowConfidence: false, tag: e.tag }),
-        latency: setLatency,
+        // A later event without a speak time must not erase the one already measured.
+        latency: (e) => setLatency((prev) => ({ ...e, speakMs: e.speakMs ?? prev?.speakMs ?? null })),
         drift: (u) => setDrift((d) => [...d, ...u]),
         done: () => undefined,
       },

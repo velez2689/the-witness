@@ -19,6 +19,8 @@ export interface FeedItem {
   lowConfidence: boolean;
   /** Mode A: what the plan was doing. Mode B whisper: what triggered it. */
   tag: string | null;
+  /** Live only: where this turn sits in the recorded audio (transcription clock). */
+  audio?: { startMs: number; endMs: number };
 }
 
 export function fromModeA(events: readonly CallEvent[]): FeedItem[] {

@@ -57,3 +57,23 @@ describe('zipStored', () => {
     expect(sizes).toEqual([7, 4]);
   });
 });
+
+describe('the recording behind a statement', () => {
+  it('slices the Rep audio on the transcription clock, from where the socket started hearing', () => {
+    const r = new CallRecorder(() => 0);
+    r.begin();
+    r.fromRep(Int16Array.from({ length: 24_000 }, () => 1)); // one second before the socket was ready
+    r.markSttStart();
+    r.fromRep(Int16Array.from({ length: 24_000 }, (_, i) => (i < 12_000 ? 100 : 30_000)));
+    const slice = r.repSlice(250, 750);
+    expect(slice.length).toBe(12_000);
+    expect(slice[0]).toBe(100);
+    expect(slice[slice.length - 1]).toBe(30_000);
+    expect(r.repSlice(5_000, 6_000).length, 'nothing recorded there').toBe(0);
+    const peaks = r.repPeaks(0, 1000, 4)!;
+    expect(peaks.length).toBe(4);
+    expect(peaks[0]).toBeCloseTo(100 / 32768, 5);
+    expect(peaks[3]).toBeCloseTo(30_000 / 32768, 3);
+    expect(r.repPeaks(9_000, 9_500, 4)).toBeNull();
+  });
+});

@@ -82,9 +82,12 @@ Pre-submit gate:
 - `grep -rniE '[0-9]+ ?% ?(accura|wer)' docs/submission docs/assets README.md` returns nothing.
 - The long description's last paragraph and deck slide 8 match the video.
 
-## Optional, only if time remains (cut rule: nothing the video will not show)
+## Done since (visible on a live call)
 
-- Real waveforms in the edit view from the recorder's PCM (`src/ui/Stage.tsx`, a `peaks()` helper).
-- "Play" on a live statement plays the Rep WAV slice from the recorder using the statement's span offsets; until then, the button reads "Read aloud" on scripted data.
-- Word timings from the `Turn` message as statement offsets, and the end-of-turn to flag latency displayed beside the engine time.
+- Statement offsets come from the server's word timings, and the transport bar shows the flag latency from the end of the Rep's turn ("flag 1.62 s after end of turn · engine 0.4 ms"). On the scripted path the figure stays engine-only and says so.
+- In the inspector, a statement from the live call has "Play recording": the microphone audio behind the quote, sliced from the recorder on the transcription clock. Scripted data keeps "Read aloud".
+- The edit view draws the real amplitude envelope inside each live Rep block.
+
+## Optional, only if time remains
+
 - `agent_context` on the transcription socket: after each Witness line, `UpdateConfiguration` with the line's text (the docs say this improves recognition of spelled-out identifiers in the next user turn). Spike first.

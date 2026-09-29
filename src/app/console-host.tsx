@@ -76,7 +76,11 @@ export function ConsoleHost(props: ConsoleProps) {
             witness: (e) => { recorder.note('witness-line', `${e.tag}: ${e.text}`); events.witness(e); },
             drift: (u) => { recorder.note('drift', u.join(', ')); events.drift(u); },
             done: (r) => { recorder.end(r); events.done(r); },
-            trace: (k, d) => { recorder.note(k, d); events.trace?.(k, d); },
+            trace: (k, d) => {
+              if (k === 'stt-begin') recorder.markSttStart();
+              recorder.note(k, d);
+              events.trace?.(k, d);
+            },
           },
         });
       },
@@ -91,6 +95,8 @@ export function ConsoleHost(props: ConsoleProps) {
         download(`${stamp}.zip`, await zipStored(files));
       },
       hasRecording: () => recorder.hasAudio,
+      playSpan: (startMs, endMs) => player.playOnce(recorder.repSlice(startMs, endMs)),
+      peaks: (startMs, endMs, buckets) => recorder.repPeaks(startMs, endMs, buckets),
     };
   }, []);
   return <Console {...props} driver={driver} readWorkbook={readWorkbook} worklistStore={worklistStore} />;

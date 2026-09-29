@@ -275,6 +275,24 @@ export class PcmPlayer {
     return this.ctx.currentTime < this.speakingUntil + tailSeconds;
   }
 
+  /**
+   * Play a recorded span once, on its own source node, without touching the live queue. Used for
+   * "play the recording" on a statement: the audio is what the microphone heard, not text
+   * re-synthesised by the browser.
+   */
+  playOnce(pcm: Int16Array): void {
+    if (pcm.length === 0) return;
+    const ctx = this.context();
+    const buffer = ctx.createBuffer(1, pcm.length, SAMPLE_RATE);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < pcm.length; i += 1) data[i] = pcm[i] / 0x8000;
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(ctx.destination);
+    if (ctx.state === 'suspended') void ctx.resume();
+    src.start();
+  }
+
   stop(): void {
     this.pending = [];
     this.speaking = false;
