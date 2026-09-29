@@ -6,7 +6,7 @@ import { CALLS, CLAIM, LIVE_CALL } from '@fixtures/scripts/claim-A-4471-08';
 import { REP_BANK_CALL_06 } from '@fixtures/scripts/rep-bank-call-06';
 import { ROSTER_BATCH } from '@fixtures/scripts/roster-batch';
 
-/** CAQH Index 2024 edition (2023 data): $13.80 per manual phone claim-status inquiry. */
+/** CAQH Index 2024 edition (2023 data): $13.80 per manual phone claim-status inquiry; the latest edition with per-transaction figures (the 2025 edition gates them behind Index Pro). */
 const COST_PER_CALL = 13.8;
 
 export default function Home() {
