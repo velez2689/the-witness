@@ -1,5 +1,7 @@
 # The Witness — Situation Report (for a second model to plan from)
 
+> **Historical.** Written earlier on 2026-09-29. Its hypotheses about the audio failure were superseded by the fixes and the three live calls recorded later that day. The current state is in `docs/HANDOFF-2026-09-29.md`.
+
 Written 2026-09-29 by Claude (Sonnet 5.5) at the owner's request. Purpose: give another model enough detail to understand exactly where the project stands, what has been tried, what is proven, what is NOT proven, and to plan a way out.
 
 > **Reading this from the repo (e.g. a cloud session)?** Everything needed is in this repo except three things kept outside it: the saved call recordings and timelines (`Items to show claude/`, gitignored; the numbers you need are quoted in §6), `.ai/decisions.md` and `.ai/handoff.md` (their substance is summarised here and in `docs/PROJECT-STATE.md`), and the throwaway test scripts from §7b (`trace-greeting.mjs`, `live-test.mjs`; described in enough detail to rewrite). Also read `CLAUDE.md`, `.repo-layout.yml` and the files listed in §10. Nothing in this repo contains secrets; the AssemblyAI key is in a local `.env` only.

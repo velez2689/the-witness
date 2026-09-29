@@ -25,7 +25,7 @@ The filename stamp is the moment "Save call" was clicked, not the call start, an
 - Commit `586db95` (the mic-gate fix) changes only how long the microphone stays closed and the barge-in word test. It does not change what the server sends, and the 17:26 microphone was silent anyway, so that commit cannot be what fixed these two failures.
 - The timeline has no socket-level events (`reply.started`, `reply.done` and its status, suppressed replies, `session.error`, STT partials), so it cannot say whether the server stopped or a second reply caused our ownership filter to drop the rest. Later builds record those events; the next saved call answers the question.
 
-No saved call exists yet for commits `586db95` or later. See `docs/SITUATION-REPORT-2026-09-29.md` for the fuller analysis.
+Calls saved on 2026-09-25 predate the mic-gate and live-path fixes. The 2026-09-29 calls in the section below were recorded on the fixed build and reach the sign-off; `docs/SITUATION-REPORT-2026-09-29.md` keeps the historical analysis of the earlier failures.
 
 The screen recordings (`Scenarios 8 (test1-3).mp4`, `Recording 2026-09-23 052700.mp4`, up to 151 MB each) are deliberately not in the repo: GitHub rejects files over 100 MB, they predate the fixes, and a screen recorder contends for the sound card, so they are unreliable for audio review.
 
