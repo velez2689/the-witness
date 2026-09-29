@@ -2,79 +2,79 @@
   {
     "n": 1,
     "file": "01.wav",
-    "seconds": 9.07,
+    "seconds": 9.22,
     "text": "Hi. This is an AssemblyAI voice agent, and the voice you will hear on the call. Let me show you The Witness: payer call memory for medical billers."
   },
   {
     "n": 2,
     "file": "02.wav",
-    "seconds": 14.93,
+    "seconds": 14.71,
     "text": "A biller spends twenty-five minutes and fourteen dollars on one call asking why a claim was denied. The answer is spoken, and gone at hang-up. Weeks later another representative says something else, and nothing notices. One in five claims is denied. Fewer than one in a hundred denials is appealed."
   },
   {
     "n": 3,
     "file": "03.wav",
-    "seconds": 10.94,
+    "seconds": 10.81,
     "text": "The console before the call. Six earlier calls on one claim, hold time to scale. One contradiction already on record. Every row is what a representative said, with a date, a name and a badge."
   },
   {
     "n": 4,
     "file": "04.wav",
-    "seconds": 7.02,
+    "seconds": 6.03,
     "text": "The call starts. I say that I am an AI assistant and that the call is recorded. That line is verbatim."
   },
   {
     "n": 5,
     "file": "05.wav",
-    "seconds": 2.36,
+    "seconds": 2.28,
     "text": "A name and a badge number become a row."
   },
   {
     "n": 6,
     "file": "06.wav",
-    "seconds": 3.09,
+    "seconds": 2.93,
     "text": "I read the claim back and say earlier calls are on file."
   },
   {
     "n": 7,
     "file": "07.wav",
-    "seconds": 4.6,
+    "seconds": 4.44,
     "text": "Four minutes on hold, then: that claim denied, timely filing."
   },
   {
     "n": 8,
     "file": "08.wav",
-    "seconds": 12.49,
+    "seconds": 11.31,
     "text": "The same representative, badge two two one zero, said no prior authorization forty-nine days ago. The link is drawn, and I challenge it on the recorded line. Code assembled every fact in that sentence. I only read it."
   },
   {
     "n": 9,
     "file": "09.wav",
-    "seconds": 1.94,
+    "seconds": 2.04,
     "text": "I'm showing timely filing today."
   },
   {
     "n": 10,
     "file": "10.wav",
-    "seconds": 3.63,
+    "seconds": 3.9,
     "text": "I ask about the August fifth call, citing the payer's own reference number."
   },
   {
     "n": 11,
     "file": "11.wav",
-    "seconds": 3.29,
+    "seconds": 3.32,
     "text": "I don't have a record of that call. The ledger does."
   },
   {
     "n": 12,
     "file": "12.wav",
-    "seconds": 1.49,
+    "seconds": 1.47,
     "text": "I'd have to look into that."
   },
   {
     "n": 13,
     "file": "13.wav",
-    "seconds": 1.5,
+    "seconds": 1.43,
     "text": "What does the remit say?"
   },
   {
@@ -86,139 +86,157 @@
   {
     "n": 15,
     "file": "15.wav",
-    "seconds": 1.8,
+    "seconds": 1.71,
     "text": "Which diagnosis code?"
   },
   {
     "n": 16,
     "file": "16.wav",
-    "seconds": 7.68,
+    "seconds": 8.65,
     "text": "It doesn't specify on my screen. A category with no value: a refusal, recorded as a row, not left blank. The absence is the evidence."
   },
   {
     "n": 17,
     "file": "17.wav",
-    "seconds": 1.26,
+    "seconds": 1.28,
     "text": "Remark code?"
   },
   {
     "n": 18,
     "file": "18.wav",
-    "seconds": 3.55,
+    "seconds": 3.67,
     "text": "I'd have to refer you to the denial letter. A second refusal on record."
   },
   {
     "n": 19,
     "file": "19.wav",
-    "seconds": 1.65,
+    "seconds": 1.64,
     "text": "Reference number for this call?"
   },
   {
     "n": 20,
     "file": "20.wav",
-    "seconds": 6.53,
+    "seconds": 6.36,
     "text": "Read fast, over hold music. Reference numbers are the hardest thing to hear on a phone, so it lands unconfirmed. I do not guess."
   },
   {
     "n": 21,
     "file": "21.wav",
-    "seconds": 4.82,
+    "seconds": 4.69,
     "text": "I read it back. Eight K two J, nine eight eight. Did I get that right?"
   },
   {
     "n": 22,
     "file": "22.wav",
-    "seconds": 5.28,
+    "seconds": 5.6,
     "text": "That's correct. The field turns confirmed, as a new row. The original is never touched."
   },
   {
     "n": 23,
     "file": "23.wav",
-    "seconds": 6.76,
+    "seconds": 7.3,
     "text": "The recap is assembled from the rows: representative, denial reason, the conflict, two refusals, the reference number."
   },
   {
     "n": 24,
     "file": "24.wav",
-    "seconds": 2.04,
+    "seconds": 2.14,
     "text": "You're welcome. Goodbye."
   },
   {
     "n": 25,
     "file": "25.wav",
-    "seconds": 3.88,
+    "seconds": 3.72,
     "text": "I sign off. The call ends only once the gate is clear."
   },
   {
     "n": 26,
     "file": "26.wav",
-    "seconds": 6.42,
+    "seconds": 6.28,
     "text": "The inspector holds both quotes. The hang-up gate: every required field captured, or refused on record."
   },
   {
     "n": 27,
     "file": "27.wav",
-    "seconds": 3.46,
+    "seconds": 3.08,
     "text": "The claim update sheet. Every line traces to a statement."
   },
   {
     "n": 28,
     "file": "28.wav",
-    "seconds": 7.86,
-    "text": "The appeal packet quotes the record: badge, reference, date and offset. Conflicts first."
+    "seconds": 8.61,
+    "text": "The biller can also take the call. Whisper mode: the biller speaks, I listen, and I whisper into their earpiece only. I never speak on the line."
   },
   {
     "n": 29,
     "file": "29.wav",
-    "seconds": 4.55,
-    "text": "The ledger is hash-chained. Verify integrity recomputes it from the log on the page."
+    "seconds": 7.18,
+    "text": "When the representative contradicts the July call, I whisper the earlier statement and its date. The biller challenges it in their own words."
   },
   {
     "n": 30,
     "file": "30.wav",
-    "seconds": 12.58,
-    "text": "How it works. The representative's audio goes to AssemblyAI Streaming, verbatim, with the claim's numbers seeded as keyterms. I speak through the Voice Agent API and am never sent audio. I call no tools and write nothing."
+    "seconds": 4.84,
+    "text": "At the end I whisper what the claim still needs, and the close-out is read from the rows."
   },
   {
     "n": 31,
     "file": "31.wav",
-    "seconds": 8.04,
-    "text": "An append-only, hash-chained ledger. Five kinds of contradiction, plus refusals as rows. Confidence is a state, never a percentage."
+    "seconds": 5.75,
+    "text": "The appeal packet quotes the record: badge, reference, date and offset. Conflicts first."
   },
   {
     "n": 32,
     "file": "32.wav",
-    "seconds": 10.44,
-    "text": "Spoken reference numbers are the hard case. Keyterms before the call, a read-back instead of a guess, and a transcript that keeps the self-correction, because the correction is often the contradiction."
+    "seconds": 4.59,
+    "text": "The ledger is hash-chained. Verify integrity recomputes it from the log on the page."
   },
   {
     "n": 33,
     "file": "33.wav",
-    "seconds": 9.17,
-    "text": "The market is the cost of chasing denials: twenty-five billion dollars a year, fifty-seven dollars per denied claim. The buyer is a billing office with a denial queue."
+    "seconds": 11.72,
+    "text": "How it works. The representative's audio goes to AssemblyAI Streaming, verbatim, with the claim's numbers seeded as keyterms. I speak through the Voice Agent API and am never sent audio. No tools, no writes."
   },
   {
     "n": 34,
     "file": "34.wav",
-    "seconds": 5.65,
-    "text": "Revenue: a seat per month, metered calls above the quota, the appeal packet as the upsell."
+    "seconds": 7.99,
+    "text": "An append-only, hash-chained ledger. Five kinds of contradiction, plus refusals as rows. Confidence is a state, never a percentage."
   },
   {
     "n": 35,
     "file": "35.wav",
-    "seconds": 8.96,
-    "text": "Voice agents that call payers exist. Denial platforms exist. One promises to predict what the payer will pay. We record what the payer said."
+    "seconds": 9.48,
+    "text": "Spoken reference numbers are the hard case. Keyterms before the call, a read-back instead of a guess, and a transcript that keeps the self-correction, because the correction is often the contradiction."
   },
   {
     "n": 36,
     "file": "36.wav",
-    "seconds": 8.13,
-    "text": "Next: telephony, a copilot mode where I whisper to the biller, and a payer-level inconsistency index. We never score representatives."
+    "seconds": 9.46,
+    "text": "The market is the cost of chasing denials: twenty-five billion dollars a year, fifty-seven dollars per denied claim. The buyer is a billing office with a denial queue."
   },
   {
     "n": 37,
     "file": "37.wav",
-    "seconds": 21.9,
-    "text": "That was the scripted representative on the real console. To run it live: open the witness omega dot vercel dot app in Chrome, with headphones, choose Be the Rep, live, then Headphones, then Start live call. I will greet you. Give a name and a badge, say the claim denied for timely filing, and when I ask for the reference number say eight K two J, nine eight eight. Then click Save call. Thank you."
+    "seconds": 6.27,
+    "text": "Revenue: a seat per month, metered calls above the quota, the appeal packet as the upsell."
+  },
+  {
+    "n": 38,
+    "file": "38.wav",
+    "seconds": 7.65,
+    "text": "Voice agents that call payers exist. Denial platforms exist. One promises to predict what the payer will pay. We record what the payer said."
+  },
+  {
+    "n": 39,
+    "file": "39.wav",
+    "seconds": 6.74,
+    "text": "Next: Whisper mode on live audio, and a payer-level inconsistency index. We never score representatives."
+  },
+  {
+    "n": 40,
+    "file": "40.wav",
+    "seconds": 20.79,
+    "text": "That was the scripted representative on the real console. To run it live: open the witness omega dot vercel dot app in Chrome, with headphones, choose Be the Rep, live, Headphones, then Start live call. Give a name and a badge, say the claim denied for timely filing, and when I ask for the reference number say eight K two J, nine eight eight. Then click Save call. Thank you."
   }
 ]

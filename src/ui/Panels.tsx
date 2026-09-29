@@ -49,7 +49,7 @@ export function TransportBar(p: {
   onTheme: () => void;
 }) {
   const state =
-    p.phase === 'idle' ? 'SYSTEM READY · NO SESSION' : p.phase === 'done' ? 'CALL CLOSED' : p.phase === 'paused' ? 'PAUSED' : `REC · ${p.mode === 'A' ? 'WITNESS SPEAKS' : 'COPILOT'}`;
+    p.phase === 'idle' ? 'SYSTEM READY · NO SESSION' : p.phase === 'done' ? 'CALL CLOSED' : p.phase === 'paused' ? 'PAUSED' : `REC · ${p.mode === 'A' ? 'WITNESS SPEAKS' : 'WHISPER'}`;
   return (
     <header className="w-transport">
       <span className="w-brand">The Witness</span>
@@ -176,7 +176,7 @@ export function BriefPanel(p: {
           {!live && (
             <span className="w-seg" role="group" aria-label="Who speaks to the Rep">
               <button aria-pressed={p.mode === 'A'} disabled={p.locked} onClick={() => p.setMode('A')}>Witness speaks</button>
-              <button aria-pressed={p.mode === 'B'} disabled={p.locked} onClick={() => p.setMode('B')}>Copilot: I speak</button>
+              <button aria-pressed={p.mode === 'B'} disabled={p.locked} onClick={() => p.setMode('B')}>Whisper: I speak</button>
             </span>
           )}
           {p.phase === 'idle' && (

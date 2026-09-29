@@ -20,9 +20,9 @@ Vocabulary: **Agent** = the human using the tool. **Rep** = the payer's represen
 
 Two modes:
 - **Mode A — the Witness speaks to the Rep.** It opens by disclosing it is an AI assistant calling for the provider's billing office and that the call is recorded, asks for the rep's name and badge number, then works through a deterministic call plan (verify identity, challenge contradictions against prior calls, ask for denial reason, ask for a call reference number, read the reference back, close). This is the mode being tested live.
-- **Mode B — Copilot.** The human Agent speaks; the Witness whispers into their earpiece. Currently scripted-only, not live.
+- **Mode B — Whisper mode.** The human Agent speaks; the Witness whispers into their earpiece. Currently scripted-only, not live.
 
-There is no telephony. In the demo the "Rep" is either a scripted Rep Simulator or a person talking into the laptop microphone ("Be the Rep"). Twilio is roadmap.
+There are no phone lines. In the demo the "Rep" is either a scripted Rep Simulator or a person talking into the laptop microphone ("Be the Rep"). Real phone lines are out of scope.
 
 Stack: Next.js (App Router, a newer version with breaking changes), React 19, TypeScript, vitest. Hosted on Vercel. Repo: github.com/velez2689/the-witness (public). Live: https://the-witness-omega.vercel.app. Local repo: `C:\JarvisLite\Projects\TheWitness\the-witness`.
 
@@ -230,7 +230,7 @@ Create these outside the repo root (see `.repo-layout.yml`; images/recordings be
 - [ ] **B1. Short description**, <= 255 characters. Done when: counted, <= 255.
 - [ ] **B2. Long description**, >= 100 words. Done when: word-counted, states the problem (payer call statements vanish; ~19% of in-network claims denied, <1% appealed), the line "we don't predict what the payer will pay - we record what the payer said", the AssemblyAI angle (spoken alphanumerics; agent speaks a read-back rather than guessing), and how it uses Voice Agent + Streaming v3.
 - [ ] **B3. Cover image**, 16:9. Done when: exported PNG/JPG at 16:9 (e.g. 1920x1080), legible at thumbnail size.
-- [ ] **B4. Slide deck PDF**, must include a **competitive-analysis slide**. Done when: PDF exported; slides cover problem, product, live demo, architecture (two sockets), evidence model (append-only ledger, hash chain), competitive analysis, roadmap (telephony, Mode B live).
+- [ ] **B4. Slide deck PDF**, must include a **competitive-analysis slide**. Done when: PDF exported; slides cover problem, product, live demo, architecture (two sockets), evidence model (append-only ledger, hash chain), competitive analysis, roadmap (Mode B live).
 - [ ] **B5. Demo video**, 3-5 minutes. Done when: length in range; shows a real live call (from A3) or clearly-labelled replay; shows a contradiction being caught and the appeal packet (`/packet`). Owner's approval before anything is published.
 - [ ] **B6. Submission on lablab.ai.** Done when: OWNER explicitly says submit. Deadline 2026-09-30 11:00 ET.
 - Also required by CLAUDE.md: a meaningful commit each day through Sep 30 (commit-spread is judged).
@@ -242,7 +242,7 @@ Create these outside the repo root (see `.repo-layout.yml`; images/recordings be
 ### D. Optional - only if time remains (cut rule: drop anything the video or Judge Mode will not show)
 - [ ] D1. Judge Mode at `/judge`. D2. Payer Inconsistency Index (aggregate at payer level only). D3. Contradiction Autopsy scrubber. D4. Deadline Guard. D5. Denial-letter cross-check.
 - [ ] D6. ElevenLabs demo corpus: needs `ELEVENLABS_API_KEY`, then write `fixtures/scripts/render-corpus.mjs`; until then scripted "Play" buttons use the browser voice. Unknown whether Recorded mode plays end to end - check before relying on it as a fallback.
-- [ ] D7. Mode B (Copilot) on live audio (Streaming v3 second session). Scripted-only today.
+- [ ] D7. Mode B (Whisper mode) on live audio (Streaming v3 second session). Scripted-only today.
 
 ### E. Hygiene
 - [ ] E1. Re-run `npm run typecheck`, `npm run lint`, `npm run build` (only `vitest run` = 195 passing was re-run in this session).

@@ -78,7 +78,7 @@ socket carried the audio, never from a model's opinion about who was talking.
 - **Mode A, Witness speaks:** Rep audio -> Streaming v3 (transcription only, keyterms
   seeded); the Voice Agent is a MOUTH and is never sent audio at all. The Rep is
   whoever the microphone heard; the Witness is only ever what our code assembled.
-- **Mode B, Copilot:** Rep audio -> Streaming v3 (listen-only); Agent mic -> Voice
+- **Mode B, Whisper mode:** Rep audio -> Streaming v3 (listen-only); Agent mic -> Voice
   Agent session. One session per channel.
 
   *Mode A was one Voice Agent socket doing both jobs until Sep 25. The server answers
@@ -134,7 +134,7 @@ display it on screen. Never fake it, never smooth it.
   evaluated item, and the log already has an unfixable four-day hole at the front.
 - Conventional commits: `feat:` `fix:` `docs:` `chore:` `refactor:` `test:`.
 - Build the **recorded-audio path first**. It is the required no-mic fallback, the test
-  harness, and it keeps telephony off the critical path.
+  harness, and it keeps phone lines off the critical path.
 - Straight build, not multi-agent orchestration. Token efficiency is a stated priority.
 - Verify before claiming done: typecheck, lint, tests, build, then actually run it and
   look at it. Never report a check that was not run.

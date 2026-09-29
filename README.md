@@ -38,7 +38,7 @@ No accuracy percentage is claimed anywhere in this project, by policy. Confidenc
 One pipeline, two modes. The person using The Witness is the **Agent**; the person at the payer is the **Rep**.
 
 - **Mode A, the Witness speaks.** The Agent fills in a call brief (claim, member, what they need answered). The Witness conducts the call: it says up front that it is an AI assistant and that the call is recorded, works through a deterministic call plan, **challenges the Rep on the recorded line** when the Rep contradicts something already on record, reads reference numbers back, and only finishes when the hang-up gate is clear.
-- **Mode B, Copilot.** The Agent speaks to the Rep. The Witness listens and **whispers** into the Agent's earpiece what to ask, what to question, and what is still missing. Scripted only today; live Mode B is roadmap.
+- **Mode B, Whisper mode.** The Agent speaks to the Rep. The Witness listens and **whispers** into the Agent's earpiece what to ask, what to question, and what is still missing. Scripted only today; live Mode B is roadmap.
 - **Take over** switches from A to B in the middle of a scripted call.
 
 ### Two sockets, one memory
@@ -78,7 +78,7 @@ npm run dev               # http://localhost:3000
 npm test && npm run typecheck && npm run lint
 ```
 
-- **Scripted path (no key, no mic, no network):** open `/`, press **Start call**. Choose *Witness speaks* or *Copilot*. **Take over** switches mid-call. `/packet` is the appeal packet.
+- **Scripted path (no key, no mic, no network):** open `/`, press **Start call**. Choose *Witness speaks* or *Whisper*. **Take over** switches mid-call. `/packet` is the appeal packet.
 - **Live path:** choose *Be the Rep (live)*, press **Start live call**. You speak as the payer rep; the Witness calls you. Chrome, headphones and a server key are required. Two sessions open only when you press Start and are ended on every exit path. **Save call** downloads the call's audio and event timeline; nothing is uploaded.
 
 > **Never auto-connect.** Sessions start on an explicit click. The account allows 5 new streams per minute and this app opens two per call.
@@ -118,7 +118,7 @@ The rules are machine-readable in [`.repo-layout.yml`](.repo-layout.yml) and exp
 | Console: claim timeline, the link, flag lane, edit view, capture sheet, hang-up gate, close-out, claim update sheet, worklist import, multi-patient roster | Built |
 | Appeal packet (`/packet`) with per-statement citations and integrity check | Built |
 | Live Mode A on two AssemblyAI sockets, in-browser call recorder | Built; a clean full-plan live call on the current build is the open item (see `docs/SITUATION-REPORT-2026-09-29.md`) |
-| Live Mode B, telephony (Twilio SIP), payer-level inconsistency index | Roadmap |
+| Live Mode B (Whisper mode on live audio), payer-level inconsistency index | Roadmap |
 
 **Known constraints, stated up front:** Chrome only. The demo corpus is scripted; **no protected health information touches this project**. No accuracy percentage is claimed anywhere, by policy. No CPT descriptor text appears anywhere; codes are opaque strings.
 
