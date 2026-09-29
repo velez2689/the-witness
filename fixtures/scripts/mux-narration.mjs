@@ -20,6 +20,19 @@ const { fps, frames, beats } = JSON.parse(readFileSync(path.join(footage, 'beats
 const totalSeconds = frames / fps;
 const track = Buffer.alloc(Math.ceil(totalSeconds * RATE) * 2);
 
+// Room tone: a very quiet, soft-edged noise floor (about -50 dBFS) under the whole track, so the
+// gaps between lines are not dead digital silence and the clips do not start and stop with a hard
+// gate. Seeded, so a re-run gives the same file. No music.
+{
+  let seed = 20260929;
+  const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 0x100000000 - 0.5; };
+  let soft = 0;
+  for (let i = 0; i < track.length; i += 2) {
+    soft = soft * 0.985 + rand() * 0.015 * 2;
+    track.writeInt16LE(Math.round(soft * 32768 * 0.064), i);
+  }
+}
+
 for (const b of beats) {
   const file = path.join(narration, `${String(b.n).padStart(2, '0')}.wav`);
   if (!existsSync(file)) {
@@ -30,7 +43,11 @@ for (const b of beats) {
   const data = wav.subarray(44);
   const at = Math.round(b.startSeconds * RATE) * 2;
   const room = track.length - at;
-  data.copy(track, at, 0, Math.max(0, Math.min(data.length, room)));
+  const usable = Math.max(0, Math.min(data.length, room)) & ~1;
+  for (let i = 0; i < usable; i += 2) {
+    const mixed = track.readInt16LE(at + i) + data.readInt16LE(i);
+    track.writeInt16LE(Math.max(-32768, Math.min(32767, mixed)), at + i);
+  }
   if (data.length > room) console.warn(`line ${b.n}: audio runs ${((data.length - room) / 2 / RATE).toFixed(1)} s past the end`);
 }
 

@@ -15,7 +15,7 @@ const RATE = 24_000;
 const out = process.argv[2] ?? 'narration-check.json';
 
 const script = new Map(readFileSync('docs/submission/narration.md', 'utf8').split(/\r?\n/)
-  .map((l) => /^(\d+)\.\s+(.*)$/.exec(l)).filter(Boolean).map((m) => [Number(m[1]), m[2].trim()]));
+  .map((l) => /^(\d+)\.\s+(.*)$/.exec(l)).filter(Boolean).map((m) => [Number(m[1]), m[2].split(' || ').map((s) => s.trim().replace(/^REP: /, '')).join(' ')]));
 
 const ONES = 'zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen'.split(' ');
 const TENS = 'x x twenty thirty forty fifty sixty seventy eighty ninety'.split(' ');

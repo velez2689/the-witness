@@ -22,11 +22,19 @@ const narrationDir = process.argv[4] ?? 'docs/assets/narration';
 const FPS = 2;
 mkdirSync(path.join(out, 'frames'), { recursive: true });
 
+// A line may mix narrator and payer-representative segments (" || " between them, "REP: " in
+// front of a payer segment). The caption shows the payer's words in quotes, labelled.
 const lines = readFileSync('docs/submission/narration.md', 'utf8')
-  .split('\n')
+  .split(/\r?\n/)
   .map((l) => /^(\d+)\.\s+(.*)$/.exec(l))
   .filter(Boolean)
-  .map((m) => ({ n: Number(m[1]), text: m[2].trim() }));
+  .map((m) => ({
+    n: Number(m[1]),
+    text: m[2].split(' || ').map((s) => {
+      const t = s.trim();
+      return t.startsWith('REP: ') ? `Rep: "${t.slice(5).trim()}"` : t;
+    }).join(' '),
+  }));
 const indexPath = path.join(narrationDir, 'index.json');
 const rendered = existsSync(indexPath) ? JSON.parse(readFileSync(indexPath, 'utf8')) : [];
 const secondsFor = (n) => {
