@@ -1,0 +1,70 @@
+{
+  "sampleRate": 24000,
+  "witnessSeconds": 2.34,
+  "repSeconds": 29.3,
+  "events": [
+    {
+      "atMs": 0,
+      "kind": "start"
+    },
+    {
+      "atMs": 0,
+      "kind": "ready",
+      "detail": "connecting"
+    },
+    {
+      "atMs": 981,
+      "kind": "witness-line",
+      "detail": "greet: Hi, this is an AI assistant calling for Harbor Orthopedic Billing about a claim, and just so you know, this call is recorded. Could I get your name and badge number?"
+    },
+    {
+      "atMs": 981,
+      "kind": "ready",
+      "detail": "live"
+    },
+    {
+      "atMs": 2265,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 3836,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 5535,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 5816,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 5926,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 6386,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 14864,
+      "kind": "rep-turn",
+      "detail": "Can you hear me?"
+    },
+    {
+      "atMs": 14865,
+      "kind": "witness-line",
+      "detail": "identify: Sorry, you cut out there for a second - could I just get your name and badge number?"
+    },
+    {
+      "atMs": 31611,
+      "kind": "ready",
+      "detail": "user-stop"
+    },
+    {
+      "atMs": 31611,
+      "kind": "stop",
+      "detail": "user-stop"
+    }
+  ]
+}

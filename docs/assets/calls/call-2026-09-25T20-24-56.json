@@ -1,0 +1,216 @@
+{
+  "sampleRate": 24000,
+  "witnessSeconds": 66,
+  "repSeconds": 149.8,
+  "events": [
+    {
+      "atMs": 0,
+      "kind": "start"
+    },
+    {
+      "atMs": 1,
+      "kind": "ready",
+      "detail": "connecting"
+    },
+    {
+      "atMs": 1089,
+      "kind": "witness-line",
+      "detail": "greet: Hi, this is an AI assistant calling for Harbor Orthopedic Billing about a claim, and just so you know, this call is recorded. Could I get your name and badge number?"
+    },
+    {
+      "atMs": 1089,
+      "kind": "ready",
+      "detail": "live"
+    },
+    {
+      "atMs": 4004,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 11381,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 14446,
+      "kind": "rep-turn",
+      "detail": "Darnell."
+    },
+    {
+      "atMs": 14448,
+      "kind": "witness-line",
+      "detail": "identify: Sorry, you cut out there for a second - could I just get your name and badge number?"
+    },
+    {
+      "atMs": 18220,
+      "kind": "rep-turn",
+      "detail": "Badge number 2."
+    },
+    {
+      "atMs": 18221,
+      "kind": "witness-line",
+      "detail": "verify: Thanks. So that's member M D seven, seven one four, zero two two, eight, date of service May eighteenth. Can you tell me where claim A, four four seven one, zero eight stands right now?"
+    },
+    {
+      "atMs": 21221,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 24691,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 25191,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 25967,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 26138,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 36273,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 42444,
+      "kind": "rep-turn",
+      "detail": "Claim is denied for timely filing."
+    },
+    {
+      "atMs": 42445,
+      "kind": "witness-line",
+      "detail": "challenge:commitment_violation: So on June third, M Alvarez, badge four four seven one, reference eight K two J, one one four told us to give it thirty days. We did that, and now it's denied for timely filing. Can you help me understand what happened there?"
+    },
+    {
+      "atMs": 45853,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 57773,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 61843,
+      "kind": "rep-turn",
+      "detail": "I can only tell you what I see in my system."
+    },
+    {
+      "atMs": 61844,
+      "kind": "witness-line",
+      "detail": "probe_prior: Quick one - on August fifth, T Okafor, badge five one eight two, reference eight K two J, seven zero two had this claim as reprocessed. Can you confirm that on your end?"
+    },
+    {
+      "atMs": 68743,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 72623,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 72643,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 72803,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 72813,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 73423,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 73433,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 77993,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 81742,
+      "kind": "rep-turn",
+      "detail": "Yes, it was reprocessed and denied for timely filing."
+    },
+    {
+      "atMs": 81743,
+      "kind": "witness-line",
+      "detail": "ask:remit_reason: What is the denial reason exactly as it appears on the remit?"
+    },
+    {
+      "atMs": 84743,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 87973,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 93744,
+      "kind": "rep-turn",
+      "detail": "It appears on the remit as timely filing."
+    },
+    {
+      "atMs": 93744,
+      "kind": "witness-line",
+      "detail": "ask:reference_number: Last thing, and then I will let you go. Could I get a reference number for this call?"
+    },
+    {
+      "atMs": 104394,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 110374,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 120932,
+      "kind": "rep-turn",
+      "detail": "8K2J-988."
+    },
+    {
+      "atMs": 120933,
+      "kind": "witness-line",
+      "detail": "readback: Let me read that back to make sure I have it. eight K two J, nine eight eight. Did I get that right?"
+    },
+    {
+      "atMs": 131245,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 137405,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 139750,
+      "kind": "rep-turn",
+      "detail": "Yes."
+    },
+    {
+      "atMs": 139751,
+      "kind": "witness-line",
+      "detail": "alert_agent: Okay, no problem at all. I've got what I need for now, and I'll have someone from the billing office follow up on the rest. Thanks for your time today."
+    },
+    {
+      "atMs": 146075,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 153917,
+      "kind": "ready",
+      "detail": "plan-complete"
+    },
+    {
+      "atMs": 153917,
+      "kind": "stop",
+      "detail": "plan-complete"
+    }
+  ]
+}

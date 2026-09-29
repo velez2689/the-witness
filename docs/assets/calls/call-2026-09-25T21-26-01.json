@@ -1,0 +1,58 @@
+{
+  "sampleRate": 24000,
+  "witnessSeconds": 1.9,
+  "repSeconds": 15.3,
+  "events": [
+    {
+      "atMs": 0,
+      "kind": "start"
+    },
+    {
+      "atMs": 1,
+      "kind": "ready",
+      "detail": "connecting"
+    },
+    {
+      "atMs": 1429,
+      "kind": "witness-line",
+      "detail": "greet: Hi, this is an AI assistant calling for Harbor Orthopedic Billing about a claim, and just so you know, this call is recorded. Could I get your name and badge number?"
+    },
+    {
+      "atMs": 1429,
+      "kind": "ready",
+      "detail": "live"
+    },
+    {
+      "atMs": 5494,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 6485,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 10653,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 10853,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 11024,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 11503,
+      "kind": "playback-idle"
+    },
+    {
+      "atMs": 11513,
+      "kind": "playback-started"
+    },
+    {
+      "atMs": 11723,
+      "kind": "playback-idle"
+    }
+  ]
+}
