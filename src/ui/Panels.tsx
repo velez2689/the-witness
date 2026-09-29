@@ -145,7 +145,7 @@ export function BriefPanel(p: {
           <dt>This claim so far</dt>
           <dd className="w-sofar">
             <b>{holdLabel(p.totalHold)}</b> on hold across {p.callsCount} {p.callsCount === 1 ? 'call' : 'calls'} · <b>${(p.callsCount * p.costPerCall).toFixed(2)}</b> at the ${p.costPerCall.toFixed(2)} per-call CAQH average
-            <span className="w-note">CAQH Index 2024 edition, 2023 data year. Computed for this claim, not cited.</span>
+            <span className="w-note">CAQH Index 2024 edition, 2023 data year, the latest with per-transaction figures. Computed for this claim, not cited.</span>
           </dd>
         </dl>
       </div>

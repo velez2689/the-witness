@@ -10,7 +10,7 @@
 
 ## The problem
 
-A biller spends **25 minutes and $13.80** on one phone call asking a payer why a claim was denied (CAQH Index, 2024 edition, 2023 data year). The answer is spoken, unrecorded on the provider's side, and gone the moment they hang up, compressed into a line of shorthand in a claim note. Weeks later a different representative gives a different answer, and nothing in the revenue cycle notices.
+A biller spends **25 minutes and $13.80** on one phone call asking a payer why a claim was denied (CAQH Index, 2024 edition, 2023 data year, the latest edition that publishes per-transaction time and cost; the 2025 edition, 2024 data, puts the average manual medical transaction at $8.03). The answer is spoken, unrecorded on the provider's side, and gone the moment they hang up, compressed into a line of shorthand in a claim note. Weeks later a different representative gives a different answer, and nothing in the revenue cycle notices.
 
 Roughly **19 percent** of in-network claims are denied, **under 1 percent** of those denials are ever appealed, and payers upheld two thirds of the internal appeals they did receive (KFF, March 2026). The gap between those numbers is not merit. It is evidence: appealing means reconstructing what the payer actually said, and nobody can.
 
@@ -126,7 +126,7 @@ The rules are machine-readable in [`.repo-layout.yml`](.repo-layout.yml) and exp
 
 ## Sources
 
-1. CAQH Index, 2024 edition (2023 data year): time and cost per manual phone claim-status inquiry.
+1. CAQH Index, 2024 edition (2023 data year): time and cost per manual phone claim-status inquiry, the latest edition that publishes per-transaction figures. 2025 edition (2024 data year, published February 2026): $8.03 average manual medical transaction, claim status 81% electronic, $18.7B medical savings opportunity remaining.
 2. KFF, March 2026: denial, appeal and upheld-appeal rates for in-network claims.
 3. GAO-06-710: 900 test calls; representatives gave inconsistent responses.
 

@@ -302,12 +302,21 @@ is scored nowhere.
 **Never claim a transcription accuracy percentage.**
 
 - **25 min / $13.80** per manual phone claim-status inquiry, 2024 CAQH Index, **2023
-  data year**. Cite it with that vintage. CAQH is now **DataSpring**; the current
-  figure sits behind free registration at index.dataspring.com and should be pulled
-  before the deck ships.
+  data year**. Cite it with that vintage. It is the latest edition that publishes
+  per-transaction time and cost.
+- **2025 CAQH Index** (2024 data year, published 2026-02-19; CAQH is now DataSpring, the
+  Index keeps its name): medical provider average cost per transaction **$8.03 manual**
+  (2024 Index $7.93, 2023 Index $7.19) vs **$2.65 electronic**; medical claim status
+  inquiry **81% fully electronic** (74% in the 2023 Index); **$18.7B** medical savings
+  opportunity remains, $21B across medical and dental; **$258B** administrative cost
+  avoided in 2024, up 17%. Transaction-level time and cost moved to the paid Index Pro
+  chartbook, so no public 2025 figure exists for claim status; blogs quoting "24 min /
+  $12" against the 2025 Index are recycling the 2023 edition. Verified 2026-09-29 from
+  the public Executive Report PDF (index.caqh.org, 14 pages).
 - **TAM trap:** of 2.82B annual claim-status inquiries only **2% are fully manual** (18%
   is *partially* electronic, not phone). Use CAQH's published **$2.4B** medical savings
-  opportunity, never a reconstructed volume x price.
+  opportunity, never a reconstructed volume x price. Both are 2024-edition numbers; the
+  2025 edition publishes no per-transaction split.
 - **$25.7B** provider claims-adjudication cost, +23% YoY; **$57.23** admin cost per
   denied claim; ~15% initial denial rate, Premier, Feb 2025.
 - **19%** of in-network claims denied, range 3%-36% by issuer; ~85M denied claims;

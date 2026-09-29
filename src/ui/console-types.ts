@@ -25,7 +25,7 @@ export interface ConsoleProps {
   readWorkbook?: (file: File) => Promise<{ rows: string[][]; sheetName: string | null }>;
   /** Browser-storage handle for the worklist. Injected by the app host. */
   worklistStore?: import('./use-worklist').WorklistStorage;
-  /** Per-call average from the CAQH Index (2024 edition, 2023 data year). */
+  /** Per-call average from the CAQH Index (2024 edition, 2023 data year, the latest with per-transaction figures). */
   costPerCall: number;
 }
 
