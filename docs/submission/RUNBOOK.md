@@ -30,7 +30,7 @@ Then to submission:
 | B2 long description | Done, including the last paragraph (what the video shows) |
 | B3 cover image | Done: `docs/assets/cover-16x9.png` (3840x2160, downscale to 1920x1080 on upload if the form wants it) |
 | B4 deck | Done as `docs/submission/deck.html` and `deck.pdf`; slide 11 (competitors) needs the verification step below before it ships |
-| B5 video | Done: `docs/assets/demo-narrated.mp4` (4:16, 1920x1080, H.264 + AAC), narrated by an AssemblyAI voice agent from `docs/submission/narration.md`; the per-line audio is in `docs/assets/narration/`. Rebuild: `node --env-file=.env fixtures/scripts/render-narration.mjs`, then `PLAYWRIGHT_CORE=<path> node fixtures/scripts/capture-footage.mjs <footageDir> http://localhost:3000 docs/assets/narration`, then `node fixtures/scripts/mux-narration.mjs <footageDir> docs/assets/narration docs/assets/demo-narrated.mp4`. The owner watches it end to end before upload |
+| B5 video | Done: `docs/assets/demo-narrated.mp4` (4:32, 1920x1080, H.264 + AAC; Mode A call, then Whisper mode), narrated by an AssemblyAI voice agent from `docs/submission/narration.md`; the per-line audio is in `docs/assets/narration/`. Rebuild: `node --env-file=.env fixtures/scripts/render-narration.mjs`, then `PLAYWRIGHT_CORE=<path> node fixtures/scripts/capture-footage.mjs <footageDir> http://localhost:3000 docs/assets/narration`, then `node fixtures/scripts/mux-narration.mjs <footageDir> docs/assets/narration docs/assets/demo-narrated.mp4`. The owner watches it end to end before upload |
 | B6 submission | Owner only; checklist below |
 | Live call on the current build | Not yet proven; steps below |
 

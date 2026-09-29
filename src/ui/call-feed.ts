@@ -1,5 +1,5 @@
 import type { CallEvent } from '@/domain/mode-a';
-import type { CopilotEvent } from '@/domain/mode-b';
+import type { WhisperEvent } from '@/domain/mode-b';
 import type { Contradiction } from '@/domain/contradiction';
 import type { Statement } from '@/domain/statement';
 import { estimateDurationMs } from '@/domain/script';
@@ -57,7 +57,7 @@ export function fromModeA(events: readonly CallEvent[]): FeedItem[] {
   );
 }
 
-export function fromModeB(events: readonly CopilotEvent[]): FeedItem[] {
+export function fromModeB(events: readonly WhisperEvent[]): FeedItem[] {
   return events.map((e, i) => {
     const base = {
       id: `b-${i}`,

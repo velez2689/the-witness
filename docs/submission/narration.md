@@ -29,13 +29,16 @@ Spoken by an AssemblyAI voice agent (the same Voice Agent API the product uses, 
 25. I sign off. The call ends only once the gate is clear.
 26. The inspector holds both quotes. The hang-up gate: every required field captured, or refused on record.
 27. The claim update sheet. Every line traces to a statement.
-28. The appeal packet quotes the record: badge, reference, date and offset. Conflicts first.
-29. The ledger is hash-chained. Verify integrity recomputes it from the log on the page.
-30. How it works. The representative's audio goes to AssemblyAI Streaming, verbatim, with the claim's numbers seeded as keyterms. I speak through the Voice Agent API and am never sent audio. I call no tools and write nothing.
-31. An append-only, hash-chained ledger. Five kinds of contradiction, plus refusals as rows. Confidence is a state, never a percentage.
-32. Spoken reference numbers are the hard case. Keyterms before the call, a read-back instead of a guess, and a transcript that keeps the self-correction, because the correction is often the contradiction.
-33. The market is the cost of chasing denials: twenty-five billion dollars a year, fifty-seven dollars per denied claim. The buyer is a billing office with a denial queue.
-34. Revenue: a seat per month, metered calls above the quota, the appeal packet as the upsell.
-35. Voice agents that call payers exist. Denial platforms exist. One promises to predict what the payer will pay. We record what the payer said.
-36. Next: telephony, a copilot mode where I whisper to the biller, and a payer-level inconsistency index. We never score representatives.
-37. That was the scripted representative on the real console. To run it live: open the witness omega dot vercel dot app in Chrome, with headphones, choose Be the Rep, live, then Headphones, then Start live call. I will greet you. Give a name and a badge, say the claim denied for timely filing, and when I ask for the reference number say eight K two J, nine eight eight. Then click Save call. Thank you.
+28. The biller can also take the call. Whisper mode: the biller speaks, I listen, and I whisper into their earpiece only. I never speak on the line.
+29. When the representative contradicts the July call, I whisper the earlier statement and its date. The biller challenges it in their own words.
+30. At the end I whisper what the claim still needs, and the close-out is read from the rows.
+31. The appeal packet quotes the record: badge, reference, date and offset. Conflicts first.
+32. The ledger is hash-chained. Verify integrity recomputes it from the log on the page.
+33. How it works. The representative's audio goes to AssemblyAI Streaming, verbatim, with the claim's numbers seeded as keyterms. I speak through the Voice Agent API and am never sent audio. No tools, no writes.
+34. An append-only, hash-chained ledger. Five kinds of contradiction, plus refusals as rows. Confidence is a state, never a percentage.
+35. Spoken reference numbers are the hard case. Keyterms before the call, a read-back instead of a guess, and a transcript that keeps the self-correction, because the correction is often the contradiction.
+36. The market is the cost of chasing denials: twenty-five billion dollars a year, fifty-seven dollars per denied claim. The buyer is a billing office with a denial queue.
+37. Revenue: a seat per month, metered calls above the quota, the appeal packet as the upsell.
+38. Voice agents that call payers exist. Denial platforms exist. One promises to predict what the payer will pay. We record what the payer said.
+39. Next: Whisper mode on live audio, and a payer-level inconsistency index. We never score representatives.
+40. That was the scripted representative on the real console. To run it live: open the witness omega dot vercel dot app in Chrome, with headphones, choose Be the Rep, live, Headphones, then Start live call. Give a name and a badge, say the claim denied for timely filing, and when I ask for the reference number say eight K two J, nine eight eight. Then click Save call. Thank you.

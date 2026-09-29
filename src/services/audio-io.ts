@@ -235,7 +235,7 @@ export class PcmPlayer {
     else this.pending.push(samples);
   }
 
-  /** Route output to a specific device (e.g. the Agent's earpiece in Copilot mode). Chrome only. */
+  /** Route output to a specific device (e.g. the Agent's earpiece in Whisper mode). Chrome only. */
   async setOutputDevice(deviceId: string): Promise<void> {
     const ctx = this.context() as AudioContext & { setSinkId?: (id: string) => Promise<void> };
     if (ctx.setSinkId) await ctx.setSinkId(deviceId);

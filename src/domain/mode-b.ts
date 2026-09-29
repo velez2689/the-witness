@@ -10,11 +10,11 @@ import type { Statement } from './statement';
 import type { ModeAState } from './mode-a';
 
 /**
- * Mode B, Copilot. The Agent speaks to the Rep; the Witness listens and WHISPERS into the Agent's
+ * Mode B, Whisper mode. The Agent speaks to the Rep; the Witness listens and WHISPERS into the Agent's
  * earpiece only. The Witness never speaks on the line. Same pipeline as Mode A: the whisper is
  * assembled from statement rows, never composed by the model.
  */
-export type CopilotEvent =
+export type WhisperEvent =
   | { type: 'agent'; text: string; atMs: number }
   | {
       type: 'rep';
@@ -36,7 +36,7 @@ export interface ModeBState {
   session: CallSession;
   clockMs: number;
   holdSeconds: number;
-  events: CopilotEvent[];
+  events: WhisperEvent[];
   /** Trigger statements already whispered about. */
   whispered: readonly string[];
   finished: boolean;

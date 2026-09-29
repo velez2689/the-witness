@@ -94,6 +94,9 @@ async function showSlide(index) {
   await page.goto(pathToFileURL(path.resolve('docs/submission/deck.html')).href, { waitUntil: 'networkidle' });
   await page.evaluate((i) => {
     document.querySelectorAll('section').forEach((s, k) => { s.style.display = k === i - 1 ? 'block' : 'none'; });
+    // The caption bar covers the bottom of the frame; lift the slide's source line and page number above it.
+    document.querySelectorAll('section .src, section .n').forEach((el) => { el.style.bottom = '176px'; });
+    document.querySelectorAll('section .src').forEach((el) => { el.style.right = '300px'; });
     window.scrollTo(0, 0);
   }, index);
 }
@@ -131,16 +134,39 @@ await beat(26);
 await scrollTo('.w-update');
 await beat(27);
 
-// 28 to 29: the packet.
+// 28 to 30: Whisper mode on the same claim, the biller speaks and the Witness whispers.
+await page.goto(base, { waitUntil: 'networkidle' });
+await theme('dark');
+await page.getByRole('button', { name: 'Whisper: I speak' }).click();
+await page.getByRole('button', { name: 'Start call' }).click();
+await page.getByRole('button', { name: 'Pause' }).click();
+const whispers = () => page.locator('.w-line.whisper').count();
+const stepUntil = async (pred, max) => {
+  for (let k = 0; k < max && !(await pred()); k += 1) {
+    await page.getByRole('button', { name: 'Step' }).click().catch(() => undefined);
+    await page.waitForTimeout(250);
+  }
+};
+await stepUntil(async () => (await page.locator('.w-line.agent').count()) >= 1, 6);
+await scrollTo('.w-flaglane');
+await beat(28);
+await stepUntil(async () => (await whispers()) >= 1, 40);
+await scrollTo('.w-flaglane');
+await beat(29);
+await stepUntil(async () => (await page.locator('.w-line.closeout').count()) >= 1, 80);
+await scrollTo('.w-flaglane');
+await beat(30);
+
+// 31 to 32: the packet.
 await page.goto(`${base}/packet`, { waitUntil: 'networkidle' });
 await theme('light');
-await beat(28);
+await beat(31);
 await page.getByRole('button', { name: 'Verify integrity' }).click();
-await beat(29);
+await beat(32);
 await caption('');
 
-// 30 to 37: the deck.
-for (const [slideNo, lineNo] of [[5, 30], [6, 31], [7, 32], [9, 33], [10, 34], [11, 35], [12, 36], [8, 37]]) {
+// 33 to 40: the deck.
+for (const [slideNo, lineNo] of [[5, 33], [6, 34], [7, 35], [9, 36], [10, 37], [11, 38], [12, 39], [8, 40]]) {
   await showSlide(slideNo);
   await beat(lineNo);
 }

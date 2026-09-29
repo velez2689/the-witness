@@ -4,7 +4,7 @@
 
 **Vocabulary.** Agent = the person using The Witness. Rep = the payer rep. Witness = our voice AI. (Code: `operator` / `rep` / `witness`.)
 
-**Two modes (§Modes).** Mode A: the Witness speaks to the Rep (one Voice Agent session on the Rep's audio; verbatim AI + recording disclosure; deterministic call plan; challenges contradictions on the recorded line). Mode B, Copilot: the Agent speaks, the Witness whispers. **Take Over** moves A to B mid-call. No telephony: the demo Rep is a scripted simulator or a person speaking into the mic ("Be the Rep"). Real dialing is roadmap.
+**Two modes (§Modes).** Mode A: the Witness speaks to the Rep (one Voice Agent session on the Rep's audio; verbatim AI + recording disclosure; deterministic call plan; challenges contradictions on the recorded line). Mode B, Whisper mode: the Agent speaks, the Witness whispers. **Take Over** moves A to B mid-call. No phone lines: the demo Rep is a scripted simulator or a person speaking into the mic ("Be the Rep"). Real dialing is roadmap.
 
 **Freeze moved to Sep 26.** Submit Sep 29.
 
@@ -273,7 +273,7 @@ number); and a refusal (names a diagnosis issue, won't specify). Then the readba
 degraded audio, then the Close-Out.
 
 **Build the recorded-audio path first.** It is the required no-mic fallback, the test
-harness, and it keeps telephony off the critical path.
+harness, and it keeps phone lines off the critical path.
 
 ---
 
