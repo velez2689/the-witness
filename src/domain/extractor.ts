@@ -67,7 +67,26 @@ function tokenize(text: string): string[] {
 }
 
 const DEFLECTION =
-  /(don'?t|do not) have that level of detail|(doesn'?t|does not) (specify|say)|refer you to the denial letter|you should have (gotten|received) a letter|how can i help you|just says the diagnosis/;
+  /(don'?t|do not) have that level of detail|(doesn'?t|does not) (specify|say)|refer you to the denial letter|you should have (gotten|received) a letter|how can i help you|just says the diagnosis|can'?t share|cannot share|(?:unable|not able) to (?:share|provide|give|disclose)|not something i can (?:see|share|provide|give)|(?:don'?t|do not) see that (?:on|in) (?:my|the) (?:screen|end|system)/;
+
+// Phrasing families for each typed fact. The first alternative in each is the wording the demo
+// corpus uses; the rest are other ways a Rep says the same thing (tests/domain/extractor-paraphrase
+// .test.ts holds phrasings that are not in the corpus). A wording that matches none is not lost: the
+// turn is still filed as a verbatim quote, it is just not typed. Nothing here ever guesses a value.
+const NO_AUTH =
+  /\bno (?:prior )?auth|\bnever (?:got|received|obtained|had|submitted) (?:a |the )?(?:prior )?auth|\b(?:missing|without|lacks?) (?:a |the )?(?:prior )?auth|\b(?:prior )?auth(?:orization)? (?:was|is|were|has been) (?:not|never) (?:obtained|received|on file|approved|requested|submitted)|\b(?:prior )?auth(?:orization)? (?:wasn'?t|isn'?t|hasn'?t been) (?:obtained|received|on file|approved|requested|submitted)/;
+const TIMELY =
+  /timely filing|\bfiled (?:too late|late|after the (?:filing )?(?:deadline|limit|window))|\b(?:past|outside|beyond|after) the (?:timely )?filing (?:deadline|limit|window)|\bfiling (?:deadline|limit|window) (?:has |had |was )?(?:passed|expired|missed)/;
+const DIAGNOSIS =
+  /denying on a diagnosis|diagnosis (?:issue|isn'?t supported|is not supported)|just says the diagnosis|problem with (?:the |your )?diagnosis|diagnosis (?:doesn'?t|does not) support|(?:because of|due to) (?:the )?diagnosis|denied (?:for|on) (?:the )?diagnosis|diagnosis code (?:is|was) (?:invalid|missing|wrong|not valid)/;
+const NON_COVERED =
+  /\bnon-?\s?cover(?:ed|age)\b|\bnot covered\b|\b(?:is|are|was|were)(?:n'?t| not) (?:a )?covered\b|\bnot a covered\b|\bno coverage\b|\bexcluded (?:from|under) (?:the |your )?(?:plan|policy|benefits?)\b/;
+const PROCEDURE_CODE =
+  /\b(?:cpt|procedure) code\b|\bcoding (?:issue|error|problem)\b|\b(?:wrong|invalid|incorrect|bad) (?:billing|procedure|cpt) code\b/;
+const IN_PROCESS = /in process|still processing|being processed|(?:is|still) pending/;
+const WAIT_DAYS = /(?:allow|wait|takes?(?: up to)?) ([a-z0-9-]+(?: [a-z]+)?) days/;
+const NO_RECORD_OF_CALL =
+  /(?:don'?t|do not) have a record of (?:a|that|the) call|no record of (?:a|that|the) call|(?:can'?t|cannot|couldn'?t|unable to) (?:find|locate) (?:a|that|the) call|(?:not|n'?t) (?:seeing|finding) (?:a|that|the) call/;
 
 export function extractFromTurn(turn: RepTurn, ctx: ExtractContext): Extraction {
   const text = turn.text.replace(/[‘’]/g, "'");
@@ -156,23 +175,23 @@ export function extractFromTurn(turn: RepTurn, ctx: ExtractContext): Extraction 
 
   // --- denial reasons -------------------------------------------------------------------
   const additional = /\balso\b|\banother\b/.test(lower);
-  if (/\bno (?:prior )?auth/.test(lower)) {
-    fact('denial_reason', 'no prior authorization', /\bno (?:prior )?auth/);
+  if (NO_AUTH.test(lower)) {
+    fact('denial_reason', 'no prior authorization', NO_AUTH);
   }
-  if (/timely filing/.test(lower)) {
-    fact('denial_reason', 'timely filing', /timely filing/, { additional });
+  if (TIMELY.test(lower)) {
+    fact('denial_reason', 'timely filing', TIMELY, { additional });
   }
-  if (/denying on a diagnosis|diagnosis (issue|isn'?t supported|is not supported)|just says the diagnosis/.test(lower)) {
+  if (DIAGNOSIS.test(lower)) {
     fact('denial_reason', 'diagnosis code', /diagnosis/, { additional });
   }
   // Heard on the 2026-09-29 live calls and not typed until now: "non-covered" / "denied for
   // non-coverage", and "an issue with the CPT code" (a category with no value, so the plan
   // then asks which code, as it does for a diagnosis issue).
-  if (/\bnon-?\s?cover(?:ed|age)\b|\bnot covered\b/.test(lower)) {
-    fact('denial_reason', 'non-covered', /non-?\s?cover(?:ed|age)|not covered/, { additional });
+  if (NON_COVERED.test(lower)) {
+    fact('denial_reason', 'non-covered', NON_COVERED, { additional });
   }
-  if (/\b(?:cpt|procedure) code\b|\bcoding (?:issue|error|problem)\b/.test(lower) && !/\bwhich\b/.test(lower)) {
-    fact('denial_reason', 'procedure code', /(?:cpt|procedure) code|coding (?:issue|error|problem)/, { additional });
+  if (PROCEDURE_CODE.test(lower) && !/\bwhich\b/.test(lower)) {
+    fact('denial_reason', 'procedure code', PROCEDURE_CODE, { additional });
   }
 
   // --- status ---------------------------------------------------------------------------
@@ -185,15 +204,15 @@ export function extractFromTurn(turn: RepTurn, ctx: ExtractContext): Extraction 
   } else if (/\b(denied|denial|denying)\b/.test(lower)) {
     fact('status', 'denied', /\b(denied|denial|denying)\b/);
   }
-  if (/in process/.test(lower)) {
-    fact('status', 'in process', /in process/);
+  if (IN_PROCESS.test(lower)) {
+    fact('status', 'in process', IN_PROCESS);
   }
 
   // --- commitments ----------------------------------------------------------------------
-  const allow = /allow ([a-z0-9-]+(?: [a-z]+)?) days/.exec(lower);
+  const allow = WAIT_DAYS.exec(lower);
   const allowDays = allow ? parseNumberWords(allow[1]) : null;
   if (allowDays) {
-    fact('commitment', `wait ${allowDays} days`, /allow/, { windowDays: allowDays });
+    fact('commitment', `wait ${allowDays} days`, WAIT_DAYS, { windowDays: allowDays });
   }
   const range = /give it (?:another )?([a-z0-9-]+) to ([a-z0-9-]+) days/.exec(lower);
   if (range) {
@@ -203,8 +222,8 @@ export function extractFromTurn(turn: RepTurn, ctx: ExtractContext): Extraction 
   }
 
   // --- existence denial -----------------------------------------------------------------
-  if (/(?:don'?t|do not) have a record of (?:a|that|the) call/.test(lower)) {
-    fact('existence_claim', 'no record of call', /record of/, {
+  if (NO_RECORD_OF_CALL.test(lower)) {
+    fact('existence_claim', 'no record of call', NO_RECORD_OF_CALL, {
       subjectDate: parseMonthDay(text, year) ?? undefined,
     });
   }
