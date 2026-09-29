@@ -91,7 +91,7 @@ export function PacketView({ packet, ledger }: { packet: Packet; ledger: ClaimLe
       <p className="id" style={{ wordBreak: 'break-all' }}>ledger hash · {packet.ledgerHash}</p>
       <p className="pk-note">
         Each statement&apos;s hash covers the one before it. Changing, removing or reordering any row changes every hash after
-        it. Use “Verify integrity” to recompute the hash from the log in this page.
+        it. Use the Verify integrity button to recompute the hash from the log in this page.
       </p>
     </main>
   );

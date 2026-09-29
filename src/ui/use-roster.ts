@@ -22,7 +22,7 @@ import type { RosterPatient } from '@fixtures/scripts/roster-batch';
 /**
  * Runs the "while I have you" segment of ONE call across several patients.
  *
- * It is the same pipeline the main call uses — the roster just decides which ledger a turn lands
+ * It is the same pipeline the main call uses, the roster just decides which ledger a turn lands
  * in, and it only ever lands in the one the Agent explicitly selected.
  */
 
@@ -109,7 +109,7 @@ export function useRoster(
     setStep((s) => s + 1);
   }, [clockMs, lines, roster, segment, step]);
 
-  /** Explicit move to the next patient. Never automatic — that is the whole rule. */
+  /** Explicit move to the next patient. Never automatic, that is the whole rule. */
   const next = useCallback(() => {
     if (!roster || segment + 1 >= batch.length) return;
     setRoster(switchTo(roster, batch[segment + 1].brief.claimId));
@@ -126,8 +126,8 @@ export function useRoster(
   const gates = useMemo(() => (roster ? rosterGates(roster) : []), [roster]);
   const short = useMemo(() => (roster ? outstanding(roster) : []), [roster]);
   /**
-   * The challenge stays on screen after it is answered — it happened, and the Agent should see it
-   * in the record — but it stops shouting once the held turn has been ruled on AND the rep has
+   * The challenge stays on screen after it is answered, it happened, and the Agent should see it
+   * in the record, but it stops shouting once the held turn has been ruled on AND the rep has
    * re-stated something about the right patient. A permanently loud banner would imply an open
    * problem that is no longer open; a quiet one over an unresolved hold would hide a real decision.
    */

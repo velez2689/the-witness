@@ -53,9 +53,9 @@ export function TransportBar(p: {
       <span className="w-state" style={{ color: p.phase === 'running' ? 'var(--flag)' : 'var(--ink-soft)' }}>{state}</span>
       <span className="w-stat">claim <b>{p.claimId}</b> · {p.payer}</span>
       <span className="w-stat">on hold <b>{holdLabel(p.holdSeconds)}</b></span>
-      <span className="w-stat">flag <b>{p.flagLatencyMs === null ? '—' : `${p.flagLatencyMs.toFixed(1)} ms`}</b> <span title="Time to extract, diff and plan for the last flagged turn, measured in the browser.">{p.live ? 'engine' : 'scripted · no network'}</span></span>
-      {p.live && <span className="w-stat">first audio <b>{p.replyMs === null ? '—' : `${Math.round(p.replyMs)} ms`}</b> <span title="From the end of the Rep's turn to the first audible syllable of the Witness.">after Rep turn</span></span>}
-      <span className="w-stat">extract <b>{p.extractMs === null ? '—' : `${p.extractMs.toFixed(1)} ms`}</b></span>
+      <span className="w-stat">flag <b>{p.flagLatencyMs === null ? 'none' : `${p.flagLatencyMs.toFixed(1)} ms`}</b> <span title="Time to extract, diff and plan for the last flagged turn, measured in the browser.">{p.live ? 'engine' : 'scripted · no network'}</span></span>
+      {p.live && <span className="w-stat">first audio <b>{p.replyMs === null ? 'none' : `${Math.round(p.replyMs)} ms`}</b> <span title="From the end of the Rep's turn to the first audible syllable of the Witness.">after Rep turn</span></span>}
+      <span className="w-stat">extract <b>{p.extractMs === null ? 'none' : `${p.extractMs.toFixed(1)} ms`}</b></span>
       <span className="w-stat">statements <b>{p.statementCount}</b></span>
       <span className="w-spacer" />
       <button className="w-btn" onClick={p.onTheme} aria-label="Toggle colour theme">theme: {p.theme}</button>
@@ -144,7 +144,7 @@ export function BriefPanel(p: {
         </ul>
         <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
           <span className="w-seg" role="group" aria-label="Where the Rep comes from">
-            <button aria-pressed={!live} disabled={p.locked || p.imported} title={p.imported ? 'The scripted Rep replays the sample conversation. Playing it against a real claim would file the sample rep’s words into this patient’s ledger.' : undefined} onClick={() => p.setSource('scripted')}>Scripted Rep</button>
+            <button aria-pressed={!live} disabled={p.locked || p.imported} title={p.imported ? "The scripted Rep replays the sample conversation. Playing it against a real claim would file the sample rep's words into this patient's ledger." : undefined} onClick={() => p.setSource('scripted')}>Scripted Rep</button>
             <button aria-pressed={live} disabled={p.locked || !p.liveAvailable} onClick={() => p.setSource('live')}>Be the Rep (live)</button>
           </span>
           {!live && (
@@ -341,7 +341,7 @@ export function CaptureSheet(p: { brief: CallBrief; patientLabel: string; ledger
         <div className="hdr">HEALTH INSURANCE CLAIM FORM · capture copy</div>
         {box('1a', "INSURED'S I.D. NUMBER", p.brief.memberId)}
         {box('2', "PATIENT'S NAME", p.patientLabel)}
-        {box('21', 'DIAGNOSIS OR NATURE OF ILLNESS (A–C)', p.brief.dxCodes.join('  '))}
+        {box('21', 'DIAGNOSIS OR NATURE OF ILLNESS (A-C)', p.brief.dxCodes.join('  '))}
         {box('22', 'RESUBMISSION CODE / ORIGINAL REF. NO.', ref.value, ref.state === 'missing' || ref.state === 'refused' ? 'missing' : ref.state === 'unconfirmed' ? 'unconfirmed' : 'ok', ref.state === 'unconfirmed' ? '· verify' : ref.state === 'confirmed' ? '· read back' : undefined)}
         {box('23', 'PRIOR AUTHORIZATION NUMBER', priorAuth ? `payer said none on file` : null, priorAuth ? 'ok' : 'missing', priorAuth ? `· ${shortDate(priorAuth.capturedAt)}, ${priorAuth.speaker?.name ?? 'rep'}` : undefined)}
         {reason && <div className="w-stamp">DENIED · {reason.value.toUpperCase()}</div>}

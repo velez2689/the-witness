@@ -10,7 +10,7 @@ import { findAlnumRuns } from '@/lib/alphanumeric';
 /**
  * One call, several patients.
  *
- * A biller does not hang up after one claim — getting through the IVR and the hold queue
+ * A biller does not hang up after one claim, getting through the IVR and the hold queue
  * costs 25 minutes, so they say "while I have you, I have three more." That is where the
  * worst error in this job happens: call three's reference number filed under patient two.
  * It is invisible when it happens and nobody catches it later.
@@ -59,7 +59,7 @@ export interface QuarantinedTurn {
   /**
    * What this turn CONTAINS, for the Agent to rule on. Deliberately not `Statement[]`: these rows
    * were never appended to anything, and typing them as statements would invite treating them as
-   * record. It also deliberately skips duplicate-suppression — a turn repeating something already
+   * record. It also deliberately skips duplicate-suppression, a turn repeating something already
    * on file still says it, and an Agent shown "nothing here" would discard a turn that is in fact
    * a second, corroborating utterance.
    */
@@ -126,7 +126,7 @@ export function memberIdsOn(r: CallRoster): string[] {
 
 /**
  * Did the rep just read a member ID that belongs to a different patient on this call?
- * Detection only — the caller decides what to do, and nothing is re-routed.
+ * Detection only, the caller decides what to do, and nothing is re-routed.
  */
 export function checkWrongClaim(r: CallRoster, turn: RepTurn): WrongClaimWarning | null {
   const active = activeEntry(r);
@@ -156,7 +156,7 @@ export function checkWrongClaim(r: CallRoster, turn: RepTurn): WrongClaimWarning
  * refuses. Either guess is the failure this product claims to prevent.
  *
  * What we do NOT do is throw it away. The turn is held whole, the Agent is shown the challenge
- * and what the turn would record, and they decide — file it to the patient the rep was reading,
+ * and what the turn would record, and they decide, file it to the patient the rep was reading,
  * or discard it because the rep simply misspoke. See releaseQuarantineTo / discardQuarantine.
  */
 export function ingestToActive(r: CallRoster, turn: RepTurn): RosterIngest {
@@ -193,7 +193,7 @@ export function ingestToActive(r: CallRoster, turn: RepTurn): RosterIngest {
 /**
  * What the turn holds, read in the context of the patient the rep was actually looking at.
  * The extractor runs directly rather than through ingestRepTurn so that nothing is appended and
- * nothing is suppressed as a duplicate — the Agent rules on what was said, not on what is new.
+ * nothing is suppressed as a duplicate, the Agent rules on what was said, not on what is new.
  */
 function contentsOf(r: CallRoster, claimId: ClaimId, turn: RepTurn): WithheldItem[] {
   const target = r.entries.find((e) => e.brief.claimId === claimId);
@@ -216,8 +216,8 @@ function contentsOf(r: CallRoster, claimId: ClaimId, turn: RepTurn): WithheldIte
 
 /**
  * The Agent's explicit decision: this held turn belongs to `claimId`. Nothing reaches a ledger
- * any other way. Extraction runs against that claim for real — with its own member IDs and its
- * own prior rows — so a released turn is indistinguishable from one captured while it was active.
+ * any other way. Extraction runs against that claim for real, with its own member IDs and its
+ * own prior rows, so a released turn is indistinguishable from one captured while it was active.
  */
 export function releaseQuarantineTo(r: CallRoster, quarantineId: string, claimId: ClaimId): RosterIngest {
   const held = r.quarantine.find((q) => q.id === quarantineId);
@@ -259,7 +259,7 @@ export function noteUsLineOnActive(r: CallRoster, text: string): CallRoster {
 
 /**
  * Move to another patient. Explicit by design. The rep's identity carries across in SESSION state
- * — it is the same person on the line — but no statement is copied and nothing the rep said about
+ *, it is the same person on the line, but no statement is copied and nothing the rep said about
  * a claim ever follows them to another claim.
  *
  * Identity deliberately does NOT become a row in the new patient's ledger. See `callIdentity` in
@@ -322,7 +322,7 @@ export function rosterGates(r: CallRoster): RosterGate[] {
 
 /**
  * The call may close when every patient's gate is clear AND no held turn is still waiting on the
- * Agent. An unresolved quarantine is an answer the rep actually gave sitting in limbo — hanging up
+ * Agent. An unresolved quarantine is an answer the rep actually gave sitting in limbo, hanging up
  * over it loses it for good, which is the outcome the hold exists to prevent.
  */
 export const canEndCall = (r: CallRoster): boolean =>

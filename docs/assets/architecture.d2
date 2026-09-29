@@ -5,14 +5,14 @@ vars: {
   }
 }
 
-title: "How The Witness works\nOne pipeline, two modes — the model is a mouth, never a hand" {
+title: "How The Witness works\nTwo sockets per call, one memory. The model is a mouth, never a hand." {
   near: top-center
   shape: text
   style.font-size: 26
   style.bold: true
 }
 
-rep: "Rep\npayer line" {
+rep: "Rep\npayer line (microphone)" {
   shape: person
 }
 agent: "Agent\nyou" {
@@ -22,36 +22,37 @@ agent: "Agent\nyou" {
 aai: "AssemblyAI" {
   shape: package
   style.stroke-width: 3
-  va: "Voice Agent API\nMode A · one session on the Rep\nverbatim greeting + keyterms" {
+  stt: "Streaming STT v3\nhears the Rep, transcription only\nkeyterms seeded from the claim and the ledger\nverbatim, never cleaned" {
     style.border-radius: 14
   }
-  stt: "Streaming STT v3\nMode B · Rep audio, listen only" {
+  va: "Voice Agent API\nspeaks for the Witness\nreceives NO audio, calls NO tools\nverbatim greeting: AI disclosure + recording notice" {
     style.border-radius: 14
   }
-  vb: "Voice Agent API\nMode B · speaks the whisper" {
+  vb: "Streaming STT v3 (second session)\nMode B: listens while the Agent speaks\nroadmap for live audio" {
     style.border-radius: 14
+    style.stroke-dash: 4
   }
 }
 
-brain: "Our code — deterministic, no LLM decides" {
+brain: "Our code. Deterministic, no LLM decides" {
   shape: hexagon
   style.stroke-width: 3
   extractor: "Extractor\nfinal turns only" {
     style.border-radius: 20
   }
-  ledger: "Ledger\nappend-only\nhash-chained" {
+  ledger: "Ledger\nappend-only\nhash-chained\nrefusals are rows" {
     shape: cylinder
   }
   engine: "Contradiction\nengine\n5 kinds + refusals" {
     shape: diamond
   }
-  plan: "Call plan\nask or whisper" {
+  plan: "Call plan\nstate machine\nask, challenge, read back, close" {
     style.border-radius: 20
   }
-  speech: "Speech assembly\nbuilt from rows\n\nreply.create sends this\nback up to the Voice Agent API" {
+  speech: "Speech assembly\nevery line built from rows\n\nreply.create sends the exact text\nto the Voice Agent API" {
     style.border-radius: 20
   }
-  check: "Self-check\nevery number must\nbe on record" {
+  check: "Self-check\nevery number spoken\nmust be on record" {
     style.border-radius: 20
     style.stroke-dash: 4
   }
@@ -63,22 +64,23 @@ brain: "Our code — deterministic, no LLM decides" {
   speech -> check
 }
 
-result_a: "Mode A\nWitness speaks, challenges\non the recorded line" {
+result_a: "Mode A\nthe Witness speaks and challenges\non the recorded line" {
   shape: oval
 }
-result_b: "Mode B\nwhisper to the Agent" {
+result_b: "Mode B\nwhisper into the Agent's earpiece" {
   shape: oval
 }
 evidence: "Console · claim update · appeal packet\nwith a verifiable hash" {
   shape: document
 }
 
-rep -> aai.va
-rep -> aai.stt
+rep -> aai.stt: "PCM16 24 kHz, binary frames"
+aai.stt -> brain.extractor: "Turn (end_of_turn)"
+brain.speech -> aai.va: "reply.create, one-shot text"
+aai.va -> result_a: "reply.audio to the speaker"
+aai.va -> brain.check: "transcript.agent"
 agent -> aai.vb
-aai.va -> brain.extractor
-aai.stt -> brain.extractor
-aai.va -> result_a
-aai.vb -> result_b
+aai.vb -> brain.extractor
+brain.plan -> result_b
 brain.ledger -> evidence
 brain.engine -> evidence

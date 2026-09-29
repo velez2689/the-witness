@@ -13,7 +13,7 @@ import { Icon } from './Icon';
 /**
  * The front door: a biller's AR worklist, straight out of Epic, Cerner or Meditech.
  *
- * The file is read in the page and never uploaded — a worklist is full of PHI and this project
+ * The file is read in the page and never uploaded, a worklist is full of PHI and this project
  * has no BAA. The panel says so plainly rather than burying it, because a biller is the one
  * person who will immediately wonder.
  */
@@ -88,7 +88,7 @@ export function ClaimImport(p: Props) {
             onChange={(e) => take(e.currentTarget.files)}
           />
           <Icon name="file" size={26} />
-          <p className="w-drop-main">{p.busy ? 'Reading the file…' : 'Drop your AR worklist here'}</p>
+          <p className="w-drop-main">{p.busy ? 'Reading the file...' : 'Drop your AR worklist here'}</p>
           <p className="w-note">
             .xlsx or .csv from Epic, Cerner, Meditech or any system that exports an AR follow-up list.
           </p>

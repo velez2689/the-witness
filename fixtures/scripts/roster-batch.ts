@@ -9,7 +9,7 @@ import { DEFAULT_OBJECTIVES, type CallBrief } from '@/domain/call-brief';
  *
  * The Nazario segment contains the failure this product exists to catch: the rep pulls up the
  * WRONG patient and reads Okonkwo's member ID aloud while the console is on Nazario. Nothing is
- * silently re-routed — the Witness challenges the rep on the line and the Agent decides.
+ * silently re-routed, the Witness challenges the rep on the line and the Agent decides.
  */
 
 export interface RosterPatient {

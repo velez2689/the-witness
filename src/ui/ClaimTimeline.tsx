@@ -15,7 +15,7 @@ import type { HistoryCall } from './console-types';
  * hover, shadow or type scale could reach it. Real elements mean real type sizes.
  *
  * Cards sit at their date, nudged apart only as far as legibility requires, and each one
- * drops a leader line to its true date on the axis — so the nudge never lies about when
+ * drops a leader line to its true date on the axis, so the nudge never lies about when
  * a call happened.
  */
 

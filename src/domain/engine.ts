@@ -5,7 +5,7 @@ import { daysBetween, isoDate } from '@/lib/dates';
 
 /**
  * The contradiction engine. Pure: contradictions are DERIVED from the ledger and recomputable
- * from it at any time. Precision over recall — every result quotes two stored statements.
+ * from it at any time. Precision over recall, every result quotes two stored statements.
  */
 
 const SEVERITY = {
@@ -62,7 +62,7 @@ export function detect(ledger: ClaimLedger): Contradiction[] {
     if (!isFact(s)) return;
     const earlier = all.slice(0, index).filter(isFact).filter((e) => e.callId !== s.callId);
 
-    // 1 · value conflict — same question, a different answer in a different call.
+    // 1 · value conflict, same question, a different answer in a different call.
     if (s.category === 'denial_reason' && !s.additional) {
       const prior = earlier.filter((e) => e.category === 'denial_reason' && !e.additional && e.value !== s.value);
       const byValue = new Map<string, FactStatement>();
@@ -81,7 +81,7 @@ export function detect(ledger: ClaimLedger): Contradiction[] {
       }
     }
 
-    // 2 · existence denial — the Rep denies a call the ledger holds.
+    // 2 · existence denial, the Rep denies a call the ledger holds.
     if (s.category === 'existence_claim' && s.subjectDate) {
       const target = earlier.filter((e) => isoDate(e.capturedAt) === s.subjectDate);
       if (target.length > 0) {
@@ -90,7 +90,7 @@ export function detect(ledger: ClaimLedger): Contradiction[] {
       }
     }
 
-    // 3 · status flip — a status regresses.
+    // 3 · status flip, a status regresses.
     if (s.category === 'status') {
       const prev = [...earlier].reverse().find((e) => e.category === 'status');
       if (prev && REGRESSIONS.has(`${prev.value}>${s.value}`)) {
@@ -98,13 +98,13 @@ export function detect(ledger: ClaimLedger): Contradiction[] {
       }
     }
 
-    // 4 · commitment violation — told to wait, then denied for timely filing.
+    // 4 · commitment violation, told to wait, then denied for timely filing.
     if (s.category === 'denial_reason' && s.value === 'timely filing') {
       const wait = earlier.find((e) => e.category === 'commitment' && e.windowDays !== undefined);
       if (wait) out.push(make('commitment_violation', wait, s, SEVERITY.commitment));
     }
 
-    // 5 · policy inconsistency — two reps, two rules, one topic.
+    // 5 · policy inconsistency, two reps, two rules, one topic.
     if (s.category === 'policy' && s.topic) {
       const prev = earlier.find((e) => e.category === 'policy' && e.topic === s.topic && e.value !== s.value);
       if (prev) out.push(make('policy_inconsistency', prev, s, SEVERITY.policy));

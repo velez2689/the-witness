@@ -41,7 +41,7 @@ export function computeGate(
    * Who the rep said they were on this call, captured against ANOTHER claim worked on the same
    * call. Identity is a property of the CALL, not of the claim: one rep answers the line, and they
    * say their name once, not once per patient. Passing the real row here lets this claim's gate
-   * clear while its ledger stays strictly what was said about THIS claim — the alternative,
+   * clear while its ledger stays strictly what was said about THIS claim, the alternative,
    * copying the row into every ledger, would put a quote in claim B timestamped from before
    * claim B was ever mentioned, which is indistinguishable from fabricated evidence in a packet.
    */

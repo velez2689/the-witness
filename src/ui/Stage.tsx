@@ -5,7 +5,7 @@ import type { Mode } from './use-call-runner';
 /**
  * Band 4 of the console: the live call as an audio-editor track view.
  *
- * SVG is the right tool here — this is a waveform/track visualisation with a time ruler,
+ * SVG is the right tool here, this is a waveform/track visualisation with a time ruler,
  * where geometry is the content. The claim timeline above it is HTML (see ClaimTimeline)
  * because that one is type-heavy and needed real font sizes.
  */

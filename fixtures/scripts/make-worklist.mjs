@@ -1,5 +1,5 @@
 /**
- * Builds public/sample-ar-worklist.xlsx — the file a judge (or anyone without a billing system)
+ * Builds public/sample-ar-worklist.xlsx, the file a judge (or anyone without a billing system)
  * uploads to try the import. Shaped like a real Epic AR follow-up export: a report title and a
  * run date above the header, "Account Number" rather than "Claim", names as "Last, First M",
  * US dates, money with thousands separators, and one row missing a member ID so the validation

@@ -25,7 +25,7 @@ export interface ExtractContext {
   nameHint: string | null;
   /**
    * Member IDs of every patient on this call. A rep reading one aloud must never be filed
-   * as a reference number — on a multi-patient call that is how ledgers get contaminated.
+   * as a reference number, on a multi-patient call that is how ledgers get contaminated.
    */
   knownMemberIds?: readonly string[];
 }

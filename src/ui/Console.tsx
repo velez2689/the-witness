@@ -33,7 +33,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
    * Which claims the console is working: the imported worklist once the Agent has loaded it,
    * otherwise the sample claim with its six calls of history.
    *
-   * An imported claim has no history on file, so no contradiction can fire on its first call —
+   * An imported claim has no history on file, so no contradiction can fire on its first call , 
    * that is the truth about a claim nobody has called on yet, and the timeline says so rather
    * than implying otherwise. The scripted Rep is disabled for imported claims on purpose:
    * replaying the sample conversation would file the sample rep's words into a real patient's

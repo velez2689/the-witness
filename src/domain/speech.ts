@@ -30,7 +30,7 @@ function factOf(ledger: ClaimLedger, id: string): FactStatement {
   return s;
 }
 
-/** "D. Reese, badge two two one zero" — or an honest "an unidentified representative". */
+/** "D. Reese, badge two two one zero", or an honest "an unidentified representative". */
 /**
  * A rep's name and badge, for speaking aloud.
  *

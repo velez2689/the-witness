@@ -1,7 +1,7 @@
 import type { ScriptCall } from '@/domain/script';
 
 /**
- * Structured form of fixtures/scripts/claim-A-4471-08.md — the demo corpus.
+ * Structured form of fixtures/scripts/claim-A-4471-08.md, the demo corpus.
  * Every name, ID, reference number and payer is invented. No PHI. No CPT descriptors.
  * Text is what a finalized transcript of each scripted line would read as.
  *
@@ -106,7 +106,7 @@ export const CALLS: ScriptCall[] = [
   },
 ];
 
-/** Call 06 — Aug 26. THE LIVE CALL. Same rep as call 02, 49 days later. */
+/** Call 06, Aug 26. THE LIVE CALL. Same rep as call 02, 49 days later. */
 export const LIVE_CALL: ScriptCall = {
   id: 'call-06', number: 6, startedAt: '2026-08-26T17:31:00Z', durationSeconds: 620, holdSeconds: 242,
   repFirstName: 'Darnell', repSurname: null, repBadge: '2210', referenceNumber: '8K2J-988',

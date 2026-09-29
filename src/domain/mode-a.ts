@@ -9,7 +9,7 @@ import type { Statement } from './statement';
 
 /**
  * Mode A: the Witness conducts the call. The Rep here is a Rep Simulator (scripted, deterministic)
- * or, in the browser, a live person / a recorded track — the same `ingestRepTurn` path either way.
+ * or, in the browser, a live person / a recorded track, the same `ingestRepTurn` path either way.
  */
 
 /** Rep lines keyed by the Witness move that provokes them. Data lives in fixtures/. */
