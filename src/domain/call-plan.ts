@@ -131,7 +131,7 @@ export function nextMove(
 
   if (state.done) return { move: { kind: 'wait', key: 'wait', line: null, whisper: null }, state };
 
-  // 0 · Greeting — verbatim, AI + recording disclosure, asks for name and badge.
+  // 0 · Greeting, verbatim, AI + recording disclosure, asks for name and badge.
   if (count(state, 'greet') === 0) {
     return say('greet', 'greet', speech.consentGreeting(brief), speech.whisperMissing('Rep name and badge'));
   }

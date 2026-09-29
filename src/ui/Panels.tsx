@@ -37,6 +37,8 @@ export function TransportBar(p: {
   claimId: string;
   payer: string;
   statementCount: number;
+  contradictionCount: number;
+  refusalCount: number;
   flagLatencyMs: number | null;
   extractMs: number | null;
   replyMs: number | null;
@@ -53,10 +55,12 @@ export function TransportBar(p: {
       <span className="w-state" style={{ color: p.phase === 'running' ? 'var(--flag)' : 'var(--ink-soft)' }}>{state}</span>
       <span className="w-stat">claim <b>{p.claimId}</b> · {p.payer}</span>
       <span className="w-stat">on hold <b>{holdLabel(p.holdSeconds)}</b></span>
-      <span className="w-stat">flag <b>{p.flagLatencyMs === null ? '—' : `${p.flagLatencyMs.toFixed(1)} ms`}</b> <span title="Time to extract, diff and plan for the last flagged turn, measured in the browser.">{p.live ? 'engine' : 'scripted · no network'}</span></span>
-      {p.live && <span className="w-stat">first audio <b>{p.replyMs === null ? '—' : `${Math.round(p.replyMs)} ms`}</b> <span title="From the end of the Rep's turn to the first audible syllable of the Witness.">after Rep turn</span></span>}
-      <span className="w-stat">extract <b>{p.extractMs === null ? '—' : `${p.extractMs.toFixed(1)} ms`}</b></span>
+      <span className="w-stat">flag <b>{p.flagLatencyMs === null ? 'none' : `${p.flagLatencyMs.toFixed(1)} ms`}</b> <span title="Time to extract, diff and plan for the last flagged turn, measured in the browser.">{p.live ? 'engine' : 'scripted · no network'}</span></span>
+      {p.live && <span className="w-stat">first audio <b>{p.replyMs === null ? 'none' : `${Math.round(p.replyMs)} ms`}</b> <span title="From the end of the Rep's turn to the first audible syllable of the Witness.">after Rep turn</span></span>}
+      <span className="w-stat">extract <b>{p.extractMs === null ? 'none' : `${p.extractMs.toFixed(1)} ms`}</b></span>
       <span className="w-stat">statements <b>{p.statementCount}</b></span>
+      <span className="w-stat" style={p.contradictionCount > 0 ? { color: 'var(--flag)' } : undefined}>contradictions <b style={p.contradictionCount > 0 ? { color: 'var(--flag)' } : undefined}>{p.contradictionCount}</b></span>
+      <span className="w-stat">refusals <b>{p.refusalCount}</b></span>
       <span className="w-spacer" />
       <button className="w-btn" onClick={p.onTheme} aria-label="Toggle colour theme">theme: {p.theme}</button>
     </header>
@@ -76,6 +80,8 @@ export function BriefPanel(p: {
   setSource: (s: Source) => void;
   liveAvailable: boolean;
   liveDetail: string | null;
+  audioSetup: 'headphones' | 'speakers';
+  setAudioSetup: (a: 'headphones' | 'speakers') => void;
   objectives: readonly ObjectiveKey[];
   setObjectives: (o: readonly ObjectiveKey[]) => void;
   phase: Phase;
@@ -127,6 +133,11 @@ export function BriefPanel(p: {
           <dt>Member ID</dt><dd className="id">{p.brief.memberId}</dd>
           <dt>Date of service</dt><dd className="id">{p.brief.dateOfService}</dd>
           <dt>Diagnosis codes</dt><dd className="id">{p.brief.dxCodes.join('  ')}</dd>
+          <dt>This claim so far</dt>
+          <dd className="w-sofar">
+            <b>{holdLabel(p.totalHold)}</b> on hold across {p.callsCount} {p.callsCount === 1 ? 'call' : 'calls'} · <b>${(p.callsCount * p.costPerCall).toFixed(2)}</b> at the ${p.costPerCall.toFixed(2)} per-call CAQH average
+            <span className="w-note">CAQH Index 2024 edition, 2023 data year. Computed for this claim, not cited.</span>
+          </dd>
         </dl>
       </div>
       <div>
@@ -144,9 +155,15 @@ export function BriefPanel(p: {
         </ul>
         <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
           <span className="w-seg" role="group" aria-label="Where the Rep comes from">
-            <button aria-pressed={!live} disabled={p.locked || p.imported} title={p.imported ? 'The scripted Rep replays the sample conversation. Playing it against a real claim would file the sample rep’s words into this patient’s ledger.' : undefined} onClick={() => p.setSource('scripted')}>Scripted Rep</button>
+            <button aria-pressed={!live} disabled={p.locked || p.imported} title={p.imported ? "The scripted Rep replays the sample conversation. Playing it against a real claim would file the sample rep's words into this patient's ledger." : undefined} onClick={() => p.setSource('scripted')}>Scripted Rep</button>
             <button aria-pressed={live} disabled={p.locked || !p.liveAvailable} onClick={() => p.setSource('live')}>Be the Rep (live)</button>
           </span>
+          {live && (
+            <span className="w-seg" role="group" aria-label="How you are listening">
+              <button aria-pressed={p.audioSetup === 'headphones'} disabled={p.locked} onClick={() => p.setAudioSetup('headphones')}>Headphones</button>
+              <button aria-pressed={p.audioSetup === 'speakers'} disabled={p.locked} onClick={() => p.setAudioSetup('speakers')}>Speakers</button>
+            </span>
+          )}
           {!live && (
             <span className="w-seg" role="group" aria-label="Who speaks to the Rep">
               <button aria-pressed={p.mode === 'A'} disabled={p.locked} onClick={() => p.setMode('A')}>Witness speaks</button>
@@ -185,7 +202,9 @@ export function BriefPanel(p: {
         </div>
         <p className="w-note" style={{ margin: '8px 0 0' }}>
           {live
-            ? 'Live: you speak as the payer rep into your microphone; the Witness (AssemblyAI Voice Agent) calls you. Use headphones. Opens one AssemblyAI session only when you press Start.'
+            ? p.audioSetup === 'headphones'
+              ? 'Live: you speak as the payer rep into your microphone and the Witness calls you. On headphones you can talk over it. Two AssemblyAI sessions open only when you press Start.'
+              : 'Live: you speak as the payer rep into your microphone and the Witness calls you. On speakers the microphone closes while it talks, so wait for it to finish. Two AssemblyAI sessions open only when you press Start.'
             : 'Scripted path: no microphone, no network, no session opens until you press Start.'}
         </p>
         {p.liveDetail && <p role="alert" style={{ margin: '6px 0 0', color: 'var(--flag)' }}>{p.liveDetail}</p>}
@@ -211,25 +230,35 @@ export function RepCue({ lastAsk, suggestion }: { lastAsk: string | null; sugges
 }
 
 // ---------------------------------------------------------------- banner
-export function Banner(p: { group: Contradiction[]; ledger: ClaimLedger; queued: number; onDismiss: () => void }) {
+/**
+ * A contradiction with both quotes. `onRecord` renders one that happened between earlier calls,
+ * in grey and without a Dismiss, so the console shows what it catches before a call starts.
+ */
+export function Banner(p: { group: Contradiction[]; ledger: ClaimLedger; queued: number; onDismiss?: () => void; onRecord?: boolean }) {
   const c = p.group[0];
   const earlier = p.ledger.statements.find((s) => s.id === c.statementIds[0])!;
   const later = p.ledger.statements.find((s) => s.id === c.statementIds[1])!;
   return (
-    <div className="w-banner" role="alert" aria-live="assertive">
-      <div className="kind">{KIND_LABEL[c.kind]}{c.sameBadge ? ' · SAME BADGE' : ''} · {c.daysApart} DAYS APART</div>
+    <div className={p.onRecord ? 'w-banner muted' : 'w-banner'} role={p.onRecord ? undefined : 'alert'} aria-live={p.onRecord ? undefined : 'assertive'}>
+      <div className="kind">{p.onRecord ? 'ON RECORD · ' : ''}{KIND_LABEL[c.kind]}{c.sameBadge ? ' · SAME BADGE' : ''} · {c.daysApart} DAYS APART</div>
       <div>
         <p style={{ margin: '4px 0' }}><span className="said">{quoteOf(later)}</span></p>
-        <p className="w-note" style={{ margin: 0 }}>now · {later.speaker ? `${later.speaker.name} · badge ${later.speaker.badge}` : 'rep'}</p>
+        <p className="w-note" style={{ margin: 0 }}>{p.onRecord ? metaOf(p.ledger, later) : `now · ${later.speaker ? `${later.speaker.name} · badge ${later.speaker.badge}` : 'rep'}`}</p>
       </div>
       <div>
         <p style={{ margin: '4px 0' }}><span className="said">{quoteOf(earlier)}</span></p>
         <p className="w-note" style={{ margin: 0 }}>{metaOf(p.ledger, earlier)}</p>
       </div>
       <div className="row">
-        <button className="w-btn" onClick={p.onDismiss}>Dismiss</button>
-        {p.queued > 0 && <span className="w-note">{p.queued} more waiting</span>}
-        {p.group.length > 1 && <span className="w-note">also contradicts {p.group.length - 1} earlier statement{p.group.length > 2 ? 's' : ''}</span>}
+        {p.onRecord ? (
+          <span className="w-note">Caught on an earlier call and kept. When the Rep contradicts the record on this call, it lands here in red.</span>
+        ) : (
+          <>
+            <button className="w-btn" onClick={p.onDismiss}>Dismiss</button>
+            {p.queued > 0 && <span className="w-note">{p.queued} more waiting</span>}
+            {p.group.length > 1 && <span className="w-note">also contradicts {p.group.length - 1} earlier statement{p.group.length > 2 ? 's' : ''}</span>}
+          </>
+        )}
       </div>
     </div>
   );
@@ -281,16 +310,16 @@ export function Inspector(p: {
   const related = f.relatedStatementIds.map((id) => p.ledger.statements.find((s) => s.id === id)).filter(Boolean) as Statement[];
   return (
     <section className="w-panel" aria-label="Contradiction inspector">
-      <h2>Contradiction inspector</h2>
+      <h2><Icon name="alert" size={15} /><span>Contradiction inspector</span></h2>
       <div className="w-kindlabel">{KIND_LABEL[f.kind]}{f.sameBadge ? ' · SAME BADGE' : ''}</div>
       <div className="w-quote">
         <span className="said">{quoteOf(later)}</span>
-        <button className="w-play" onClick={() => speak(quoteOf(later))} aria-label="Play this quote"><Icon name="play" size={11} />Play</button>
+        <button className="w-play" onClick={() => speak(quoteOf(later))} aria-label="Read this quote aloud"><Icon name="play" size={11} />Read aloud</button>
         <div className="meta">just now · {later.speaker ? `${later.speaker.name} · badge ${later.speaker.badge}` : 'rep'}</div>
       </div>
       <div className="w-quote">
         <span className="said">{quoteOf(earlier)}</span>
-        <button className="w-play" onClick={() => speak(quoteOf(earlier))} aria-label="Play the earlier quote"><Icon name="play" size={11} />Play</button>
+        <button className="w-play" onClick={() => speak(quoteOf(earlier))} aria-label="Read the earlier quote aloud"><Icon name="play" size={11} />Read aloud</button>
         <div className="meta">{metaOf(p.ledger, earlier)}</div>
       </div>
       {related.map((r) => (
@@ -304,14 +333,14 @@ export function Inspector(p: {
           <span className="w-note">{said.side === 'witness' ? 'The Witness said to the Rep' : 'Whispered to the Agent'} (assembled from the {said.cites.length} rows above, not composed by the model):</span>
           <br />
           {said.text}
-          {said.side === 'witness' && <button className="w-play" onClick={() => speak(said.text, 'witness')} aria-label="Play what the Witness said"><Icon name="play" size={11} />Play</button>}
+          {said.side === 'witness' && <button className="w-play" onClick={() => speak(said.text, 'witness')} aria-label="Read aloud what the Witness said"><Icon name="play" size={11} />Read aloud</button>}
         </p>
       )}
       {p.closeOut && (
         <div className="w-closeout">
           <h2>Close-out · rendered from the statement rows</h2>
           <p style={{ margin: 0 }}>{p.closeOut.text}</p>
-          <button className="w-play" style={{ margin: '6px 0 0' }} onClick={() => speak(p.closeOut!.text, 'witness')}><Icon name="play" size={11} />Play close-out</button>
+          <button className="w-play" style={{ margin: '6px 0 0' }} onClick={() => speak(p.closeOut!.text, 'witness')}><Icon name="play" size={11} />Read the close-out aloud</button>
         </div>
       )}
     </section>
@@ -341,7 +370,7 @@ export function CaptureSheet(p: { brief: CallBrief; patientLabel: string; ledger
         <div className="hdr">HEALTH INSURANCE CLAIM FORM · capture copy</div>
         {box('1a', "INSURED'S I.D. NUMBER", p.brief.memberId)}
         {box('2', "PATIENT'S NAME", p.patientLabel)}
-        {box('21', 'DIAGNOSIS OR NATURE OF ILLNESS (A–C)', p.brief.dxCodes.join('  '))}
+        {box('21', 'DIAGNOSIS OR NATURE OF ILLNESS (A-C)', p.brief.dxCodes.join('  '))}
         {box('22', 'RESUBMISSION CODE / ORIGINAL REF. NO.', ref.value, ref.state === 'missing' || ref.state === 'refused' ? 'missing' : ref.state === 'unconfirmed' ? 'unconfirmed' : 'ok', ref.state === 'unconfirmed' ? '· verify' : ref.state === 'confirmed' ? '· read back' : undefined)}
         {box('23', 'PRIOR AUTHORIZATION NUMBER', priorAuth ? `payer said none on file` : null, priorAuth ? 'ok' : 'missing', priorAuth ? `· ${shortDate(priorAuth.capturedAt)}, ${priorAuth.speaker?.name ?? 'rep'}` : undefined)}
         {reason && <div className="w-stamp">DENIED · {reason.value.toUpperCase()}</div>}

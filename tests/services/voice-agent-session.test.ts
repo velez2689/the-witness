@@ -303,6 +303,23 @@ describe('turn ownership: the model may generate, but it is never heard', () => 
   });
 
   /** A barge-in on the model's unheard turn must not flush OUR playback or close the call. */
+  it('muteCurrent() silences the rest of our reply without touching the next one', () => {
+    const audio: string[] = [];
+    const { session, sock } = setup({ onAudio: (b) => audio.push(b) });
+    session.connect('tok', CONFIG);
+    sock().open();
+    sock().server({ type: 'session.ready', session_id: 's1' });
+    sock().server({ type: 'reply.started', reply_id: 'greet' });
+    sock().server({ type: 'reply.audio', data: 'one' });
+    session.muteCurrent();
+    sock().server({ type: 'reply.audio', data: 'two' });
+    sock().server({ type: 'reply.done', reply_id: 'greet', status: 'completed' });
+    session.say('Next line.');
+    sock().server({ type: 'reply.started', reply_id: 'next' });
+    sock().server({ type: 'reply.audio', data: 'three' });
+    expect(audio).toEqual(['one', 'three']);
+  });
+
   it('reports reply.done only for our own replies', () => {
     const dones: boolean[] = [];
     const { sock } = live({ onReplyDone: (i) => dones.push(i) });

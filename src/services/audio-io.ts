@@ -94,7 +94,7 @@ export async function startMic(onChunk: (pcm: Int16Array) => void): Promise<Mic>
  * arrives as ~50 ms websocket messages; the previous player gave each one its own
  * AudioBufferSourceNode scheduled 20 ms ahead of the clock. Twenty milliseconds is less than
  * the jitter on a normal connection, so the queue ran dry mid-word, over and over, and each
- * refill restarted the clock — a gap and a discontinuity inside individual syllables. The
+ * refill restarted the clock, a gap and a discontinuity inside individual syllables. The
  * rendered audio was fine; the playback was shredding it. One continuous stream with a real
  * jitter buffer is the fix.
  *
@@ -109,7 +109,7 @@ const RING_SECONDS = 30;
  *
  * Under-run outputs silence and re-arms the pre-buffer, so a slow network costs one clean
  * pause instead of a stutter on every 128-sample render quantum. Overflow drops the incoming
- * tail rather than wrapping over audio that has not been heard yet — losing the end of a
+ * tail rather than wrapping over audio that has not been heard yet, losing the end of a
  * sentence is recoverable, corrupting the middle of one is not.
  */
 export const PLAYER_WORKLET = `
@@ -261,11 +261,11 @@ export class PcmPlayer {
    * Witness's voice returns through the microphone and is transcribed as the Rep.
    *
    * It must be answered from when the audio will FINISH PLAYING, which is the mistake this
-   * replaces. It previously answered from when a chunk last ARRIVED, and the server sends far
-   * faster than real time - a ten-second greeting lands in about three. One tail later the
-   * microphone opened while the Witness was still seven seconds from finishing, heard itself,
-   * and the barge-in cut off its own greeting. A saved call caught it exactly: 2.34 seconds of a
-   * ten-second greeting played, in three fragments, and the next line never played at all.
+   * replaces. It previously answered from when a chunk last ARRIVED. Arrival and playback are
+   * different clocks: a trace on 2026-09-29 measured the server delivering roughly at real time
+   * (6.57 s of audio by +7.3 s), and network jitter can bunch chunks ahead of the player either
+   * way. Answering from arrival opened the microphone while audio was still queued, so on
+   * speakers the Witness heard itself and the barge-in cut off its own greeting.
    *
    * So the end time is accumulated the way the audio is actually scheduled, including the
    * pre-buffer, and it only moves forward. The tail then covers speaker and room delay on top.

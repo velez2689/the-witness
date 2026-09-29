@@ -1,0 +1,1 @@
+The Witness rides along on a payer call, records what the rep said as timestamped quotable statements, catches contradictions against earlier calls on the same claim in real time, and builds the appeal packet. AssemblyAI Streaming v3 + Voice Agent API.

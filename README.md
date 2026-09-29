@@ -4,17 +4,17 @@
 
 > We don't predict what the payer will pay. We record what the payer said.
 
-**Live demo:** https://the-witness-omega.vercel.app · **Built on:** AssemblyAI Streaming STT v3 + Voice Agent API · **Submission:** AssemblyAI Voice Agent Hackathon, Sep 2026
+**Live demo:** https://the-witness-omega.vercel.app (Chrome, headphones for the live path) · **Built on:** AssemblyAI Streaming STT v3 + Voice Agent API · **Submission:** AssemblyAI Voice Agent Hackathon on lablab.ai, September 2026
 
 ---
 
 ## The problem
 
-A biller spends **25 minutes and $13.80** on one phone call asking a payer why a claim was denied.<sup>[1]</sup> The answer is spoken, unrecorded on the provider's side, and gone the moment they hang up — compressed into a line of shorthand in a claim note. Three weeks later a different representative gives a different answer, and nothing in the revenue cycle notices.
+A biller spends **25 minutes and $13.80** on one phone call asking a payer why a claim was denied (CAQH Index, 2024 edition, 2023 data year). The answer is spoken, unrecorded on the provider's side, and gone the moment they hang up, compressed into a line of shorthand in a claim note. Weeks later a different representative gives a different answer, and nothing in the revenue cycle notices.
 
-The last federal measurement of payer call-center accuracy found representatives giving *inconsistent responses within the same call center*.<sup>[2]</sup> It was published in 2006. No modern measurement exists, because no instrument exists.
+Roughly **19 percent** of in-network claims are denied, **under 1 percent** of those denials are ever appealed, and payers upheld two thirds of the internal appeals they did receive (KFF, March 2026). The gap between those numbers is not merit. It is evidence: appealing means reconstructing what the payer actually said, and nobody can.
 
-Meanwhile roughly 15% of claims are denied, **under 1%** of denied in-network ACA claims are ever appealed, and most appeals that are filed get overturned.<sup>[3]</sup> The gap between those numbers isn't merit. It's evidence: appealing means reconstructing what the payer actually said, and nobody can.
+The last federal measurement of payer call-center accuracy found representatives giving inconsistent answers within the same call center (GAO-06-710). It was published in 2006. No modern measurement exists, because no instrument exists.
 
 **The Witness creates that record while the call is happening.**
 
@@ -24,12 +24,12 @@ Meanwhile roughly 15% of claims are denied, **under 1%** of denied in-network AC
 
 The hardest thing in this product and the reason the agent has to *speak* are the same thing.
 
-Spoken alphanumerics are a documented frontier failure — roughly a third of spoken phone numbers are missed even by the best models. Reference numbers *are* that problem. Two moves solve it, and both are AssemblyAI-shaped:
+Spoken alphanumerics are the documented hard case for speech recognition, and reference numbers, member IDs and badge numbers are exactly that. Two moves address it, and both are AssemblyAI-shaped:
 
 1. **Seed keyterms with the claim's own numbers** before the call starts, collapsing open-vocabulary transcription into candidate matching.
-2. **When confidence lands below threshold, the agent speaks a readback prompt** instead of guessing — *"I heard eight-K-two-J-nine-one-five. Ask them to repeat it."*
+2. **When a reference number lands unconfirmed, the agent reads it back** instead of guessing: *"Let me read that back to make sure I have it. Eight K two J, nine eight eight. Did I get that right?"*
 
-Nothing else in the stack can be swapped out for this. The transcription difficulty is what creates the need for a voice agent.
+No accuracy percentage is claimed anywhere in this project, by policy. Confidence is shown as a state: confirmed, unconfirmed, or not captured.
 
 ---
 
@@ -37,77 +37,76 @@ Nothing else in the stack can be swapped out for this. The transcription difficu
 
 One pipeline, two modes. The person using The Witness is the **Agent**; the person at the payer is the **Rep**.
 
-- **Mode A, the Witness speaks.** The Agent fills in a call brief (claim, member, what they need answered). The Witness conducts the call: it says up front that it is an AI assistant and that the call is recorded, works through the brief, **challenges the Rep on the recorded line** when the Rep contradicts something already on record, reads reference numbers back, and only finishes when the hang-up gate is clear.
-- **Mode B, Copilot.** The Agent speaks to the Rep. The Witness listens and **whispers** into the Agent's earpiece what to ask, what to question, and what is still missing.
-- **Take over** switches from A to B in the middle of a call.
+- **Mode A, the Witness speaks.** The Agent fills in a call brief (claim, member, what they need answered). The Witness conducts the call: it says up front that it is an AI assistant and that the call is recorded, works through a deterministic call plan, **challenges the Rep on the recorded line** when the Rep contradicts something already on record, reads reference numbers back, and only finishes when the hang-up gate is clear.
+- **Mode B, Copilot.** The Agent speaks to the Rep. The Witness listens and **whispers** into the Agent's earpiece what to ask, what to question, and what is still missing. Scripted only today; live Mode B is roadmap.
+- **Take over** switches from A to B in the middle of a scripted call.
+
+### Two sockets, one memory
+
+Mode A runs on two AssemblyAI sessions per call, and the split is the design:
+
+- **The Rep's audio goes to Streaming STT v3** (`wss://streaming.assemblyai.com/v3/ws`), transcription only, keyterms seeded from the claim and the ledger. Verbatim, never cleaned: the self-correction a rep makes mid-sentence is often the contradiction.
+- **The Witness speaks through the Voice Agent API** (`wss://agents.assemblyai.com/v1/ws`), which is never sent any audio. It is a mouth, not a hand: every line it speaks is assembled by our code from statement rows and handed to it with `reply.create`. It never calls tools and never writes the ledger, by choice rather than limitation. A self-check compares every number it actually says against the record.
+
+Speaker identity is structural (which socket carried the audio), never diarization. Both sockets are registered and closed on every exit path, because billing is on socket-open time.
 
 ![The Witness console running Mode A: the flag fires, the link is drawn to the earlier call, refusals and the read-back are recorded, the gate clears](docs/assets/console-run.gif)
 
-_The real console, recorded from the production build. Scripted Rep, no network._
+_The console, recorded from the production build. Scripted Rep, no network._
 
-![The Witness architecture: audio in, AssemblyAI, our deterministic code, and outputs](docs/assets/d2-architecture.svg)
-
-Generated from `docs/assets/architecture.d2` (`d2 architecture.d2 d2-architecture.svg`).
-
-### One real run of Mode A
-
-Same claim. Same representative. Forty-nine days apart. The steps below are taken from the automated test run of the scripted call, not written for the diagram.
-
-![Mode A call flow: greeting, same-badge challenge, existence denial, refusal chain, read-back, close](docs/assets/d2-mode-a-call-flow.svg)
-
-The diagram is generated from `docs/assets/mode-a-call-flow.d2` (`d2 mode-a-call-flow.d2 d2-mode-a-call-flow.svg`).
+The architecture diagram source is `docs/assets/architecture.d2` (`d2 architecture.d2 d2-architecture.svg`). The step-by-step call flow is `docs/assets/mode-a-call-flow.d2`.
 
 ### What the agent is, and is not
 
-The agent is a **mouth, not a hand.** Contradiction detection is deterministic and runs in our own code. The agent never writes to the ledger and never decides what is true: the call plan decides what happens next, and every sentence that carries a fact is assembled from a recorded statement. A self-check compares every number the agent actually says against the ledger and the call brief.
+Contradiction detection is deterministic and runs in our own code. Five contradiction types plus a sixth statement type that is not a contradiction: a **refusal**, where the payer names a category without a value ("it's a diagnosis code", which one? they won't say). A refusal is recorded as a first-class attributable row. The absence is the evidence.
 
-This is a deliberate constraint, not a limitation we backed into: every evidence-bearing utterance can be traced to a row a human can play back. The ledger is append-only and hash-chained, so the appeal packet can be verified against the log.
+The ledger is append-only and hash-chained, so the appeal packet can be verified against the log. Statement extraction is rule-based on the demo vocabulary; a Rep who phrases a denial differently is captured as a verbatim quote but not as a typed fact. That boundary is deliberate: the model never touches evidence.
 
 ---
 
 ## Quickstart
 
-**Prerequisites:** Node 20+, an AssemblyAI API key, and Chrome (dual-channel browser audio capture is Chromium-only).
+**Prerequisites:** Node 20+, an AssemblyAI API key (live path only), and Chrome.
 
 ```bash
-git clone https://github.com/<your-user>/the-witness.git
+git clone https://github.com/velez2689/the-witness.git
 cd the-witness
-npm install
+npm ci
 
-cp .env.example .env      # then paste your key into .env
-npm run dev
+cp .env.example .env      # paste your key into .env (live path only)
+npm run dev               # http://localhost:3000
+npm test && npm run typecheck && npm run lint
 ```
 
-Open <http://localhost:3000>. You should see the holding console reading **SYSTEM READY · NO SESSION**.
+- **Scripted path (no key, no mic, no network):** open `/`, press **Start call**. Choose *Witness speaks* or *Copilot*. **Take over** switches mid-call. `/packet` is the appeal packet.
+- **Live path:** choose *Be the Rep (live)*, press **Start live call**. You speak as the payer rep; the Witness calls you. Chrome, headphones and a server key are required. Two sessions open only when you press Start and are ended on every exit path. **Save call** downloads the call's audio and event timeline; nothing is uploaded.
 
-> **Never auto-connect.** Sessions start on an explicit click. The account allows 5 new streams per minute and this app opens two per call — a hot-reload loop that reconnects on save will trip the limit and present as a connection bug.
+> **Never auto-connect.** Sessions start on an explicit click. The account allows 5 new streams per minute and this app opens two per call.
 
 ### Configuration
 
 | Variable | What it is | Required | Default |
 |---|---|:--:|---|
-| `ASSEMBLYAI_API_KEY` | Server-side only. Never sent to the browser — the client gets a short-lived token from `/api/token`. | Yes | — |
-| `ASSEMBLYAI_STT_MODEL` | Speech model, pinned explicitly. | Yes | `universal-3-5-pro` |
-| `ASSEMBLYAI_AGENT_LLM` | Agent LLM, pinned explicitly. Never rely on default resolution — the default may resolve to a model the account cannot reach, and it fails looking like a connection error. | Yes | `qwen3.5-4b-fast` |
-| `SESSION_MAX_SECONDS` | Hard ceiling per session. Billing is on socket-open duration, so every session must be able to kill itself. | Yes | `900` |
+| `ASSEMBLYAI_API_KEY` | Server-side only. The browser gets a short-lived token from `/api/token`. | Live path | none |
+| `SESSION_MAX_SECONDS` | Hard ceiling per session, enforced in the token. Billing is on socket-open duration, so every session must be able to kill itself. | No | `300` |
 
 ---
 
 ## Project structure
 
 ```
-src/app/          Next.js routes. Pages and API handlers only — no business logic.
+src/app/          Next.js routes. Pages and API handlers only. No business logic.
   api/token/      Mints short-lived tokens. The only place the API key is read.
-src/domain/       Pure rules: statements, claim ledger, contradiction types. No I/O.
-src/services/     The outside world: AssemblyAI clients, audio capture, storage.
+src/domain/       Pure rules: statements, claim ledger, contradiction types, call plan, speech assembly. No I/O.
+src/services/     The outside world: AssemblyAI clients, audio capture, call recorder, storage.
 src/ui/           React components. Props in, pixels out. Never calls an API.
 src/lib/          Small shared helpers with no domain meaning.
-fixtures/         Scripted demo corpus — call scripts, audio, expected records.
-docs/             Architecture, decisions, compliance notes.
+fixtures/         Scripted demo corpus, golden logs, spike scripts.
+docs/             Architecture, decisions, situation reports, saved test calls, submission copy.
 tests/            Mirrors src/ path for path.
 ```
 
-The rules are machine-readable in [`.repo-layout.yml`](.repo-layout.yml) and explained in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). **Read them before adding a file.**
+The rules are machine-readable in [`.repo-layout.yml`](.repo-layout.yml) and explained in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Read them before adding a file.
 
 ---
 
@@ -115,23 +114,21 @@ The rules are machine-readable in [`.repo-layout.yml`](.repo-layout.yml) and exp
 
 | Area | State |
 |---|---|
-| Research and planning | Complete |
-| Technical spikes | Complete: both resolved — agent-initiated speech confirmed, audio capture path decided |
-| Repo + deploy shell | In progress |
-| Dual AssemblyAI sessions | Not started, week A |
-| Claim ledger + contradiction engine | Not started, week B |
-| Two-timescale evidence console | Not started, week B |
-| Close-Out + appeal packet | Not started, week C |
+| Domain: extractor, five contradiction kinds plus refusals, append-only ledger, hash chain, call plan, speech assembly with self-check | Built, unit-tested (195 tests) |
+| Console: claim timeline, the link, flag lane, edit view, capture sheet, hang-up gate, close-out, claim update sheet, worklist import, multi-patient roster | Built |
+| Appeal packet (`/packet`) with per-statement citations and integrity check | Built |
+| Live Mode A on two AssemblyAI sockets, in-browser call recorder | Built; a clean full-plan live call on the current build is the open item (see `docs/SITUATION-REPORT-2026-09-29.md`) |
+| Live Mode B, telephony (Twilio SIP), payer-level inconsistency index | Roadmap |
 
-**Known constraints, stated up front:** Chrome-only (dual-channel capture is Chromium-only, and macOS needs 14.2+ with Chrome 141+). The demo corpus is scripted text-to-speech — **no protected health information touches this project.** No accuracy percentage is claimed anywhere, by policy.
+**Known constraints, stated up front:** Chrome only. The demo corpus is scripted; **no protected health information touches this project**. No accuracy percentage is claimed anywhere, by policy. No CPT descriptor text appears anywhere; codes are opaque strings.
 
 ---
 
 ## Sources
 
-1. CAQH Index, 2024 — time and cost per phone claim-status transaction.
-2. GAO-06-710 — 900 test calls; representatives gave inconsistent responses.
-3. KFF analysis of ACA and Medicare Advantage appeal and overturn rates.
+1. CAQH Index, 2024 edition (2023 data year): time and cost per manual phone claim-status inquiry.
+2. KFF, March 2026: denial, appeal and upheld-appeal rates for in-network claims.
+3. GAO-06-710: 900 test calls; representatives gave inconsistent responses.
 
 Legal framing for the appeal packet rests on the **US Department of Labor / EBSA Information Letter of June 14, 2021**, which holds that under 29 CFR 2560.503-1(h)(2)(iii) audio recordings and transcripts of conversations with plan representatives are relevant documents a plan must produce. The regulation assumed such records exist. For providers, they mostly do not. This creates them.
 
@@ -139,20 +136,4 @@ The Witness is leverage inside a payer's own internal appeal. It is not a litiga
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
-
-
----
-
-## Status and how to run it
-
-```bash
-npm install
-cp .env.example .env      # add ASSEMBLYAI_API_KEY (live path only)
-npm run dev               # http://localhost:3000
-npm test && npm run typecheck && npm run lint
-```
-
-- **Scripted path (no key, no mic, no network):** open `/`, press **Start call**. Choose *Witness speaks* (the AI conducts the call and challenges the rep) or *Copilot* (you speak, the Witness whispers). **Take over** switches mid-call. `/packet` is the appeal packet.
-- **Live path:** choose *Be the Rep (live)*, press **Start live call**. You speak as the payer rep; the Witness calls you through the AssemblyAI Voice Agent API. Chrome, headphones, a microphone and a server key are required. One session opens only when you press Start and is ended on every exit path.
-- Everything spoken by the Witness is assembled from recorded statements and checked against the record; nothing is inferred. All demo data is synthetic. No PHI.
+MIT, see [LICENSE](LICENSE).

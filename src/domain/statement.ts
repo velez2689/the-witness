@@ -56,14 +56,14 @@ export interface FactStatement extends StatementBase {
   /** Set on a confirming row: the id of the statement this row confirms. The original stays untouched. */
   confirms?: string;
   /**
-   * Reference numbers only. Some payers issue one reference per claim, some one per call —
+   * Reference numbers only. Some payers issue one reference per claim, some one per call , 
    * it varies by payer, so the record says which kind this was rather than assuming.
    */
   refScope?: 'call' | 'claim';
 }
 
 /**
- * The payer names a category but withholds the value ("it's a diagnosis code" —
+ * The payer names a category but withholds the value ("it's a diagnosis code" , 
  * won't say which). Not a contradiction: a first-class row, the absence is the evidence.
  */
 export interface RefusalStatement extends StatementBase {

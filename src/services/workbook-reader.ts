@@ -5,8 +5,8 @@
  * is read with FileReader and parsed here; no fetch, no form post, no telemetry. That is not a
  * policy note, it is the implementation: there is no network call in this module.
  *
- * An .xlsx is a ZIP of XML, and the platform can already do both halves — DecompressionStream
- * for the deflate and DOMParser for the XML — so this adds no dependency. That keeps the
+ * An .xlsx is a ZIP of XML, and the platform can already do both halves, DecompressionStream
+ * for the deflate and DOMParser for the XML, so this adds no dependency. That keeps the
  * licence audit trivial and keeps a large third-party parser out of a public demo.
  */
 

@@ -22,7 +22,7 @@ export interface SessionConfig {
  * Turn detection, tuned for a payer call rather than a chat.
  *
  * `min_silence` is the reason this is set at all. A rep reading an identifier off a screen pauses
- * inside it — "Eight-K-two-J... nine-eight-eight" — and at the 1000 ms default that lands as two
+ * inside it, "Eight-K-two-J... nine-eight-eight", and at the 1000 ms default that lands as two
  * turns. Our extractor would then see "8K2J" and "988" as separate runs and file a reference
  * number that was never spoken. 1800 ms keeps the identifier whole.
  *
@@ -40,7 +40,7 @@ export const TURN_DETECTION = {
 /**
  * Voice isolation. A judge demos on a laptop, so the Witness's own voice comes out of the speakers
  * and straight back into the microphone; near-field is what keeps that from being transcribed as
- * the Rep. Set at connect — a mid-session change only applies on the next STT reconnect.
+ * the Rep. Set at connect, a mid-session change only applies on the next STT reconnect.
  */
 /**
  * Chosen by listening, not by picking a name off the list.
@@ -79,6 +79,10 @@ export interface AgentHandlers {
   onSpeechStarted?: () => void;
   /** True when the Rep talked over the Witness and the server cut the reply short. */
   onReplyDone?: (interrupted: boolean) => void;
+  /** Every reply.started, ours or the model's. Observability for the saved-call timeline. */
+  onReplyStarted?: (ours: boolean) => void;
+  /** Every reply.done with its status, ours or the model's. Observability only. */
+  onReplyEnded?: (ours: boolean, status: string) => void;
   onError?: (message: string) => void;
   onClosed?: (reason: string, durationMs: number) => void;
 }
@@ -147,7 +151,7 @@ export class VoiceAgentSession {
        * Field shapes VERIFIED against the live server on 2026-09-22, not against the docs.
        *
        * The voices documentation describes `voice.voice_id`; the server rejects it with
-       * `session.error: invalid_format` and then runs the whole call on defaults — empty system
+       * `session.error: invalid_format` and then runs the whole call on defaults, empty system
        * prompt, NO GREETING, and the stock voice. Nothing else reports a problem, so a call would
        * have gone out with the AI disclosure silently missing. `output.voice` is the real field.
        *
@@ -173,7 +177,7 @@ export class VoiceAgentSession {
           output: { voice: config.voice ?? DEFAULT_VOICE },
           // No `llm` key, deliberately. The server rejects BYO-LLM config on session.update
           // ("define it on a stored agent via POST /v1/agents"), and a rejected session.update
-          // does not fail loudly — it drops the greeting and runs the call on defaults. Pinning
+          // does not fail loudly, it drops the greeting and runs the call on defaults. Pinning
           // the model would mean managing a stored agent; the default is fine here because no
           // evidence-bearing sentence comes from the model. Our code assembles those.
         },
@@ -194,7 +198,7 @@ export class VoiceAgentSession {
     const at = this.now();
     // Field names confirmed against the events reference (2026-09-22): transcript.user and
     // transcript.agent both carry `text`; reply.audio carries base64 PCM16 in `data`, NOT `audio`
-    // — that one was guessed wrong and would have produced a silent agent on every live call.
+    //, that one was guessed wrong and would have produced a silent agent on every live call.
     // `transcript` is kept as a fallback only; the documented field is `text`.
     const text = String(m.text ?? m.transcript ?? '');
     switch (m.type) {
@@ -219,9 +223,12 @@ export class VoiceAgentSession {
           this.handlers.onUserTurn?.(text, at);
         }
         break;
-      case 'reply.started':
-        this.inFlight = { ours: this.claimReply() };
+      case 'reply.started': {
+        const ours = this.claimReply();
+        this.inFlight = { ours };
+        this.handlers.onReplyStarted?.(ours);
         break;
+      }
       case 'transcript.agent':
         if (text.trim()) {
           if (this.playing()) this.handlers.onAgentTranscript?.(text);
@@ -245,6 +252,7 @@ export class VoiceAgentSession {
         // leave the Witness mute for the rest of the call.
         this.inFlight = null;
         this.oursPending = false;
+        this.handlers.onReplyEnded?.(wasOurs, String(m.status ?? 'unknown'));
         if (wasOurs) this.handlers.onReplyDone?.(m.status === 'interrupted');
         this.drain();
         break;
@@ -277,7 +285,7 @@ export class VoiceAgentSession {
    * Rejoin a session whose socket dropped, keeping its conversation history.
    *
    * ONE explicit attempt, never a loop and never automatic. The account allows five new streams
-   * a minute, and a reconnect-on-close loop is the fastest way to exhaust that — it then presents
+   * a minute, and a reconnect-on-close loop is the fastest way to exhaust that, it then presents
    * as a connection bug rather than as the self-inflicted rate limit it is. A drop during a call
    * surfaces to the operator, who decides whether to rejoin.
    */
@@ -341,6 +349,20 @@ export class VoiceAgentSession {
   private clearGrace(): void {
     if (this.graceTimer) clearTimeout(this.graceTimer);
     this.graceTimer = null;
+  }
+
+  /**
+   * Stop hearing the reply that is playing now.
+   *
+   * There is no client event that cancels a reply in flight (the client vocabulary is input.audio,
+   * session.update, session.resume, session.end, tool.result, reply.create, conversation.message),
+   * and the server only interrupts itself when it hears the user, which on this socket it never
+   * does. So a barge-in the Rep makes on the transcription socket has to be finished here: the
+   * rest of the reply is treated as not ours and never reaches the speaker. Flushing the player
+   * alone only dropped what was buffered at that instant; the sentence then carried on.
+   */
+  muteCurrent(): void {
+    if (this.inFlight?.ours) this.inFlight = { ours: false };
   }
 
   /** Speak assembled text. Queued, never overlapped: see the turn-ownership note above. */

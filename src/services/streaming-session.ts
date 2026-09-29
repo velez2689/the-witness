@@ -22,6 +22,20 @@ export interface StreamingConfig {
   sampleRate: number;
   /** Identifiers from the claim and the ledger, biased in recognition. */
   keyterms: readonly string[];
+  /** Pinned explicitly; the server default moves between model generations. */
+  speechModel?: string;
+  /**
+   * Turn detection, in milliseconds. The server forces a turn to end after `maxTurnSilenceMs` of
+   * silence regardless of punctuation (default 1536 on Universal-3.5 Pro), and a rep reading a
+   * reference number off a screen pauses inside it for longer than that. The Sep 25 recordings
+   * show it: "Badge number 2." arrived as a whole turn, the other three digits never did. The
+   * docs' own advice for entities split across turns is to raise this value.
+   */
+  maxTurnSilenceMs?: number;
+  minTurnSilenceMs?: number;
+  voiceFocus?: 'near-field' | 'far-field';
+  /** Server-side kill switch in seconds: an abandoned socket ends itself (constraint 5). */
+  inactivityTimeoutSeconds?: number;
 }
 
 export interface StreamingHandlers {
@@ -76,6 +90,13 @@ export class StreamingSession {
       // A JSON array, confirmed accepted live. The pre-recorded API calls the same idea
       // `keyterms_prompt` too, but rejects `keyterms` - the names are not interchangeable.
       url.searchParams.set('keyterms_prompt', JSON.stringify([...config.keyterms]));
+    }
+    if (config.speechModel) url.searchParams.set('speech_model', config.speechModel);
+    if (config.maxTurnSilenceMs !== undefined) url.searchParams.set('max_turn_silence', String(config.maxTurnSilenceMs));
+    if (config.minTurnSilenceMs !== undefined) url.searchParams.set('min_turn_silence', String(config.minTurnSilenceMs));
+    if (config.voiceFocus) url.searchParams.set('voice_focus', config.voiceFocus);
+    if (config.inactivityTimeoutSeconds !== undefined) {
+      url.searchParams.set('inactivity_timeout', String(config.inactivityTimeoutSeconds));
     }
     url.searchParams.set('token', token);
 

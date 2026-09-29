@@ -43,6 +43,8 @@ export interface LiveHandlers {
   latency(e: { flagMs: number; speakMs: number | null }): void;
   drift(unknown: string[]): void;
   done(reason: string): void;
+  /** Socket-level events for the saved call's timeline. Kinds mirror services/live-call TraceKind. */
+  trace?(kind: string, detail?: string): void;
 }
 
 export interface LiveSession {
@@ -57,13 +59,15 @@ export interface LiveDriver {
       brief: import('@/domain/call-brief').CallBrief;
       ledger: import('@/domain/claim-ledger').ClaimLedger;
       call: { callId: string; capturedAt: string; repSurname?: string | null };
+      /** Headphones: the Rep may interrupt. Speakers: the microphone closes while the Witness talks. */
+      audioSetup: 'headphones' | 'speakers';
     },
     handlers: LiveHandlers,
   ): LiveSession;
   /** Close every open session (Reset, unmount). */
   closeAll(reason: string): void;
   /** Save the last call: one WAV per speaker plus the event timeline. Local only. */
-  saveCall?(): void;
+  saveCall?(): void | Promise<void>;
   /** Whether there is anything to save yet. */
   hasRecording?(): boolean;
 }

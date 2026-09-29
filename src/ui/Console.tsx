@@ -5,6 +5,7 @@ import type { ObjectiveKey } from '@/domain/call-brief';
 import { toCallBrief } from '@/domain/claim-import';
 import { buildClaimUpdate } from '@/domain/claim-update';
 import { createLedger } from '@/domain/claim-ledger';
+import { groupByTrigger } from '@/domain/engine';
 import { closeOutForAgent } from '@/domain/speech';
 import { shortDate } from '@/lib/dates';
 import { ClaimUpdateSheet } from './ClaimUpdateSheet';
@@ -14,7 +15,6 @@ import { Icon } from './Icon';
 import { BriefPanel, Banner, CaptureSheet, HangUpGate, Inspector, RepCue, Transcript, TransportBar, type Source } from './Panels';
 import { RosterBand } from './RosterBand';
 import { Stage } from './Stage';
-import { buildStats, StatStrip } from './StatStrip';
 import type { ConsoleProps, LiveDriver } from './console-types';
 import { useCallRunner, type Phase } from './use-call-runner';
 import { useLiveCall } from './use-live-call';
@@ -27,13 +27,14 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
   const [objectives, setObjectives] = useState<readonly ObjectiveKey[]>(props.brief.objectives);
   const [source, setSource] = useState<Source>('scripted');
   const [theme, setTheme] = useState<(typeof THEMES)[number]>('auto');
+  const [audioSetup, setAudioSetup] = useState<'headphones' | 'speakers'>('headphones');
   const worklist = useWorklist(props.readWorkbook, props.worklistStore);
 
   /**
    * Which claims the console is working: the imported worklist once the Agent has loaded it,
    * otherwise the sample claim with its six calls of history.
    *
-   * An imported claim has no history on file, so no contradiction can fire on its first call —
+   * An imported claim has no history on file, so no contradiction can fire on its first call , 
    * that is the truth about a claim nobody has called on yet, and the timeline says so rather
    * than implying otherwise. The scripted Rep is disabled for imported claims on purpose:
    * replaying the sample conversation would file the sample rep's words into a real patient's
@@ -58,7 +59,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
   }, [imported, objectives, props, worklist.chosen]);
 
   const scripted = useCallRunner(active, objectives);
-  const liveCall = useLiveCall(active, objectives, props.driver);
+  const liveCall = useLiveCall(active, objectives, props.driver, audioSetup);
   // A real claim has no recorded conversation to replay, so Live is the only honest source.
   const isLive = imported ? true : source === 'live';
 
@@ -91,18 +92,11 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
   );
 
   const totalHistoryHold = active.historyCalls.reduce((n, c) => n + c.holdSeconds, 0);
-  const callsSoFar = active.historyCalls.length + (phase === 'idle' ? 0 : 1);
-  const stats = useMemo(
-    () =>
-      buildStats({
-        calls: callsSoFar,
-        holdSeconds: totalHistoryHold + v.holdSeconds,
-        costPerCall: props.costPerCall,
-        statements: v.ledger.statements.length,
-        contradictions: v.contradictions.length,
-        refusals: v.ledger.statements.filter((s) => s.kind === 'refusal').length,
-      }),
-    [callsSoFar, totalHistoryHold, v.holdSeconds, props.costPerCall, v.ledger.statements, v.contradictions.length],
+  const refusalCount = v.ledger.statements.filter((s) => s.kind === 'refusal').length;
+  // Before a call starts, the worst contradiction already on record stands in for the live flag.
+  const onRecord = useMemo(
+    () => (phase === 'idle' ? (groupByTrigger(v.contradictions)[0] ?? null) : null),
+    [phase, v.contradictions],
   );
   const lastWitness = [...v.shown].reverse().find((i) => i.side === 'witness');
   const suggestion = lastWitness?.tag ? (props.bank[lastWitness.tag]?.text ?? null) : null;
@@ -144,6 +138,8 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         claimId={active.brief.claimId}
         payer={active.brief.payer}
         statementCount={v.ledger.statements.length}
+        contradictionCount={v.contradictions.length}
+        refusalCount={refusalCount}
         flagLatencyMs={flagMs}
         extractMs={v.extractMs}
         replyMs={isLive ? (liveCall.latency?.speakMs ?? null) : null}
@@ -151,7 +147,6 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         theme={theme}
         onTheme={() => setTheme(THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length])}
       />
-      <StatStrip stats={stats} />
       <ClaimImport
         fileName={worklist.fileName}
         sheetName={worklist.sheetName}
@@ -175,6 +170,8 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         setSource={setSource}
         liveAvailable={liveCall.available}
         liveDetail={isLive ? liveCall.detail : null}
+        audioSetup={audioSetup}
+        setAudioSetup={setAudioSetup}
         objectives={objectives}
         setObjectives={setObjectives}
         phase={phase}
@@ -199,6 +196,8 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
       <div className="w-flaglane" aria-label="Contradiction flag lane">
         {banner ? (
           <Banner group={banner} ledger={v.ledger} queued={v.openCount - 1} onDismiss={() => v.dismiss(banner[0].statementIds[1])} />
+        ) : onRecord ? (
+          <Banner group={onRecord} ledger={v.ledger} queued={0} onRecord />
         ) : (
           <div className="w-empty">
             <p className="w-note" style={{ margin: 0 }}>
@@ -216,6 +215,7 @@ export function Console(props: ConsoleProps & { driver?: LiveDriver }) {
         contradictions={v.contradictions}
         focus={v.focus}
         liveStartedAt={props.live.startedAt}
+        liveCallId={props.live.id}
         liveDuration={props.live.durationSeconds}
         liveNumber={active.historyCalls.length + 1}
         holdSeconds={v.holdSeconds}

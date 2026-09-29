@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Witness, payer call memory</title>
+<style>
+  :root {
+    --bg: #0b0d0f; --panel: #12161a; --raise: #181d22; --ink: #e7e4dc; --ink-soft: #8d949b; --rule: #262d34;
+    --accent: #6fb1ff; --flag: #ff6b5e; --signal: #f0b840; --confirm: #4fd08f; --paper: #f7f2e6; --form-ink: #b8402f;
+    --sans: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+  }
+  @page { size: 1920px 1080px; margin: 0; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); }
+  section { width: 1920px; height: 1080px; box-sizing: border-box; padding: 96px 120px; position: relative; page-break-after: always; break-after: page; overflow: hidden; }
+  section:last-child { page-break-after: auto; }
+  h1 { font-size: 92px; margin: 0 0 24px; font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 56px; margin: 0 0 40px; font-weight: 600; letter-spacing: -0.01em; }
+  p, li { font-size: 34px; line-height: 1.4; margin: 0 0 22px; }
+  ul { margin: 0; padding-left: 42px; }
+  .soft { color: var(--ink-soft); }
+  .line { font-size: 60px; font-weight: 700; line-height: 1.2; margin: 60px 0; }
+  .said { font-family: var(--serif); font-style: italic; }
+  .id { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .flag { color: var(--flag); }
+  .accent { color: var(--accent); }
+  .num { font-family: var(--mono); font-size: 96px; font-weight: 600; line-height: 1; margin: 0 0 8px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; }
+  .cols3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 60px; }
+  .src { position: absolute; left: 120px; bottom: 56px; font-size: 22px; color: var(--ink-soft); }
+  .n { position: absolute; right: 120px; bottom: 56px; font-size: 22px; color: var(--ink-soft); font-family: var(--mono); }
+  .brand { position: absolute; left: 120px; top: 48px; font-size: 22px; color: var(--ink-soft); }
+  .brand::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--accent); margin-right: 12px; vertical-align: 1px; }
+  img.shot { width: 100%; border: 1px solid var(--rule); }
+  table { border-collapse: collapse; width: 100%; font-size: 28px; }
+  th, td { text-align: left; padding: 14px 18px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { color: var(--ink-soft); font-weight: 600; font-size: 24px; }
+  td.y { color: var(--confirm); font-family: var(--mono); }
+  td.n2 { color: var(--ink-soft); font-family: var(--mono); }
+  td.us { color: var(--accent); font-family: var(--mono); font-weight: 700; }
+  .quote { border-left: 6px solid var(--flag); padding: 8px 0 8px 36px; margin: 40px 0; }
+  .quote p { margin: 0 0 10px; font-size: 44px; }
+  .rail { border-left: 6px solid var(--accent); padding-left: 36px; }
+  .hold { display: flex; align-items: center; gap: 24px; margin: 30px 0; }
+  .hold .bar { height: 26px; background: var(--ink-soft); opacity: .7; }
+  .hold .lbl { font-family: var(--mono); font-size: 28px; }
+  .cover { padding: 0; }
+  .cover img { width: 1920px; height: 1080px; display: block; }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <img src="../assets/cover-16x9.png" alt="The Witness cover: the console mid-contradiction">
+</section>
+
+<section>
+  <div class="brand">The Witness</div>
+  <h2>The answer is spoken, and then it is gone</h2>
+  <div class="quote">
+    <p class="said">"It's denying on a diagnosis code."</p>
+    <p class="said">"Which one?"</p>
+    <p class="said">"I don't have that level of detail on my end."</p>
+  </div>
+  <div class="cols">
+    <div><p class="num">25 min</p><p class="soft">and $13.80 of staff time per manual phone claim-status inquiry</p></div>
+    <div><p class="num">19%</p><p class="soft">of in-network claims denied; under 1% of denials ever appealed</p></div>
+  </div>
+  <p>Weeks later a different representative gives a different answer, and nothing in the revenue cycle notices. Appealing means reconstructing what the payer said, and nobody can.</p>
+  <div class="src">CAQH Index, 2024 edition (2023 data year). KFF, March 2026. Denial and appeal rates are for in-network claims.</div>
+  <div class="n">2 / 13</div>
+</section>
+
+<section>
+  <div class="brand">The Witness</div>
+  <h2>What vanishes: one call from the demo claim</h2>
+  <p>Call 03, July 22. Twenty-five minutes on the phone. The rep would not give a name or badge, would not say which diagnosis code, would not give a reference number.</p>
+  <div class="hold"><div class="bar" style="width: 1100px"></div><span class="lbl">11m 20s on hold</span></div>
+  <div class="hold"><div class="bar" style="width: 1500px; opacity: .35"></div><span class="lbl">25m 04s total</span></div>
+  <p>The claim note afterwards reads "denied, dx issue, call back". Everything that could be quoted in an appeal is gone. Three refusals happened and none of them is on paper.</p>
+  <p class="soft">The Witness records a refusal as a row: <span class="id">REFUSAL · asked which diagnosis code · rep declined to specify · 14:37</span>. The absence is the evidence.</p>
+  <div class="src">Synthetic demo corpus, claim A-4471-08. All names, payers and identifiers invented. No PHI.</div>
+  <div class="n">3 / 13</div>
+</section>
+
+<section>
+  <div class="brand">The Witness</div>
+  <h2>The product in one frame</h2>
+  <img class="shot" src="../assets/console-flag.jpg" alt="The console paused on the first flag" style="width: 1620px; margin: 0 auto; display: block;">
+  <div class="src">Same representative, badge 2210, 49 days apart, two answers. The link is drawn the moment the second answer is spoken.</div>
+  <div class="n">4 / 13</div>
+</section>
+
+<section>
+  <div class="brand">The Witness</div>
+  <h2>How it works: two sockets, one memory</h2>
+  <div class="cols">
+    <div class="rail">
+      <p><b>The Rep's audio goes to Streaming STT v3.</b> Transcription only, verbatim, never cleaned. Keyterms are seeded from the claim and the ledger before the call.</p>
+      <p><b>The Witness speaks through the Voice Agent API.</b> It is never sent audio. It never calls tools. It never writes the ledger. By choice.</p>
+    </div>
+    <div>
+      <p>Speaker identity is structural: which socket carried the audio. Never diarization.</p>
+      <p>Every line the Witness speaks is assembled by our code from statement rows and handed over with <span class="id">reply.create</span>. A self-check compares every number it actually says against the record.</p>
+      <p class="soft">The model is a mouth, not a hand. A sentence the model invented cannot be played back, and playing it back is the whole product.</p>
+    </div>
+  </div>
+  <div class="src">Both sockets are registered and closed on every exit path. Billing is on socket-open time.</div>
+  <div class="n">5 / 13</div>
+</section>
+
+<section>
+  <div class="brand">The Witness</div>
+  <h2>The evidence model</h2>
+  <div class="cols3">
+    <div><p><b>Append-only ledger.</b> A statement is never updated or deleted. A later, conflicting statement is a new row. The history is the product.</p></div>
+    <div><p><b>Hash-chained.</b> Each row's hash covers the one before it. The appeal packet carries the chain head; anyone holding the log can recompute it.</p></div>
+    <div><p><b>Five contradiction kinds plus refusals.</b> Value conflict, existence denial, status flip, commitment violation, policy inconsistency. A refusal is a row, not a blank.</p></div>
+  </div>
+  <p style="margin-top: 40px"><b>Confidence is a state,</b> never a percentage: confirmed, unconfirmed, not captured. An unconfirmed reference number triggers a spoken read-back.</p>
+  <p><b>The before-you-hang-up gate</b> is an exit condition: the call does not close while a required field is missing and not refused.</p>
+  <div class="n">6 / 13</div>
+</section>
+
+<section>
+  <div class="brand">The Witness</div>
+  <h2>Why AssemblyAI, specifically</h2>
+  <p>Spoken alphanumerics are the hard case in speech recognition. Reference numbers, member IDs and badge numbers are exactly that, and a wrong one is a fabricated fact in an appeal.</p>
+  <ul>
+    <li><b>Keyterms seeded before the call</b> with the claim's own identifiers: open-vocabulary transcription becomes candidate matching.</li>
+    <li><b>Read-back, not a guess.</b> <span class="said">"Let me read that back. Eight K two J, nine eight eight. Did I get that right?"</span></li>
+    <li><b>Verbatim on purpose.</b> The Dictation API was refused for the Rep channel: it resolves "timely fil-, sorry, no prior auth" into a clean sentence and discards the contradiction.</li>
+    <li><b>Turn detection tuned for identifiers</b> so a reference read with a pause stays one turn.</li>
+  </ul>
+  <p class="soft">No accuracy percentage is claimed anywhere. Degraded audio is the test input, and the read-back loop is what is shown handling it.</p>
+  <div class="n">7 / 13</div>
+</section>
+
+<section>
+  <div class="brand">The Witness</div>
+  <h2>What is live, what is replayed</h2>
+  <table>
+    <tr><th>Layer</th><th>State</th></tr>
+    <tr><td>Statement extraction, contradiction engine, ledger, hash chain, call plan, speech assembly</td><td class="y">built, 205 unit tests</td></tr>
+    <tr><td>Console, appeal packet, worklist import, multi-patient roster</td><td class="y">built, deployed</td></tr>
+    <tr><td>Live Mode A on two AssemblyAI sockets, in-browser call recorder</td><td class="y">built, deployed</td></tr>
+    <tr><td>Demo video call</td><td class="n2">[fill in: live call on the deployed build, or scripted Rep on the real console, labelled]</td></tr>
+    <tr><td>Telephony (Twilio SIP), live Mode B, payer inconsistency index</td><td class="n2">roadmap</td></tr>
+  </table>
+  <p class="soft" style="margin-top: 40px">Statement extraction is rule-based on the demo vocabulary; a differently phrased denial is captured as a verbatim quote, not as a typed fact. That boundary is deliberate: the model never touches evidence.</p>
+  <div class="n">8 / 13</div>
+</section>
+
+<section>
+  <div class="brand">The Witness</div>
+  <h2>Market: the denial-chasing spend, not the phone call</h2>
+  <div class="cols3">
+    <div><p class="num">$25.7B</p><p class="soft">provider cost of claims adjudication, up 23% year on year</p></div>
+    <div><p class="num">$57.23</p><p class="soft">administrative cost per denied claim</p></div>
+    <div><p class="num">73%</p><p class="soft">of providers cite unclear denial reasons or underpayments</p></div>
+  </div>
+  <p style="margin-top: 30px"><b>Target user:</b> outsourced medical billing companies and hospital central billing offices. Named teams with a denial queue, not "healthcare".</p>
+  <p><b>Sizing:</b> CAQH's published $2.4B medical savings opportunity for claim-status transactions. We do not reconstruct a volume-times-price figure; only 2% of 2.82B inquiries are fully manual.</p>
+  <div class="src">Premier, February 2025. HFMA/Guidehouse, April 2026. CAQH Index, 2024 edition (2023 data year).</div>
+  <div class="n">9 / 13</div>
+</section>
+
+<section>
+  <div class="brand">The Witness</div>
+  <h2>Revenue model</h2>
+  <ul>
+    <li><b>Per seat, per month</b> for billing teams, priced against the 25 minutes a call costs today.</li>
+    <li><b>Per-call metering</b> above the seat quota, so a large central billing office pays for what it uses.</li>
+    <li><b>The appeal packet</b> is the upsell: an evidence-grade record the payer must treat as a relevant document.</li>
+  </ul>
+  <p class="soft" style="margin-top: 40px">Why it needs AI: the record has to be made while the call is happening, by something that can hear a reference number, compare it to six earlier calls and speak in under two seconds. A person on the call cannot do that and take notes.</p>
+  <div class="n">10 / 13</div>
+</section>
+
+<section>
+  <div class="brand">The Witness</div>
+  <h2>Competitive analysis</h2>
+  <table>
+    <tr><th></th><th>Makes the call</th><th>Records it</th><th>Remembers across calls</th><th>Flags contradictions live</th><th>Citable evidence</th></tr>
+    <tr><td>AI payer-call agents (Infinitus, Outbound AI)</td><td class="y">yes</td><td class="y">yes</td><td class="n2">per task</td><td class="n2">no</td><td class="n2">no</td></tr>
+    <tr><td>Denial-management platforms (Waystar, Experian Health, AKASA)</td><td class="n2">no</td><td class="n2">no</td><td class="n2">claim status only</td><td class="n2">no</td><td class="n2">no</td></tr>
+    <tr><td>Call recording and QA tools</td><td class="n2">no</td><td class="y">yes</td><td class="n2">no</td><td class="n2">no</td><td class="n2">audio only</td></tr>
+    <tr><td>Status quo: claim notes</td><td class="n2">the biller does</td><td class="n2">no</td><td class="n2">a line of shorthand</td><td class="n2">no</td><td class="n2">no</td></tr>
+    <tr><td><b>The Witness</b></td><td class="us">rides along or speaks</td><td class="us">yes</td><td class="us">whole claim history</td><td class="us">under 2 s, spoken</td><td class="us">quotes, hash, offsets</td></tr>
+  </table>
+  <p class="soft" style="margin-top: 36px">Our wedge: cross-call payer memory and an evidence-grade record. We witness the call rather than replace the biller, so nothing about the workflow changes on day one.</p>
+  <div class="src">Competitor rows to be verified against each vendor's own site before this slide ships; sources in the notes.</div>
+  <div class="n">11 / 13</div>
+</section>
+
+<section>
+  <div class="brand">The Witness</div>
+  <h2>Roadmap, and the line we will not cross</h2>
+  <div class="cols">
+    <div>
+      <ul>
+        <li>Telephony: Twilio SIP into the same two sockets.</li>
+        <li>Live Mode B: the biller speaks, the Witness whispers, on a second Streaming session.</li>
+        <li>Payer Inconsistency Index: "this payer gave inconsistent answers on 3 of 11 claims this quarter".</li>
+        <li>Audio snippets in the appeal packet beside every quote.</li>
+      </ul>
+    </div>
+    <div class="rail">
+      <p><b>The console names the representative,</b> because a statement without an attributable speaker is not citable.</p>
+      <p><b>We will not build rep scoring.</b> Ranking call-centre workers by contradiction rate is a surveillance product wearing an evidence product's clothes. Attribute individuals because evidence requires it; aggregate only at the payer level.</p>
+    </div>
+  </div>
+  <div class="src">Legal framing: US DOL/EBSA Information Letter, June 14 2021, on 29 CFR 2560.503-1(h)(2)(iii). Leverage inside the payer's own internal appeal, never litigation.</div>
+  <div class="n">12 / 13</div>
+</section>
+
+<section>
+  <div class="brand">The Witness</div>
+  <h2>Try it</h2>
+  <p class="id accent" style="font-size: 44px">https://the-witness-omega.vercel.app</p>
+  <p class="id" style="font-size: 36px">https://github.com/velez2689/the-witness</p>
+  <p style="margin-top: 40px">Scripted path: press Start call. No microphone, no network, no session opens.</p>
+  <p>Live path: Be the Rep (live), headphones, Chrome. Two AssemblyAI sessions open on click and close on every exit path.</p>
+  <p class="soft" style="margin-top: 60px">Next.js on Vercel. AssemblyAI Streaming STT v3 and Voice Agent API. MIT licence. All demo data synthetic; no PHI; no CPT descriptor text; no accuracy claims.</p>
+  <div class="line">We don't predict what the payer will pay.<br>We record what the payer said.</div>
+  <div class="n">13 / 13</div>
+</section>
+
+</body>
+</html>

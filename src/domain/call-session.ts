@@ -13,7 +13,7 @@ import { findAlnumRuns, formatReference } from '@/lib/alphanumeric';
 
 /**
  * One call in progress. Every function returns a NEW session; the ledger inside is append-only.
- * The Rep's words become statements here, in our code — the voice agent never writes.
+ * The Rep's words become statements here, in our code, the voice agent never writes.
  */
 export interface CallSession {
   claimId: ClaimId;
@@ -170,7 +170,7 @@ export function noteUsLine(session: CallSession, text: string): CallSession {
 }
 
 /**
- * Close the call. A read-back the Rep never objected to is confirmed — the Agent repeated the
+ * Close the call. A read-back the Rep never objected to is confirmed, the Agent repeated the
  * number and nobody corrected it before hang-up. Rep silence is not agreement for a NEW read-back
  * in a live call (that waits for the Rep), so this only runs for archived calls.
  */

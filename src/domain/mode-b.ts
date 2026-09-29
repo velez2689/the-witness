@@ -10,7 +10,7 @@ import type { Statement } from './statement';
 import type { ModeAState } from './mode-a';
 
 /**
- * Mode B — Copilot. The Agent speaks to the Rep; the Witness listens and WHISPERS into the Agent's
+ * Mode B, Copilot. The Agent speaks to the Rep; the Witness listens and WHISPERS into the Agent's
  * earpiece only. The Witness never speaks on the line. Same pipeline as Mode A: the whisper is
  * assembled from statement rows, never composed by the model.
  */

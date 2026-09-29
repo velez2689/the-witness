@@ -1,7 +1,7 @@
 import type { ClaimId, CallId, Statement } from './statement';
 
 /**
- * Append-only. The history IS the product — there is no update or delete here,
+ * Append-only. The history IS the product, there is no update or delete here,
  * only append and read. A statement is keyed to its claim at capture time and is
  * never moved or overwritten.
  */

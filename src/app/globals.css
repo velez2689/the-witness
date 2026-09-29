@@ -96,7 +96,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* custom checkbox — replaces the native control everywhere in the console */
+/* custom checkbox, replaces the native control everywhere in the console */
 .w-check { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; font-size: 13.5px; user-select: none; }
 .w-check input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .w-check-box {
@@ -122,13 +122,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .said::after { content: "\201D"; }
 
 /* Section titles: sentence case, an icon, and enough size to read as a heading.
-   (An earlier pass used 11px uppercase micro-labels — smaller AND a documented
+   (An earlier pass used 11px uppercase micro-labels, smaller AND a documented
    AI-design tell. Replaced.) */
-.w-brief h2, .w-panel h2, .w-update h2, .w-claim-head h2, .w-stage-head h2 {
+.w-brief h2, .w-panel h2, .w-update h2, .w-claim-head h2, .w-stage-head h2, .w-import-head h2, .w-roster-head h2 {
   margin: 0 0 14px; font-size: 14px; font-weight: 600; color: var(--ink);
   letter-spacing: -0.005em; display: flex; align-items: center; gap: 8px;
 }
-.w-brief h2 .w-icon, .w-panel h2 .w-icon, .w-update h2 .w-icon,
+.w-brief h2 .w-icon, .w-panel h2 .w-icon, .w-update h2 .w-icon, .w-import-head h2 .w-icon, .w-roster-head h2 .w-icon,
 .w-claim-head h2 .w-icon, .w-stage-head h2 .w-icon { color: var(--accent); }
 
 /* ---------- console shell ---------- */
@@ -168,18 +168,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .w-btn.warn { border-color: var(--flag); color: var(--flag); background: transparent; }
 .w-btn.warn:hover { background: var(--flag-wash); }
 
-/* ---------- the claim's record at a glance ---------- */
-.w-stats {
-  display: flex; flex-wrap: wrap; align-items: stretch;
-  padding: 18px 28px 20px; border-bottom: 1px solid var(--rule); background: var(--panel);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
-}
-.w-stat-block { display: flex; flex-direction: column; gap: 6px; padding: 0 30px; border-left: 1px solid var(--rule); }
-.w-stat-block:first-child { padding-left: 0; border-left: 0; }
-.w-stat-label { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-soft); }
-.w-stat-value { font-size: 30px; line-height: 1.1; font-weight: 500; letter-spacing: -0.02em; }
-.w-stat-block.flag .w-stat-value, .w-stat-block.flag .w-stat-label .w-icon { color: var(--flag); }
-.w-stat-block.accent .w-stat-value { color: var(--accent); }
+/* the computed cost line inside the brief: hold time and cost are evidence, not vanity metrics */
+.w-sofar b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; }
+.w-sofar .w-note { display: block; margin-top: 2px; }
 
 /* ---------- band 2: the claim timeline (HTML, so type and depth actually work) ---------- */
 .w-claim { padding: 22px 28px 16px; border-bottom: 1px solid var(--rule); background: var(--bg); }
@@ -194,7 +185,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   width: 104px; height: 120px; overflow: hidden;
   display: flex; flex-direction: column; gap: 1px;
   padding: 11px 10px 28px; text-align: left;
-  background: var(--panel); border: 1px solid var(--rule); border-radius: 10px;
+  background: var(--panel); border: 1px solid var(--rule); border-radius: 3px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
   transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
 }
@@ -217,7 +208,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .w-call.live { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 0 1px var(--accent), 0 0 26px -6px var(--accent); }
 .w-call.live .band, .w-call.pending .band { background: var(--accent); opacity: 1; }
 .w-call.pending { border-style: dashed; border-color: var(--accent); }
-.w-call .livelabel { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; color: var(--accent); letter-spacing: 0.04em; }
+.w-call .livelabel { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--accent); white-space: nowrap; }
 .w-call .pendinglabel { font-size: 12px; color: var(--accent); margin-top: 3px; }
 .w-call .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--flag); animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
@@ -225,11 +216,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .w-link-line { position: absolute; left: 0; right: 0; top: 0; height: 34px; width: 100%; overflow: visible; }
 .w-link-dot { position: absolute; top: 30px; width: 7px; height: 7px; border-radius: 50%; background: var(--flag); transform: translateX(-50%); }
+.w-claim-track.on-record .w-link-chip { color: var(--ink-soft); border-color: var(--ink-soft); }
+.w-claim-track.on-record .w-link-dot { background: var(--ink-soft); }
 .w-link-chip {
   position: absolute; top: 14px; transform: translate(-50%, -50%);
   display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
-  padding: 5px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
-  color: var(--flag); background: var(--bg); border: 1px solid var(--flag); box-shadow: var(--shadow);
+  padding: 4px 10px; border-radius: 2px; font-size: 13px; font-weight: 600;
+  color: var(--flag); background: var(--bg); border: 1px solid var(--flag);
 }
 
 .w-lead { position: absolute; left: 0; right: 0; top: 154px; height: 40px; width: 100%; }
@@ -252,7 +245,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .w-obj { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 0; padding: 0; list-style: none; }
 
 .w-stage { position: relative; border-bottom: 1px solid var(--rule); background: var(--bg); padding: 20px 28px 22px; }
-/* the chart only — NOT the icons inside the header, which are also svg */
+/* the chart only, NOT the icons inside the header, which are also svg */
 .w-stage > svg { display: block; width: 100%; height: auto; }
 .w-stage text { font-family: var(--font-sans); fill: var(--ink-soft); font-size: 11.5px; }
 .w-stage .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
@@ -264,7 +257,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border: 1px dashed var(--rule); border-radius: var(--radius-lg); padding: 20px;
 }
 .w-banner {
-  background: var(--raise); border: 1px solid var(--flag); border-left-width: 6px; border-radius: var(--radius);
+  background: var(--raise); border: 1px solid var(--flag); border-left-width: 6px; border-radius: 0;
   box-shadow: var(--shadow); padding: 15px 20px 17px; animation: banner-in 180ms ease-out;
   display: grid; grid-template-columns: 1fr 1fr; gap: 4px 32px;
 }
@@ -272,6 +265,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @keyframes banner-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .w-banner { animation: banner-fade 180ms linear; } @keyframes banner-fade { from { opacity: 0; } to { opacity: 1; } } }
 .w-banner .kind { font-family: var(--font-mono); font-size: 12px; color: var(--flag); font-weight: 700; letter-spacing: 0.03em; }
+.w-banner.muted { border-color: var(--rule); border-left-color: var(--ink-soft); box-shadow: none; animation: none; background: var(--panel); }
+.w-banner.muted .kind { color: var(--ink-soft); }
 .w-banner p { margin: 5px 0; font-size: 14.5px; }
 .w-banner .row { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
 
@@ -350,7 +345,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .pk { max-width: 74ch; margin: 0 auto; padding: 24px 20px 64px; background: var(--raise); color: var(--ink); font-family: var(--font-serif); font-size: 15.5px; line-height: 1.6; }
 .pk h1 { font-size: 26px; margin: 8px 0 2px; font-weight: 600; }
 .pk h2 { font-size: 17px; margin: 30px 0 6px; padding-top: 8px; border-top: 1px solid var(--rule); }
-.pk h3 { font-size: 13px; margin: 14px 0 2px; font-family: var(--font-mono); color: var(--flag); text-transform: uppercase; }
+.pk h3 { font-size: 14px; margin: 14px 0 2px; font-family: var(--font-sans); font-weight: 600; color: var(--flag); }
 .pk-sub { color: var(--ink-soft); margin: 0 0 10px; font-family: var(--font-sans); font-size: 13.5px; }
 .pk-note { color: var(--ink-soft); font-family: var(--font-sans); font-size: 13px; }
 .pk-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; font-family: var(--font-sans); }
@@ -367,7 +362,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .pk-conflict { background: #fff; }
 }
 
-.w-cue { padding: 14px 24px; border-bottom: 1px solid var(--rule); background: var(--raise); border-left: 6px solid var(--accent); box-shadow: var(--shadow); font-size: 13.5px; }
+.w-cue { padding: 14px 24px; border-bottom: 1px solid var(--rule); background: var(--raise); border-left: 6px solid var(--accent); font-size: 13.5px; }
 
 /* --- Patients on this call (the batch band) ------------------------------------------- */
 .w-roster { padding: 20px 28px 18px; border-bottom: 1px solid var(--rule); background: var(--bg); }
@@ -378,7 +373,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .w-pt {
   position: relative; display: flex; flex-direction: column; gap: 3px;
   padding: 13px 14px 12px; background: var(--panel); border: 1px solid var(--rule);
-  border-radius: var(--radius); overflow: hidden;
+  border-radius: 3px; overflow: hidden;
 }
 .w-pt-band { position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--ink-soft); opacity: 0.5; }
 .w-pt.clear .w-pt-band { background: var(--confirm); opacity: 1; }
@@ -388,10 +383,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .w-pt-top { display: flex; align-items: baseline; gap: 8px; }
 .w-pt-top b { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
 .w-pt-name { font-size: 14px; font-weight: 600; }
-.w-pt-now {
-  margin-left: auto; font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em;
-  color: var(--on-accent); background: var(--accent); padding: 2px 6px; border-radius: 999px;
-}
+.w-pt-now { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--accent); }
+.w-pt-now .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1.4s ease-in-out infinite; }
 .w-pt-claim { font-size: 11.5px; color: var(--ink-soft); }
 .w-pt-gate { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; margin-top: 4px; }
 .w-pt.clear .w-pt-gate { color: var(--confirm); }
@@ -400,13 +393,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .w-wrongclaim {
   border: 1px solid var(--flag); border-left: 6px solid var(--flag); background: var(--flag-wash);
-  border-radius: var(--radius); padding: 13px 16px; margin-bottom: 14px;
+  border-radius: 0; padding: 13px 16px; margin-bottom: 14px;
 }
 .w-wrongclaim p { margin: 0 0 4px; font-size: 13.5px; }
 .w-wrongclaim p:last-child { margin-bottom: 0; }
 .w-wc-tag {
   display: inline-flex; align-items: center; gap: 7px; color: var(--flag);
-  font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; margin-bottom: 6px;
+  font-size: 13px; font-weight: 600; margin-bottom: 6px;
 }
 
 .w-roster-feed { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 1px; }
@@ -416,7 +409,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .w-roster-feed li.rep { background: var(--panel); }
 .w-roster-feed li.flagged { background: var(--flag-wash); box-shadow: inset 3px 0 0 var(--flag); }
-.w-rf-who { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink-soft); }
+.w-rf-who { font-size: 12px; color: var(--ink-soft); }
 .w-roster-feed li.flagged .w-rf-who { color: var(--flag); }
 .w-rf-dest { font-size: 11px; color: var(--ink-soft); white-space: nowrap; }
 .w-roster-feed li.flagged .w-rf-dest { color: var(--flag); font-weight: 700; }
@@ -429,13 +422,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .w-held { margin-top: 11px; padding: 11px 13px; background: var(--raise); border: 1px solid var(--rule); border-radius: var(--radius); }
 .w-held-title { display: flex; align-items: center; gap: 7px; margin: 0 0 7px; font-size: 12.5px; font-weight: 600; color: var(--signal); }
 .w-held-quote { margin: 0 0 8px; padding-left: 11px; border-left: 3px solid var(--rule); font-family: var(--font-serif); font-size: 15px; }
-.w-held-list { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-.w-held-list li { font-size: 11.5px; padding: 3px 8px; background: var(--panel); border: 1px solid var(--rule); border-radius: 999px; }
+.w-held-list { list-style: none; margin: 0 0 8px; padding: 0; font-size: 12.5px; }
+.w-held-list li { display: inline; }
+.w-held-list li + li::before { content: " \00B7 "; color: var(--ink-soft); }
 .w-held-acts { display: flex; flex-wrap: wrap; gap: 9px; }
 
 /* --- Claim timeline below the width its axis needs -------------------------------------
    The axis spaces six 104px cards at 10.4% of the track, so it needs a ~1180px viewport to
-   place them without collision — measured, not guessed. Below that the timeline becomes a
+   place them without collision, measured, not guessed. Below that the timeline becomes a
    list in date order: the dates stay on the cards, so the sequence survives even though the
    to-scale spacing cannot. The contradiction label keeps its text as a standalone chip,
    because an elbow connector has no meaning in a stack. */

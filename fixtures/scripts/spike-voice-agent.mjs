@@ -21,15 +21,20 @@ const log = (m) => console.log(`+${Date.now() - t0}ms ${m}`);
 let audioChunks = 0, audioField = null, firstAudioAt = null;
 const seen = new Set();
 
-// Exactly what src/services/voice-agent-session.ts sends.
+// The same shape src/services/voice-agent-session.ts sends (verified 2026-09-22): `output.voice`,
+// not `voice.voice_id`, which the server rejects and then silently runs the call on defaults.
 const session = {
   system_prompt: 'You only say what you are instructed to say. Never invent an identifier.',
   greeting: 'Hello, this is an AI assistant calling on behalf of the billing office. This call is recorded.',
   input: {
-    transcription_mode: 'max_accuracy',
+    keyterms: ['8K2J-988', '8K2J-702', 'Meridian Health Plan', 'Darnell', '2210'],
     transcription_prompt: '8K2J-988, 8K2J-702, Meridian Health Plan, Darnell, badge 2210',
+    turn_detection: { vad_threshold: 0.5, min_silence: 1800, max_silence: 5000, interrupt_response: true, interruption_delay: 150 },
+    voice_focus: 'near-field',
+    voice_focus_threshold: 0.85,
+    continuous_partials: true,
   },
-  voice: { voice_id: 'alba' },
+  output: { voice: 'jean' },
 };
 
 ws.addEventListener('open', () => {
