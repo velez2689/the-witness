@@ -28,3 +28,15 @@ The filename stamp is the moment "Save call" was clicked, not the call start, an
 No saved call exists yet for commits `586db95` or later. See `docs/SITUATION-REPORT-2026-09-29.md` for the fuller analysis.
 
 The screen recordings (`Scenarios 8 (test1-3).mp4`, `Recording 2026-09-23 052700.mp4`, up to 151 MB each) are deliberately not in the repo: GitHub rejects files over 100 MB, they predate the fixes, and a screen recorder contends for the sound card, so they are unreliable for audio review.
+
+## 2026-09-29 calls on the current build (added by the owner, as zips)
+
+Each zip holds `call-<ts>.json` (full trace: `stt-partial`, `reply-started`, `reply-done`, `interrupted`, `suppressed`, `socket-closed`...), `witness-<ts>.wav` and `rep-<ts>.wav`. Timestamps are UTC (local Eastern is four hours earlier). Recorded after the live-path fixes in `1e92ff7`, so these are the first saved calls on the fixed build.
+
+| Zip | Length | Outcome |
+|---|---|---|
+| `call-2026-09-29T12-52-24.zip` | 153 s | Full plan to `plan-complete`. Greeting delivered in full, identity captured ("Darnell", badge 2210), three contradiction challenges spoken (`value_conflict`, `probe_prior`, `existence_denial`), reference number 8K2J-988 read back and confirmed, recap and close spoken. Greeting's first audio arrived 5.7 s after the `greet` event (slow start). |
+| `call-2026-09-29T12-57-56.zip` | 95 s | Full plan to `plan-complete`, different Rep (Smith) and claim. The "Badge number" partial fired a barge-in (`interrupted`) on the `identify` line. `denial_reason` was asked twice because "issue with the CPT code" and "Non-covered" did not extract as a typed denial reason. Ended on the hand-off line, not the sign-off. |
+| `call-2026-09-29T13-00-23.zip` | 91 s | Full plan to `plan-complete`. `denial_reason` asked twice again ("Non-covered" not extracted); reference number 627762 read back; recap and close spoken. The `verify` line took about 15 s to speak. |
+
+Things worth a second look: the rule-based extractor does not type "non-covered" as a denial reason (the Witness re-asks); a one-word answer ("Smith.") triggers "Sorry, you cut out there for a second"; the `verify` line is 10-15 s long with the slowed identifier pacing.
