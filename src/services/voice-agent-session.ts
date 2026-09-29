@@ -122,7 +122,7 @@ export class VoiceAgentSession {
    * overlap. This is where "the agent is a mouth, not a hand" stops being a comment and starts
    * being enforced - the model may generate whatever it likes and it is physically inaudible.
    */
-  private inFlight: { ours: boolean } | null = null;
+  private inFlight: { ours: boolean; muted?: boolean } | null = null;
   private oursPending = false;
   private expectModelReply = false;
   private graceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -247,12 +247,13 @@ export class VoiceAgentSession {
         break;
       case 'reply.done': {
         const wasOurs = this.playing();
+        const muted = this.inFlight?.muted === true;
         // Whatever was outstanding is finished now. Clearing both here rather than only on
         // reply.started means a reply that never announced itself cannot wedge the queue and
         // leave the Witness mute for the rest of the call.
         this.inFlight = null;
         this.oursPending = false;
-        this.handlers.onReplyEnded?.(wasOurs, String(m.status ?? 'unknown'));
+        this.handlers.onReplyEnded?.(wasOurs, muted ? `muted ${String(m.status ?? 'unknown')}` : String(m.status ?? 'unknown'));
         if (wasOurs) this.handlers.onReplyDone?.(m.status === 'interrupted');
         this.drain();
         break;
@@ -362,7 +363,7 @@ export class VoiceAgentSession {
    * alone only dropped what was buffered at that instant; the sentence then carried on.
    */
   muteCurrent(): void {
-    if (this.inFlight?.ours) this.inFlight = { ours: false };
+    if (this.inFlight?.ours) this.inFlight = { ours: false, muted: true };
   }
 
   /** Speak assembled text. Queued, never overlapped: see the turn-ownership note above. */

@@ -320,6 +320,17 @@ describe('turn ownership: the model may generate, but it is never heard', () => 
     expect(audio).toEqual(['one', 'three']);
   });
 
+  it('labels the end of a muted reply as muted, not as the model speaking', () => {
+    const ended: string[] = [];
+    const { session, sock } = live({ onReplyEnded: (ours, status) => ended.push(`${ours} ${status}`) });
+    sock().server({ type: 'reply.done', reply_id: 'greet', status: 'completed' }); // greeting over
+    session.say('Could I get your name and badge number?');
+    sock().server({ type: 'reply.started', reply_id: 'identify' });
+    session.muteCurrent();
+    sock().server({ type: 'reply.done', reply_id: 'identify', status: 'completed' });
+    expect(ended).toEqual(['true completed', 'false muted completed']);
+  });
+
   it('reports reply.done only for our own replies', () => {
     const dones: boolean[] = [];
     const { sock } = live({ onReplyDone: (i) => dones.push(i) });

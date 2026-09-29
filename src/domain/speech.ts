@@ -127,12 +127,20 @@ export function verifyClaim(brief: CallBrief, context?: CallContext): Utterance 
   return say(`${identify} Just so you know, ${many}${when}, and I've got notes from those calls in front of me. ${ask}`);
 }
 
-export function askObjective(key: ObjectiveKey): Utterance {
-  return say(OBJECTIVES[key].ask);
+/** The objective's question; `nth` is how many times it has already been asked on this call. */
+export function askObjective(key: ObjectiveKey, nth = 0): Utterance {
+  return say(nth > 0 ? OBJECTIVES[key].askAgain : OBJECTIVES[key].ask);
 }
 
-export function askIdentityAgain(): Utterance {
-  return say("Sorry, you cut out there for a second - could I just get your name and badge number?");
+/**
+ * Ask only for the part of the identity still missing, and never claim the Rep "cut out": on
+ * the 2026-09-29 live call that phrase followed a perfectly clear "Smith." and prompted the Rep
+ * to answer with the words "badge number" and nothing else.
+ */
+export function askIdentityAgain(identity: { first: string | null; badge: string | null } = { first: null, badge: null }): Utterance {
+  if (identity.first && !identity.badge) return say(`Thanks, ${identity.first}. And your badge number?`);
+  if (identity.badge && !identity.first) return say('And your name, please?');
+  return say("Sorry, I didn't catch that. Could I get your name and badge number?");
 }
 
 export function askReference(): Utterance {
