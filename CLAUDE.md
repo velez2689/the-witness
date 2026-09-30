@@ -19,8 +19,7 @@ Every claim the product makes must trace to an utterance a human can play back.
 Nothing is inferred, scored, or adjudicated.
 
 ## Read before starting
-- **`docs/HANDOFF-2026-09-29.md`, read this first.** The full review, every fix, the artifacts and what is left, with step-by-step instructions.
-- **`docs/PROJECT-STATE.md`.** Everything we have decided and why,
+- **`docs/PROJECT-STATE.md`, read this first.** Everything we have decided and why,
   where things stand, what is built, what is next. One file, no archaeology needed.
 - `.repo-layout.yml`, the structure contract. Machine-readable. **Run its placement
   procedure before creating any file.**
